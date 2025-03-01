@@ -213,7 +213,9 @@ export default function NodeStatus() {
               </div>
             ) : (
               <div className="text-center py-2 text-gray-400 text-sm">
-                No clients currently connected to your node.
+                {status.connectedUsers > 0 ? 
+                  `${status.connectedUsers} clients connected. Click Refresh to see details.` : 
+                  'No clients currently connected to your node.'}
               </div>
             )}
           </div>
@@ -234,7 +236,7 @@ export default function NodeStatus() {
           </div>
         )}
 
-        {/* Available Nodes List (visible in client mode) */}
+        {/* Available Nodes List (always visible in client mode) */}
         {!isHost && (
           <div className="mt-4">
             <AvailableNodes onSelectNode={(nodeId) => {
