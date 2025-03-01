@@ -453,6 +453,20 @@ export function useVPNNode() {
 
     setIsLoading(true);
     try {
+      // Vérifier si l'utilisateur est déjà connecté à un autre nœud
+      if (status.active && status.connectedToNode && status.connectedToNode !== nodeWalletAddress) {
+        console.log('Déjà connecté à un autre nœud. Déconnexion automatique...');
+        // Déconnecter du nœud actuel avant de se connecter au nouveau
+        const disconnectSuccess = await disconnectFromNode();
+        if (!disconnectSuccess) {
+          console.error('Échec de la déconnexion automatique');
+          setError('Échec de la déconnexion du nœud actuel. Veuillez réessayer.');
+          setIsLoading(false);
+          return false;
+        }
+        console.log('Déconnexion réussie, connexion au nouveau nœud...');
+      }
+
       const response = await api.post(`${config.API_BASE_URL}/api/connect-to-node`, {
         clientWalletAddress: account,
         hostWalletAddress: nodeWalletAddress
