@@ -59,7 +59,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     disconnectFromNode,
     isLoading,
     error,
-    fetchAvailableNodesFromHook,
+    fetchAvailableNodes,
     status
   } = useVPNNode();
   
@@ -77,7 +77,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     try {
       // Utiliser directement la fonction du hook useVPNNode pour récupérer les nœuds
       // Cette approche garantit la cohérence entre les différentes parties de l'application
-      const nodes = await fetchAvailableNodesFromHook(forceRefresh);
+      const nodes = await fetchAvailableNodes(forceRefresh);
       console.log('Nœuds récupérés dans AvailableNodes:', nodes);
       setAvailableNodes(nodes);
       return nodes;

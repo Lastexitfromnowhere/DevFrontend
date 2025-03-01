@@ -881,6 +881,123 @@ export function useVPNNode() {
     }
   }, [status.active, status.nodeType]);
 
+  const fetchAvailableNodes = async (forceRefresh: boolean = false): Promise<any[]> => {
+    const now = new Date();
+    console.log('Début fetchAvailableNodes, forceRefresh:', forceRefresh);
+    
+    // Vérifier le cache si on ne force pas le rafraîchissement
+    if (!forceRefresh) {
+      const lastUpdate = localStorage.getItem('lastNodesUpdate');
+      const cachedNodes = localStorage.getItem('availableNodesCache');
+      
+      if (lastUpdate && cachedNodes) {
+        try {
+          const lastUpdateDate = new Date(lastUpdate);
+          const diffMs = now.getTime() - lastUpdateDate.getTime();
+          const diffSecs = Math.floor(diffMs / 1000);
+          
+          // Utiliser le cache si la dernière mise à jour est récente (moins de 30 secondes)
+          if (diffSecs < 30) {
+            try {
+              const parsedNodes = JSON.parse(cachedNodes);
+              console.log('Utilisation du cache de nœuds (moins de 30 secondes)', parsedNodes);
+              return parsedNodes;
+            } catch (e) {
+              console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
+            }
+          }
+        }
+      }
+    }
+    
+    // Ajouter un délai aléatoire pour éviter le rate limiting
+    const randomDelay = Math.floor(Math.random() * 300) + 50; // 50-350ms (réduit pour plus de réactivité)
+    await new Promise(resolve => setTimeout(resolve, randomDelay));
+    
+    try {
+      console.log('Envoi de la requête API pour les nœuds disponibles');
+      // Faire la requête API avec l'adresse du wallet actuel
+      const response = await api.get(`${config.API_BASE_URL}/api/available-nodes`, {
+        headers: {
+          'X-Wallet-Address': account || localStorage.getItem('walletAddress') || ''
+        }
+      });
+      
+      if (response.data.success) {
+        const nodes = response.data.nodes || [];
+        console.log('Nœuds reçus du serveur (non filtrés):', nodes);
+        
+        // Filtrer les nœuds pour ne garder que ceux qui sont valides
+        const validNodes = nodes.filter((node: any) => {
+          // Vérifier que le nœud a une adresse wallet
+          if (!node.walletAddress) {
+            console.log('Nœud rejeté - pas d\'adresse wallet');
+            return false;
+          }
+          
+          // Vérifier que le nœud a été vu récemment (moins de 15 minutes)
+          if (node.lastSeen) {
+            const lastSeenDate = new Date(node.lastSeen);
+            const diffMs = now.getTime() - lastSeenDate.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            if (diffMins >= 15) { // Réduire à 15 minutes pour plus de précision
+              console.log(`Nœud rejeté - trop ancien (${diffMins} minutes):`, node.walletAddress);
+              return false;
+            }
+          } else {
+            console.log('Nœud rejeté - pas de lastSeen:', node.walletAddress);
+            return false; // Rejeter les nœuds sans timestamp de dernière activité
+          }
+          
+          // Ne pas afficher son propre nœud dans la liste des nœuds disponibles
+          // si l'utilisateur est en mode hôte
+          const isOwnNode = node.walletAddress === account;
+          const isHostMode = localStorage.getItem('vpnNodeIsHost') === 'true';
+          if (isOwnNode && isHostMode) {
+            console.log('Nœud propre filtré de la liste des disponibles (mode hôte):', node.walletAddress);
+            return false;
+          }
+          
+          return true;
+        });
+        
+        console.log('Nœuds valides après filtrage:', validNodes);
+        
+        // Ajouter un timestamp de dernière vérification à chaque nœud
+        const nodesWithTimestamp = validNodes.map((node: any) => ({
+          ...node,
+          lastChecked: now.toISOString()
+        }));
+        
+        // Mettre à jour le cache
+        localStorage.setItem('availableNodesCache', JSON.stringify(nodesWithTimestamp));
+        localStorage.setItem('lastNodesUpdate', now.toISOString());
+        
+        return nodesWithTimestamp;
+      } else {
+        throw new Error('Failed to fetch available nodes');
+      }
+    } catch (error: any) {
+      console.error('Error fetching available nodes:', error);
+      
+      // En cas d'erreur 429 (Too Many Requests), utiliser les données en cache si disponibles
+      if (error.response?.status === 429) {
+        console.warn('Rate limit atteint, utilisation des données en cache');
+        const cachedNodes = localStorage.getItem('availableNodesCache');
+        if (cachedNodes) {
+          try {
+            return JSON.parse(cachedNodes);
+          } catch (e) {
+            console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
+          }
+        }
+      }
+      
+      // Si pas de cache ou erreur lors de l'analyse, retourner un tableau vide
+      return [];
+    }
+  };
+
   return {
     status,
     isLoading,
@@ -892,7 +1009,7 @@ export function useVPNNode() {
     resetAuthState,
     availableNodes,
     isLoadingNodes,
-    fetchAvailableNodesFromHook,
+    fetchAvailableNodes,
     connectToNode,
     disconnectFromNode,
     fetchConnectedClients,
