@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import axios from 'axios';
-import config from '@/config';
+import { config } from '@/config/env';
 import type { RewardStats, RewardClaim } from '@/types/rewards.types';
 
 export const useRewards = () => {
