@@ -115,6 +115,10 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   // Effet pour charger les nœuds disponibles au chargement du composant
   useEffect(() => {
     setIsLoadingNodes(true);
+    
+    // Ajouter un log pour voir le statut actuel
+    console.log('Status actuel au chargement:', status);
+    
     fetchAvailableNodes()
       .then(nodes => {
         setLocalNodes(nodes);
@@ -128,6 +132,8 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     // Mettre en place un intervalle pour rafraîchir les nœuds toutes les 30 secondes
     const intervalId = setInterval(() => {
       fetchAvailableNodes();
+      // Ajouter un log pour voir le statut à chaque rafraîchissement
+      console.log('Status à l\'intervalle de rafraîchissement:', status);
     }, 30000);
     
     // Nettoyer l'intervalle lors du démontage du composant
@@ -220,8 +226,13 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
               nodeWalletAddress: node.walletAddress,
               statusActive: status.active,
               connectedToNode: status.connectedToNode,
-              isConnectedToThisNode: status.active && status.connectedToNode === node.walletAddress
+              isConnectedToThisNode: status.active && status.connectedToNode === node.walletAddress,
+              fullStatus: status
             });
+            
+            // Vérifier explicitement si le client est connecté à ce nœud
+            const isConnectedToThisNode = status.active && status.connectedToNode === node.walletAddress;
+            console.log(`Node ${index} - isConnectedToThisNode:`, isConnectedToThisNode);
             
             return (
               <div
@@ -273,7 +284,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
                   </div>
                   
                   <div>
-                    {status.active && status.connectedToNode === node.walletAddress ? (
+                    {isConnectedToThisNode ? (
                       <Button
                         variant="danger"
                         onClick={handleDisconnect}
