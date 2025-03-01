@@ -460,13 +460,25 @@ export function useVPNNode() {
       
       if (response.data.success) {
         // Mettre à jour le statut avec les informations du nœud
-        setStatus({
+        const updatedStatus = {
           ...status,
           active: true,
           nodeIp: response.data.nodeIp,
           connectedToNode: nodeWalletAddress,
           lastUpdated: new Date().toISOString().toString()
-        });
+        };
+        
+        // Mettre à jour l'état
+        setStatus(updatedStatus);
+        
+        // Sauvegarder dans le localStorage
+        localStorage.setItem('vpnNodeStatus', JSON.stringify({
+          ...updatedStatus,
+          walletAddress: account
+        }));
+        
+        console.log('Connexion réussie au nœud:', nodeWalletAddress);
+        console.log('Statut mis à jour:', updatedStatus);
         
         setError(null);
         return true;

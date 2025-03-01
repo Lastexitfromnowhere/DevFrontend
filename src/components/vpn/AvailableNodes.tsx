@@ -69,6 +69,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   const [localNodes, setLocalNodes] = useState<VPNNode[]>([]);
   const [errorState, setErrorState] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isConnectedToThisNode, setIsConnectedToThisNode] = useState<boolean>(false);
   
   // Fonction pour récupérer les nœuds disponibles
   const fetchAvailableNodes = async (forceRefresh: boolean = false): Promise<VPNNode[]> => {
@@ -139,6 +140,17 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     // Nettoyer l'intervalle lors du démontage du composant
     return () => clearInterval(intervalId);
   }, []);
+  
+  // Effet pour mettre à jour isConnectedToThisNode lorsque le statut change
+  useEffect(() => {
+    console.log('Status mis à jour dans AvailableNodes:', status);
+    // Vérifier si nous sommes connectés à un nœud
+    if (status.active && status.connectedToNode) {
+      console.log('Connecté au nœud:', status.connectedToNode);
+    } else {
+      console.log('Non connecté à un nœud');
+    }
+  }, [status]);
   
   // Fonction pour gérer la connexion à un nœud
   const handleConnect = async (walletAddress?: string) => {
@@ -226,13 +238,9 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
               nodeWalletAddress: node.walletAddress,
               statusActive: status.active,
               connectedToNode: status.connectedToNode,
-              isConnectedToThisNode: status.active && status.connectedToNode === node.walletAddress,
+              isConnectedToThisNode: isConnectedToThisNode,
               fullStatus: status
             });
-            
-            // Vérifier explicitement si le client est connecté à ce nœud
-            const isConnectedToThisNode = status.active && status.connectedToNode === node.walletAddress;
-            console.log(`Node ${index} - isConnectedToThisNode:`, isConnectedToThisNode);
             
             return (
               <div
@@ -300,7 +308,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
                         onClick={() => handleConnect(node.walletAddress)}
                         loading={isLoading && selectedNode === node.walletAddress}
                         disabled={isLoading || (status.active && status.connectedToNode === node.walletAddress)}
-                        className={`text-xs px-2 py-1 ${status.active && status.connectedToNode === node.walletAddress ? "bg-purple-600 text-white" : ""}`}
+                        className={`text-xs px-2 py-1 ${status.active && status.connectedToNode === node.walletAddress ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
                       >
                         {status.active && status.connectedToNode === node.walletAddress ? 'Connected' : (node.status === 'ACTIVE' ? 'Connect' : 'Réactiver')}
                       </Button>
