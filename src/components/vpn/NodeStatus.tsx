@@ -234,8 +234,8 @@ export default function NodeStatus() {
           </div>
         )}
 
-        {/* Available Nodes List (visible in client mode when not connected to a node) */}
-        {!isHost && !status.active && (
+        {/* Available Nodes List (visible in client mode) */}
+        {!isHost && (
           <div className="mt-4">
             <AvailableNodes onSelectNode={(nodeId) => {
               // When a node is selected, it will be connected automatically
