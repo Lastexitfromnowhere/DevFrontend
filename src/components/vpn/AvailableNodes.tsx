@@ -299,7 +299,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
                         variant="primary"
                         onClick={() => handleConnect(node.walletAddress)}
                         loading={isLoading && selectedNode === node.walletAddress}
-                        disabled={isLoading || (status.active && status.connectedToNode !== undefined)}
+                        disabled={isLoading && status.active && status.connectedToNode === node.walletAddress}
                         className="text-xs px-2 py-1"
                       >
                         {node.status === 'ACTIVE' ? 'Connect' : 'Réactiver'}
