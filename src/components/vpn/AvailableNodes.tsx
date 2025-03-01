@@ -296,13 +296,13 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
                       </Button>
                     ) : (
                       <Button
-                        variant="primary"
+                        variant={status.active && status.connectedToNode === node.walletAddress ? "secondary" : "primary"}
                         onClick={() => handleConnect(node.walletAddress)}
                         loading={isLoading && selectedNode === node.walletAddress}
-                        disabled={isLoading && status.active && status.connectedToNode === node.walletAddress}
-                        className="text-xs px-2 py-1"
+                        disabled={isLoading || (status.active && status.connectedToNode === node.walletAddress)}
+                        className={`text-xs px-2 py-1 ${status.active && status.connectedToNode === node.walletAddress ? "bg-purple-600 text-white" : ""}`}
                       >
-                        {node.status === 'ACTIVE' ? 'Connect' : 'Réactiver'}
+                        {status.active && status.connectedToNode === node.walletAddress ? 'Connected' : (node.status === 'ACTIVE' ? 'Connect' : 'Réactiver')}
                       </Button>
                     )}
                     <div className="text-xs text-gray-500 mt-1">
