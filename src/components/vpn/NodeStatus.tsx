@@ -203,7 +203,6 @@ export default function NodeStatus() {
                         variant="danger"
                         onClick={() => disconnectClient(client.walletAddress)}
                         className="text-xs py-1 px-2"
-                        size="xs"
                       >
                         <WifiOff className="w-3 h-3 mr-1" />
                         Disconnect
