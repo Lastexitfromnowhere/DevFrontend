@@ -68,7 +68,7 @@ export default function DailyClaims() {
 
     setIsLoading(true);
     try {
-      const response = await api.get(`${config.API_BASE_URL}/api/rewards`, {
+      const response = await api.get(`${config.API_BASE_URL}/api/dailyClaims`, {
         headers: {
           'X-Wallet-Address': account
         }
@@ -103,7 +103,7 @@ export default function DailyClaims() {
 
     setIsClaiming(true);
     try {
-      const response = await api.post(`${config.API_BASE_URL}/api/claim-rewards`, {
+      const response = await api.post(`${config.API_BASE_URL}/api/dailyClaims/claim`, {
         walletAddress: account
       });
       
