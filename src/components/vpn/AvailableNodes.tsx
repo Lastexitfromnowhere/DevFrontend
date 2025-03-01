@@ -56,9 +56,11 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   // Utiliser le hook useVPNNode pour accéder aux fonctions et états
   const { 
     connectToNode,
+    disconnectFromNode,
     isLoading,
     error,
-    fetchAvailableNodesFromHook
+    fetchAvailableNodesFromHook,
+    status
   } = useVPNNode();
   
   const [availableNodes, setAvailableNodes] = useState<VPNNode[]>([]);
@@ -98,56 +100,42 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
       setIsRefreshing(false);
     }
   };
-
-  // Charger les nœuds disponibles au chargement du composant
-  useEffect(() => {
-    // Forcer le rafraîchissement initial
-    fetchAvailableNodes(true);
-    
-    // Configurer un intervalle pour rafraîchir les nœuds disponibles toutes les minutes
-    const interval = setInterval(() => {
-      console.log('Rafraîchissement automatique des nœuds disponibles');
-      fetchAvailableNodes();
-    }, 60 * 1000); // Réduire à 1 minute pour une mise à jour plus fréquente
-    
-    return () => clearInterval(interval);
-  }, []);
   
-  // Fonction pour rafraîchir manuellement les nœuds disponibles
+  // Fonction pour formater le score
+  const formatScore = (score?: number): string => {
+    if (score === undefined) return 'N/A';
+    return score.toFixed(1);
+  };
+  
+  // Fonction pour rafraîchir les nœuds disponibles
   const handleRefresh = () => {
-    // Forcer le rafraîchissement sans vérifier le délai
-    console.log('Rafraîchissement manuel des nœuds disponibles');
-    setIsRefreshing(true);
-    
-    // Appeler fetchAvailableNodes avec forceRefresh=true pour ignorer le cache
-    fetchAvailableNodes(true)
-      .then(() => {
-        console.log('Nœuds disponibles rafraîchis avec succès');
+    fetchAvailableNodes(true);
+  };
+  
+  // Effet pour charger les nœuds disponibles au chargement du composant
+  useEffect(() => {
+    setIsLoadingNodes(true);
+    fetchAvailableNodes()
+      .then(nodes => {
+        setLocalNodes(nodes);
+        setIsLoadingNodes(false);
       })
       .catch(error => {
-        console.error('Erreur lors du rafraîchissement des nœuds:', error);
-      })
-      .finally(() => {
-        setIsRefreshing(false);
+        console.error('Error in initial node fetch:', error);
+        setIsLoadingNodes(false);
       });
-  };
+      
+    // Mettre en place un intervalle pour rafraîchir les nœuds toutes les 30 secondes
+    const intervalId = setInterval(() => {
+      fetchAvailableNodes();
+    }, 30000);
+    
+    // Nettoyer l'intervalle lors du démontage du composant
+    return () => clearInterval(intervalId);
+  }, []);
   
-  // Mettre à jour les nœuds locaux uniquement lorsque les nœuds disponibles changent
-  // et que nous ne sommes pas en train de charger
-  useEffect(() => {
-    if (!isLoadingNodes && availableNodes) {
-      setLocalNodes(availableNodes);
-    }
-  }, [availableNodes, isLoadingNodes]);
-  
-  // Formater le score en pourcentage
-  const formatScore = (score: number | undefined): string => {
-    if (score === undefined) return 'N/A';
-    return `${Math.round(score * 100)}%`;
-  };
-  
-  // Fonction pour se connecter à un nœud
-  const handleConnect = async (walletAddress: string | undefined) => {
+  // Fonction pour gérer la connexion à un nœud
+  const handleConnect = async (walletAddress?: string) => {
     if (!walletAddress) {
       setErrorState('Invalid node selected');
       return;
@@ -170,6 +158,24 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
       setErrorState('Error connecting to node. Please try again.');
     } finally {
       setSelectedNode(null);
+    }
+  };
+
+  // Fonction pour gérer la déconnexion d'un nœud
+  const handleDisconnect = async () => {
+    setErrorState(null);
+    
+    try {
+      const success = await disconnectFromNode();
+      if (success) {
+        // Rafraîchir la liste des nœuds après la déconnexion
+        fetchAvailableNodes(true);
+      } else {
+        setErrorState('Failed to disconnect from node. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error disconnecting from node:', error);
+      setErrorState('Error disconnecting from node. Please try again.');
     }
   };
   
@@ -258,15 +264,27 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
                 </div>
                 
                 <div>
-                  <Button
-                    variant="primary"
-                    onClick={() => handleConnect(node.walletAddress)}
-                    loading={isLoading && selectedNode === node.walletAddress}
-                    disabled={isLoading}
-                    className="text-xs px-2 py-1"
-                  >
-                    {node.status === 'ACTIVE' ? 'Connect' : 'Réactiver'}
-                  </Button>
+                  {status.active && status.connectedToNode === node.walletAddress ? (
+                    <Button
+                      variant="danger"
+                      onClick={handleDisconnect}
+                      loading={isLoading}
+                      disabled={isLoading}
+                      className="text-xs px-2 py-1"
+                    >
+                      Disconnect
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleConnect(node.walletAddress)}
+                      loading={isLoading && selectedNode === node.walletAddress}
+                      disabled={isLoading || (status.active && status.connectedToNode !== undefined)}
+                      className="text-xs px-2 py-1"
+                    >
+                      {node.status === 'ACTIVE' ? 'Connect' : 'Réactiver'}
+                    </Button>
+                  )}
                   <div className="text-xs text-gray-500 mt-1">
                     Last seen: {formatRelativeTime(node.lastSeen)}
                   </div>
