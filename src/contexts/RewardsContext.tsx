@@ -1,60 +1,26 @@
 'use client';
 
-import React, { createContext, useContext, ReactNode, useState } from 'react';
+import React, { createContext, useContext, ReactNode } from 'react';
+import { useRewards } from '@/hooks/useRewards';
+import { RewardsContextType } from '@/types/rewards.types';
 
-// Interface pour les stats de récompenses
-interface RewardsStats {
-  consecutiveDays: number;
-  totalRewards: number;
-}
-
-// Interface du contexte de récompenses
-interface RewardsContextType {
-  stats: RewardsStats;
-  claimRewards: () => void;
-  canClaim: () => boolean;
-}
-
-// Créez le contexte avec une valeur par défaut complète
-const RewardsContext = createContext<RewardsContextType>({
-  stats: {
-    consecutiveDays: 0,
-    totalRewards: 0
-  },
-  claimRewards: () => {},
-  canClaim: () => false
-});
+// Créez le contexte avec une valeur par défaut
+const RewardsContext = createContext<RewardsContextType | undefined>(undefined);
 
 export const RewardsProvider = ({ children }: { children: ReactNode }) => {
-  const [stats, setStats] = useState<RewardsStats>({
-    consecutiveDays: 0,
-    totalRewards: 0
-  });
-
-  const claimRewards = () => {
-    // Logique pour réclamer les récompenses
-  };
-
-  const canClaim = () => {
-    // Logique pour déterminer si les récompenses peuvent être réclamées
-    return stats.consecutiveDays > 0; // Exemple simple
-  };
+  const rewardsData = useRewards();
 
   return (
-    <RewardsContext.Provider value={{ 
-      stats, 
-      claimRewards, 
-      canClaim 
-    }}>
+    <RewardsContext.Provider value={rewardsData}>
       {children}
     </RewardsContext.Provider>
   );
 };
 
-export const useRewardsContext = () => {
+export const useRewardsContext = (): RewardsContextType => {
   const context = useContext(RewardsContext);
-  if (!context) {
-    throw new Error('useRewardsContext must be used within RewardsProvider');
+  if (context === undefined) {
+    throw new Error('useRewardsContext must be used within a RewardsProvider');
   }
   return context;
 };

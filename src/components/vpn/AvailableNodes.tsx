@@ -57,7 +57,8 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   const { 
     connectToNode,
     isLoading,
-    error 
+    error,
+    fetchAvailableNodesFromHook
   } = useVPNNode();
   
   const [availableNodes, setAvailableNodes] = useState<VPNNode[]>([]);
@@ -71,92 +72,15 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   const fetchAvailableNodes = async (forceRefresh: boolean = false): Promise<VPNNode[]> => {
     setIsRefreshing(true);
     try {
-      // Vérifier si nous avons des données en cache et si elles sont encore valides
-      const now = new Date();
-      const lastUpdate = localStorage.getItem('lastNodesUpdate');
-      const cacheTimeout = 60 * 1000; // 1 minute (selon la stratégie de mise en cache)
-      
-      // Si ce n'est pas un rafraîchissement forcé, vérifier le cache
-      if (!forceRefresh && lastUpdate) {
-        const lastUpdateTime = new Date(lastUpdate);
-        const timeDiff = now.getTime() - lastUpdateTime.getTime();
-        
-        // Si le cache est encore valide, utiliser les données en cache
-        if (timeDiff < cacheTimeout) {
-          const cachedNodes = localStorage.getItem('availableNodesCache');
-          if (cachedNodes) {
-            try {
-              const parsedNodes = JSON.parse(cachedNodes);
-              console.log('Utilisation du cache de nœuds (moins de 1 minute)');
-              setAvailableNodes(parsedNodes);
-              return parsedNodes;
-            } catch (e) {
-              console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
-            }
-          }
-        }
-      }
-      
-      // Ajouter un délai aléatoire pour éviter le rate limiting
-      const randomDelay = Math.floor(Math.random() * 500) + 100; // 100-600ms
-      await new Promise(resolve => setTimeout(resolve, randomDelay));
-      
-      // Appeler directement l'API pour récupérer les nœuds
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiUrl}/api/available-nodes`, {
-        headers: {
-          'X-Wallet-Address': localStorage.getItem('walletAddress') || ''
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Erreur lors de la récupération des nœuds: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      if (data.success) {
-        const nodes = data.nodes || [];
-        console.log('Nœuds reçus du serveur:', nodes);
-        
-        // Filtrer les nœuds pour ne garder que ceux qui sont valides
-        const validNodes = nodes.filter((node: VPNNode) => {
-          // Vérifier que le nœud a une adresse wallet
-          if (!node.walletAddress || !node.walletAddress.startsWith('B')) {
-            console.log('Nœud rejeté - adresse wallet invalide:', node.walletAddress);
-            return false;
-          }
-          
-          // Vérifier que le nœud a été vu récemment (moins de 30 minutes)
-          if (node.lastSeen) {
-            const lastSeenDate = new Date(node.lastSeen);
-            const diffMs = now.getTime() - lastSeenDate.getTime();
-            const diffMins = Math.floor(diffMs / 60000);
-            if (diffMins >= 30) {
-              console.log(`Nœud rejeté - trop ancien (${diffMins} minutes):`, node.walletAddress);
-              return false;
-            }
-          } else {
-            console.log('Nœud rejeté - pas de lastSeen:', node.walletAddress);
-            return false; // Rejeter les nœuds sans timestamp de dernière activité
-          }
-          
-          return true;
-        });
-        
-        console.log('Nœuds valides après filtrage:', validNodes);
-        
-        // Mettre à jour le cache
-        localStorage.setItem('availableNodesCache', JSON.stringify(validNodes));
-        localStorage.setItem('lastNodesUpdate', now.toISOString());
-        
-        // Mettre à jour l'état avec les nœuds valides
-        setAvailableNodes(validNodes);
-        return validNodes;
-      } else {
-        throw new Error(data.message || 'Échec de la récupération des nœuds disponibles');
-      }
+      // Utiliser directement la fonction du hook useVPNNode pour récupérer les nœuds
+      // Cette approche garantit la cohérence entre les différentes parties de l'application
+      const nodes = await fetchAvailableNodesFromHook(forceRefresh);
+      console.log('Nœuds récupérés dans AvailableNodes:', nodes);
+      setAvailableNodes(nodes);
+      return nodes;
     } catch (error) {
       console.error('Error fetching available nodes:', error);
+      setErrorState('Impossible de récupérer les nœuds disponibles. Veuillez réessayer.');
       
       // En cas d'erreur, essayer d'utiliser le cache
       const cachedNodes = localStorage.getItem('availableNodesCache');
@@ -177,13 +101,14 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
 
   // Charger les nœuds disponibles au chargement du composant
   useEffect(() => {
-    fetchAvailableNodes(true); // Forcer le rafraîchissement
+    // Forcer le rafraîchissement initial
+    fetchAvailableNodes(true);
     
-    // Configurer un intervalle pour rafraîchir les nœuds disponibles toutes les 2 minutes
+    // Configurer un intervalle pour rafraîchir les nœuds disponibles toutes les minutes
     const interval = setInterval(() => {
       console.log('Rafraîchissement automatique des nœuds disponibles');
       fetchAvailableNodes();
-    }, 2 * 60 * 1000); // 2 minutes
+    }, 60 * 1000); // Réduire à 1 minute pour une mise à jour plus fréquente
     
     return () => clearInterval(interval);
   }, []);
@@ -366,3 +291,9 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     </Card>
   );
 }
+
+// Usage
+<AvailableNodes onSelectNode={(nodeId) => {
+  // When a node is selected, connect to it
+  connectToNode(nodeId);
+}} />

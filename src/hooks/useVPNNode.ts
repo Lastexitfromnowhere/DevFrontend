@@ -98,6 +98,13 @@ export type NodeStatusType = {
     packetLoss: number;
   };
   status?: string; // Ajouter le champ status
+  connectedClients?: Array<{
+    connectionId?: string;
+    walletAddress: string;
+    ip?: string;
+    connectedSince: string;
+    lastActivity?: string;
+  }>;
 };
 
 export function useVPNNode() {
@@ -190,20 +197,20 @@ export function useVPNNode() {
 
       const now = new Date();
       
-      // Vérifier si nous avons vérifié récemment (dans les 30 secondes)
+      // Vérifier si nous avons vérifié récemment (dans les 15 secondes)
       const lastStatusCheck = localStorage.getItem('lastStatusCheck');
       if (lastStatusCheck) {
         const lastCheck = new Date(lastStatusCheck);
         const timeSinceLastCheck = now.getTime() - lastCheck.getTime();
         
-        // Si la dernière vérification date de moins de 30 secondes et que nous avons des données en cache
-        if (timeSinceLastCheck < 30000) {
+        // Si la dernière vérification date de moins de 15 secondes et que nous avons des données en cache
+        if (timeSinceLastCheck < 15000) {
           const cachedStatus = localStorage.getItem('vpnNodeStatus');
           if (cachedStatus) {
             try {
               const parsedStatus = JSON.parse(cachedStatus);
               if (parsedStatus.walletAddress === account) {
-                console.log('Utilisation du cache de statut (moins de 30 secondes)', parsedStatus);
+                console.log('Utilisation du cache de statut (moins de 15 secondes)', parsedStatus);
                 setStatus(parsedStatus);
                 setIsLoading(false);
                 return;
@@ -247,7 +254,9 @@ export function useVPNNode() {
             bandwidth: nodeData.performance?.bandwidth || 0,
             latency: nodeData.performance?.latency || 0,
             packetLoss: nodeData.performance?.packetLoss || 0
-          }
+          },
+          // Ajouter les clients connectés s'ils existent
+          connectedClients: nodeData.connectedClients || []
         };
         
         // Assurer la cohérence entre status et active
@@ -317,12 +326,12 @@ export function useVPNNode() {
   }, [isConnected, account, status, statusRetryCount, maxRetryDelay, resetAuthState]);
 
   // Fonction pour récupérer les nœuds disponibles
-  const fetchAvailableNodes = async (forceRefresh = false) => {
+  const fetchAvailableNodesFromHook = async (forceRefresh = false) => {
     try {
       // Vérifier si nous avons des données en cache et si elles sont encore valides
       const now = new Date();
       const lastUpdate = localStorage.getItem('lastNodesUpdate');
-      const cacheTimeout = 60 * 1000; // 1 minute (selon la stratégie de mise en cache)
+      const cacheTimeout = 30 * 1000; // Réduire à 30 secondes pour une mise à jour plus fréquente
       
       // Si ce n'est pas un rafraîchissement forcé, vérifier le cache
       if (!forceRefresh && lastUpdate) {
@@ -335,7 +344,7 @@ export function useVPNNode() {
           if (cachedNodes) {
             try {
               const parsedNodes = JSON.parse(cachedNodes);
-              console.log('Utilisation du cache de nœuds (moins de 1 minute)', parsedNodes);
+              console.log('Utilisation du cache de nœuds (moins de 30 secondes)', parsedNodes);
               return parsedNodes;
             } catch (e) {
               console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
@@ -345,36 +354,55 @@ export function useVPNNode() {
       }
       
       // Ajouter un délai aléatoire pour éviter le rate limiting
-      const randomDelay = Math.floor(Math.random() * 500) + 100; // 100-600ms
+      const randomDelay = Math.floor(Math.random() * 300) + 50; // 50-350ms (réduit pour plus de réactivité)
       await new Promise(resolve => setTimeout(resolve, randomDelay));
       
-      // Faire la requête API
-      const response = await api.get(`${config.API_BASE_URL}/api/available-nodes`);
+      // Faire la requête API avec l'adresse du wallet actuel
+      const response = await api.get(`${config.API_BASE_URL}/api/available-nodes`, {
+        headers: {
+          'X-Wallet-Address': account || localStorage.getItem('walletAddress') || ''
+        }
+      });
       
       if (response.data.success) {
         const nodes = response.data.nodes || [];
+        console.log('Nœuds reçus du serveur:', nodes);
         
         // Filtrer les nœuds pour ne garder que ceux qui sont valides
         const validNodes = nodes.filter((node: any) => {
           // Vérifier que le nœud a une adresse wallet
-          if (!node.walletAddress || !node.walletAddress.startsWith('B')) {
+          if (!node.walletAddress) {
+            console.log('Nœud rejeté - pas d\'adresse wallet');
             return false;
           }
           
-          // Vérifier que le nœud a été vu récemment (moins de 30 minutes)
+          // Vérifier que le nœud a été vu récemment (moins de 15 minutes)
           if (node.lastSeen) {
             const lastSeenDate = new Date(node.lastSeen);
             const diffMs = now.getTime() - lastSeenDate.getTime();
             const diffMins = Math.floor(diffMs / 60000);
-            if (diffMins >= 30) {
+            if (diffMins >= 15) { // Réduire à 15 minutes pour plus de précision
+              console.log(`Nœud rejeté - trop ancien (${diffMins} minutes):`, node.walletAddress);
               return false;
             }
           } else {
+            console.log('Nœud rejeté - pas de lastSeen:', node.walletAddress);
             return false; // Rejeter les nœuds sans timestamp de dernière activité
+          }
+          
+          // Ne pas afficher son propre nœud dans la liste des nœuds disponibles
+          // si l'utilisateur est en mode hôte
+          const isOwnNode = node.walletAddress === account;
+          const isHostMode = localStorage.getItem('vpnNodeIsHost') === 'true';
+          if (isOwnNode && isHostMode) {
+            console.log('Nœud propre filtré de la liste des disponibles (mode hôte):', node.walletAddress);
+            return false;
           }
           
           return true;
         });
+        
+        console.log('Nœuds valides après filtrage:', validNodes);
         
         // Ajouter un timestamp de dernière vérification à chaque nœud
         const nodesWithTimestamp = validNodes.map((node: any) => ({
@@ -679,6 +707,82 @@ export function useVPNNode() {
     }
   };
 
+  // Fonction pour récupérer les clients connectés à un nœud hôte
+  const fetchConnectedClients = async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return [];
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await api.get(`${config.API_BASE_URL}/api/connected-clients`, {
+        headers: {
+          'X-Wallet-Address': account
+        }
+      });
+      
+      if (response.data.success) {
+        // Mettre à jour l'état avec les clients connectés
+        setStatus(prevStatus => ({
+          ...prevStatus,
+          connectedClients: response.data.connectedClients || [],
+          connectedUsers: response.data.totalConnections || 0
+        }));
+        
+        return response.data.connectedClients || [];
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch connected clients');
+      }
+    } catch (error: any) {
+      console.error('Error fetching connected clients:', error);
+      setError(error.response?.data?.message || error.message || 'Error fetching connected clients');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction pour déconnecter un client spécifique (pour les hôtes)
+  const disconnectClient = async (clientWalletAddress: string) => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return false;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await api.post(`${config.API_BASE_URL}/api/disconnect-client`, {
+        hostWalletAddress: account,
+        clientWalletAddress: clientWalletAddress
+      });
+      
+      if (response.data.success) {
+        // Mettre à jour l'état en retirant le client déconnecté
+        setStatus(prevStatus => {
+          const updatedClients = (prevStatus.connectedClients || [])
+            .filter(client => client.walletAddress !== clientWalletAddress);
+          
+          return {
+            ...prevStatus,
+            connectedClients: updatedClients,
+            connectedUsers: (prevStatus.connectedUsers || 1) - 1
+          };
+        });
+        
+        return true;
+      } else {
+        throw new Error(response.data.message || 'Failed to disconnect client');
+      }
+    } catch (error: any) {
+      console.error('Error disconnecting client:', error);
+      setError(error.response?.data?.message || error.message || 'Error disconnecting client');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Vérifier l'état initial du nœud au chargement avec un délai
   useEffect(() => {
     if (isConnected && account) {
@@ -757,8 +861,10 @@ export function useVPNNode() {
     resetAuthState,
     availableNodes,
     isLoadingNodes,
-    fetchAvailableNodes,
+    fetchAvailableNodesFromHook,
     connectToNode,
-    disconnectFromNode
+    disconnectFromNode,
+    fetchConnectedClients,
+    disconnectClient
   };
 }

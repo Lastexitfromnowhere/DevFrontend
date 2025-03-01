@@ -5,7 +5,7 @@ import { Card } from '../ui/Card';
 import { TerminalButton } from '../ui/terminal/TerminalButton';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useVPNNode } from '@/hooks/useVPNNode';
-import { Activity, Signal, Award, Zap, Clock, AlertTriangle, Wifi, RefreshCw, Power, WifiOff, Server } from 'lucide-react';
+import { Activity, Signal, Award, Zap, Clock, AlertTriangle, Wifi, RefreshCw, Power, WifiOff, Server, Users } from 'lucide-react';
 import { config } from '@/config/env';
 import AvailableNodes from './AvailableNodes'; // Importer le composant AvailableNodes
 
@@ -18,7 +18,10 @@ export default function NodeStatus() {
     startNode, 
     stopNode, 
     connectToNode, 
-    disconnectFromNode 
+    disconnectFromNode, 
+    fetchNodeStatus,
+    fetchConnectedClients,
+    disconnectClient
   } = useVPNNode();
   
   // Initialize isHost from localStorage or default to false
@@ -156,6 +159,66 @@ export default function NodeStatus() {
             </div>
           )}
         </div>
+
+        {/* Host Mode: Connected Clients (only when active and in host mode) */}
+        {isHost && status.active && (
+          <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center text-blue-500">
+                <Users className="w-4 h-4 mr-2" />
+                <span className="font-semibold">Connected Clients ({status.connectedUsers || 0})</span>
+              </div>
+              <TerminalButton
+                variant="secondary"
+                onClick={() => {
+                  fetchConnectedClients();
+                }}
+                loading={isLoading}
+                className="text-xs py-1 px-2"
+              >
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Refresh
+              </TerminalButton>
+            </div>
+            
+            {status.connectedClients && status.connectedClients.length > 0 ? (
+              <div className="mt-2 space-y-2 max-h-[200px] overflow-y-auto">
+                {status.connectedClients.map((client, index) => (
+                  <div key={index} className="flex justify-between items-center bg-blue-900/20 p-2 rounded">
+                    <div className="flex items-center">
+                      <Wifi className="w-3 h-3 mr-2 text-blue-400" />
+                      <span className="text-sm">
+                        {client.walletAddress ? 
+                          `${client.walletAddress.substring(0, 8)}...${client.walletAddress.substring(client.walletAddress.length - 6)}` : 
+                          'Unknown Client'}
+                      </span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="text-xs text-gray-400">
+                        {client.connectedSince ? 
+                          `Connected: ${new Date(client.connectedSince).toLocaleTimeString()}` : 
+                          'Recently connected'}
+                      </div>
+                      <TerminalButton
+                        variant="danger"
+                        onClick={() => disconnectClient(client.walletAddress)}
+                        className="text-xs py-1 px-2"
+                        size="xs"
+                      >
+                        <WifiOff className="w-3 h-3 mr-1" />
+                        Disconnect
+                      </TerminalButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-2 text-gray-400 text-sm">
+                No clients currently connected to your node.
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Client connected status */}
         {!isHost && status.active && status.connectedToNode && (
