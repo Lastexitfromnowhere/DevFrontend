@@ -291,9 +291,3 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     </Card>
   );
 }
-
-// Usage
-<AvailableNodes onSelectNode={(nodeId) => {
-  // When a node is selected, connect to it
-  connectToNode(nodeId);
-}} />
