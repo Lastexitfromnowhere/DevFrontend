@@ -72,7 +72,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   const [isConnectedToThisNode, setIsConnectedToThisNode] = useState<boolean>(false);
   
   // Fonction pour récupérer les nœuds disponibles
-  const fetchAvailableNodes = async (forceRefresh: boolean = false): Promise<VPNNode[]> => {
+  const loadAvailableNodes = async (forceRefresh: boolean = false): Promise<VPNNode[]> => {
     setIsRefreshing(true);
     try {
       // Utiliser directement la fonction du hook useVPNNode pour récupérer les nœuds
@@ -110,7 +110,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   
   // Fonction pour rafraîchir les nœuds disponibles
   const handleRefresh = () => {
-    fetchAvailableNodes(true);
+    loadAvailableNodes(true);
   };
   
   // Effet pour charger les nœuds disponibles au chargement du composant
@@ -120,7 +120,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     // Ajouter un log pour voir le statut actuel
     console.log('Status actuel au chargement:', status);
     
-    fetchAvailableNodes()
+    loadAvailableNodes()
       .then(nodes => {
         setLocalNodes(nodes);
         setIsLoadingNodes(false);
@@ -132,7 +132,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
       
     // Mettre en place un intervalle pour rafraîchir les nœuds toutes les 30 secondes
     const intervalId = setInterval(() => {
-      fetchAvailableNodes();
+      loadAvailableNodes();
       // Ajouter un log pour voir le statut à chaque rafraîchissement
       console.log('Status à l\'intervalle de rafraîchissement:', status);
     }, 30000);
@@ -187,7 +187,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
       const success = await disconnectFromNode();
       if (success) {
         // Rafraîchir la liste des nœuds après la déconnexion
-        fetchAvailableNodes(true);
+        loadAvailableNodes(true);
       } else {
         setErrorState('Failed to disconnect from node. Please try again.');
       }

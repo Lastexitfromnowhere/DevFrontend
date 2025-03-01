@@ -906,6 +906,8 @@ export function useVPNNode() {
               console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
             }
           }
+        } catch (error) {
+          console.error('Erreur lors de la vérification du cache:', error);
         }
       }
     }
