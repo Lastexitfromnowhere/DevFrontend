@@ -214,89 +214,99 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
         </div>
       ) : (
         <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-          {localNodes.map((node, index) => (
-            <div
-              key={`${node.walletAddress || ''}-${index}`}
-              className="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-gray-600 transition-colors"
-            >
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center mb-1">
-                    {node.status === 'ACTIVE' ? (
-                      <Wifi className="w-4 h-4 mr-1 text-green-400" />
-                    ) : (
-                      <Wifi className="w-4 h-4 mr-1 text-yellow-400" />
-                    )}
-                    <span className="font-medium truncate" title={node.walletAddress || ''}>
-                      {node.walletAddress && node.walletAddress.length > 14 
-                        ? `${node.walletAddress.substring(0, 8)}...${node.walletAddress.substring(node.walletAddress.length - 6)}`
-                        : node.walletAddress || 'Unknown'}
-                    </span>
-                    {node.status !== 'ACTIVE' && (
-                      <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-600/20 text-yellow-400 rounded-sm">
-                        Récemment actif
+          {localNodes.map((node, index) => {
+            // Ajouter des logs pour déboguer
+            console.log(`Node ${index}:`, {
+              nodeWalletAddress: node.walletAddress,
+              statusActive: status.active,
+              connectedToNode: status.connectedToNode,
+              isConnectedToThisNode: status.active && status.connectedToNode === node.walletAddress
+            });
+            
+            return (
+              <div
+                key={`${node.walletAddress || ''}-${index}`}
+                className="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-gray-600 transition-colors"
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <div className="flex items-center mb-1">
+                      {node.status === 'ACTIVE' ? (
+                        <Wifi className="w-4 h-4 mr-1 text-green-400" />
+                      ) : (
+                        <Wifi className="w-4 h-4 mr-1 text-yellow-400" />
+                      )}
+                      <span className="font-medium truncate" title={node.walletAddress || ''}>
+                        {node.walletAddress && node.walletAddress.length > 14 
+                          ? `${node.walletAddress.substring(0, 8)}...${node.walletAddress.substring(node.walletAddress.length - 6)}`
+                          : node.walletAddress || 'Unknown'}
                       </span>
-                    )}
+                      {node.status !== 'ACTIVE' && (
+                        <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-600/20 text-yellow-400 rounded-sm">
+                          Récemment actif
+                        </span>
+                      )}
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm text-gray-300">
+                      <div className="flex items-center text-xs text-gray-400">
+                        <Globe className="w-3 h-3 mr-1 text-blue-400" />
+                        <span>{node.location?.country || 'Unknown'}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-400">
+                        <Activity className="w-3 h-3 mr-1 text-blue-400" />
+                        <span>
+                          {node.performance?.latency !== undefined 
+                            ? `${node.performance.latency} ms` 
+                            : 'Unknown'}
+                        </span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-400">
+                        <Users className="w-3 h-3 mr-1" />
+                        <span>Users: {node.connectedUsers || 0}</span>
+                      </div>
+                      <div className="flex items-center text-xs text-gray-400">
+                        <Award className="w-3 h-3 mr-1" />
+                        <span>Score: {formatScore(node.score)}</span>
+                      </div>
+                    </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm text-gray-300">
-                    <div className="flex items-center text-xs text-gray-400">
-                      <Globe className="w-3 h-3 mr-1 text-blue-400" />
-                      <span>{node.location?.country || 'Unknown'}</span>
+                  <div>
+                    {status.active && status.connectedToNode === node.walletAddress ? (
+                      <Button
+                        variant="danger"
+                        onClick={handleDisconnect}
+                        loading={isLoading}
+                        disabled={isLoading}
+                        className="text-xs px-2 py-1"
+                      >
+                        Disconnect
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        onClick={() => handleConnect(node.walletAddress)}
+                        loading={isLoading && selectedNode === node.walletAddress}
+                        disabled={isLoading || (status.active && status.connectedToNode !== undefined)}
+                        className="text-xs px-2 py-1"
+                      >
+                        {node.status === 'ACTIVE' ? 'Connect' : 'Réactiver'}
+                      </Button>
+                    )}
+                    <div className="text-xs text-gray-500 mt-1">
+                      Last seen: {formatRelativeTime(node.lastSeen)}
                     </div>
-                    <div className="flex items-center text-xs text-gray-400">
-                      <Activity className="w-3 h-3 mr-1 text-blue-400" />
-                      <span>
-                        {node.performance?.latency !== undefined 
-                          ? `${node.performance.latency} ms` 
-                          : 'Unknown'}
+                    <div className="text-xs text-gray-500">
+                      Status: <span className={node.status === 'ACTIVE' ? 'text-green-400' : 'text-yellow-400'}>
+                        {node.status === 'ACTIVE' ? 'En ligne' : 'Hors ligne'}
                       </span>
                     </div>
-                    <div className="flex items-center text-xs text-gray-400">
-                      <Users className="w-3 h-3 mr-1" />
-                      <span>Users: {node.connectedUsers || 0}</span>
-                    </div>
-                    <div className="flex items-center text-xs text-gray-400">
-                      <Award className="w-3 h-3 mr-1" />
-                      <span>Score: {formatScore(node.score)}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                <div>
-                  {status.active && status.connectedToNode === node.walletAddress ? (
-                    <Button
-                      variant="danger"
-                      onClick={handleDisconnect}
-                      loading={isLoading}
-                      disabled={isLoading}
-                      className="text-xs px-2 py-1"
-                    >
-                      Disconnect
-                    </Button>
-                  ) : (
-                    <Button
-                      variant="primary"
-                      onClick={() => handleConnect(node.walletAddress)}
-                      loading={isLoading && selectedNode === node.walletAddress}
-                      disabled={isLoading || (status.active && status.connectedToNode !== undefined)}
-                      className="text-xs px-2 py-1"
-                    >
-                      {node.status === 'ACTIVE' ? 'Connect' : 'Réactiver'}
-                    </Button>
-                  )}
-                  <div className="text-xs text-gray-500 mt-1">
-                    Last seen: {formatRelativeTime(node.lastSeen)}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    Status: <span className={node.status === 'ACTIVE' ? 'text-green-400' : 'text-yellow-400'}>
-                      {node.status === 'ACTIVE' ? 'En ligne' : 'Hors ligne'}
-                    </span>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
           
           {isLoadingNodes && localNodes.length > 0 && (
             <div className="text-center py-2 text-gray-400">
