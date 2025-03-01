@@ -138,26 +138,35 @@ export default function NodeStatus() {
             </span>
           </div>
           
-          {!status.active && (
-            <div className="flex items-center space-x-2">
-              <span className={`text-sm ${isHost ? 'text-gray-500' : 'text-blue-500 font-semibold'}`}>Client</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="sr-only peer"
-                  checked={isHost}
-                  onChange={() => {
+          <div className="flex items-center space-x-2">
+            <span className={`text-sm ${isHost ? 'text-gray-500' : 'text-blue-500 font-semibold'}`}>Client</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={isHost}
+                onChange={() => {
+                  // Si le nœud est actif, il faut d'abord l'arrêter
+                  if (status.active) {
+                    stopNode().then(() => {
+                      const newIsHost = !isHost;
+                      setIsHost(newIsHost);
+                      localStorage.setItem('vpnNodeIsHost', newIsHost.toString());
+                    });
+                  } else {
                     const newIsHost = !isHost;
                     setIsHost(newIsHost);
                     localStorage.setItem('vpnNodeIsHost', newIsHost.toString());
-                  }}
-                  disabled={status.active}
-                />
-                <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-green-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
-              </label>
-              <span className={`text-sm ${isHost ? 'text-green-500 font-semibold' : 'text-gray-500'}`}>Host</span>
-            </div>
-          )}
+                  }
+                }}
+              />
+              <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-green-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
+            </label>
+            <span className={`text-sm ${isHost ? 'text-green-500 font-semibold' : 'text-gray-500'}`}>Host</span>
+            {status.active && (
+              <span className="text-xs text-yellow-500 ml-2">(Will stop current node)</span>
+            )}
+          </div>
         </div>
 
         {/* Host Mode: Connected Clients (only when active and in host mode) */}
