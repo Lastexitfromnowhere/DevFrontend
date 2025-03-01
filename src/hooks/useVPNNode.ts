@@ -127,8 +127,13 @@ export function useVPNNode() {
     if (savedState) {
       try {
         const parsedState = JSON.parse(savedState);
-        // Ne pas forcer l'état à inactif, mais utiliser l'état sauvegardé
-        return parsedState;
+        // Forcer l'état à inactif au démarrage de l'application
+        return {
+          ...parsedState,
+          active: false,
+          nodeIp: null,
+          connectedToNode: null
+        };
       } catch (e) {
         console.error('Error parsing saved VPN node state:', e);
       }
