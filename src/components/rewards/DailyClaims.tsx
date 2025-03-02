@@ -68,11 +68,17 @@ export default function DailyClaims() {
 
     setIsLoading(true);
     try {
+      console.log('Fetching rewards from:', `${config.API_BASE_URL}/api/dailyClaims`);
+      console.log('With wallet address:', account);
+      
       const response = await api.get(`${config.API_BASE_URL}/api/dailyClaims`, {
         headers: {
-          'X-Wallet-Address': account
+          'X-Wallet-Address': account,
+          'Authorization': `Bearer ${account}`
         }
       });
+      
+      console.log('API response:', response);
       
       if (response.data.success) {
         setRewards({
@@ -103,9 +109,14 @@ export default function DailyClaims() {
 
     setIsClaiming(true);
     try {
+      console.log('Claiming daily rewards from:', `${config.API_BASE_URL}/api/dailyClaims/claim`);
+      console.log('With wallet address:', account);
+      
       const response = await api.post(`${config.API_BASE_URL}/api/dailyClaims/claim`, {
         walletAddress: account
       });
+      
+      console.log('API response:', response);
       
       if (response.data.success) {
         // Mettre à jour l'état des récompenses après une réclamation réussie
