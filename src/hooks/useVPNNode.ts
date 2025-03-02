@@ -937,19 +937,8 @@ export function useVPNNode() {
             return false;
           }
           
-          // Vérifier que le nœud a été vu récemment (moins de 15 minutes)
-          if (node.lastSeen) {
-            const lastSeenDate = new Date(node.lastSeen);
-            const diffMs = now.getTime() - lastSeenDate.getTime();
-            const diffMins = Math.floor(diffMs / 60000);
-            if (diffMins >= 15) { // Réduire à 15 minutes pour plus de précision
-              console.log(`Nœud rejeté - trop ancien (${diffMins} minutes):`, node.walletAddress);
-              return false;
-            }
-          } else {
-            console.log('Nœud rejeté - pas de lastSeen:', node.walletAddress);
-            return false; // Rejeter les nœuds sans timestamp de dernière activité
-          }
+          // Ajouter des logs détaillés pour chaque nœud
+          console.log(`Analyse du nœud: ${node.walletAddress.substring(0, 10)}... - Status: ${node.status}, Active: ${node.active}, LastSeen: ${node.lastSeen ? new Date(node.lastSeen).toISOString() : 'N/A'}`);
           
           // Ne pas afficher son propre nœud dans la liste des nœuds disponibles
           // si l'utilisateur est en mode hôte
@@ -960,7 +949,24 @@ export function useVPNNode() {
             return false;
           }
           
-          return true;
+          // Vérifier que le nœud a été vu récemment (moins de 30 minutes)
+          if (node.lastSeen) {
+            const lastSeenDate = new Date(node.lastSeen);
+            const diffMs = now.getTime() - lastSeenDate.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            
+            // Accepter les nœuds vus dans les 30 dernières minutes, même s'ils sont INACTIVE
+            if (diffMins >= 30) {
+              console.log(`Nœud rejeté - trop ancien (${diffMins} minutes):`, node.walletAddress);
+              return false;
+            } else {
+              console.log(`Nœud accepté - vu récemment (${diffMins} minutes):`, node.walletAddress);
+              return true;
+            }
+          } else {
+            console.log('Nœud rejeté - pas de lastSeen:', node.walletAddress);
+            return false; // Rejeter les nœuds sans timestamp de dernière activité
+          }
         });
         
         console.log('Nœuds valides après filtrage:', validNodes);

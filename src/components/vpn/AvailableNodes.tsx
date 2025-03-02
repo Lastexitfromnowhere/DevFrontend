@@ -310,15 +310,15 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
                         disabled={isLoading || (status.active && status.connectedToNode === node.walletAddress)}
                         className={`text-xs px-2 py-1 ${status.active && status.connectedToNode === node.walletAddress ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
                       >
-                        {status.active && status.connectedToNode === node.walletAddress ? 'Connected' : (node.status === 'ACTIVE' ? 'Connect' : 'Réactiver')}
+                        {status.active && status.connectedToNode === node.walletAddress ? 'Connected' : 'Connect'}
                       </Button>
                     )}
                     <div className="text-xs text-gray-500 mt-1">
                       Last seen: {formatRelativeTime(node.lastSeen)}
                     </div>
                     <div className="text-xs text-gray-500">
-                      Status: <span className={node.status === 'ACTIVE' ? 'text-green-400' : 'text-yellow-400'}>
-                        {node.status === 'ACTIVE' ? 'En ligne' : 'Hors ligne'}
+                      Status: <span className="text-green-400">
+                        En ligne
                       </span>
                     </div>
                   </div>
