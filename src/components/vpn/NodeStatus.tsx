@@ -26,10 +26,7 @@ export default function NodeStatus() {
   
   // Initialize isHost from localStorage or default to false
   const [isHost, setIsHost] = React.useState(() => {
-    if (typeof window !== 'undefined') {
-      const savedIsHost = localStorage.getItem('vpnNodeIsHost');
-      return savedIsHost === 'true';
-    }
+    // Toujours démarrer en mode client par défaut
     return false;
   });
 
