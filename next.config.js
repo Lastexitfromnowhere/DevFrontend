@@ -1,33 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  async headers() {
+  async rewrites() {
     return [
       {
-        source: '/:path*',
-        headers: [
-          {
-            key: 'Access-Control-Allow-Origin',
-            value: '*',
-          },
-          {
-            key: 'Access-Control-Allow-Methods',
-            value: 'GET, POST, PUT, DELETE, OPTIONS',
-          },
-          {
-            key: 'Access-Control-Allow-Headers',
-            value: 'Content-Type, Authorization',
-          },
-        ],
+        source: '/api/:path*',
+        destination: 'http://138.68.176.152:10000/:path*',
       },
     ];
-  },
-  webpack: (config) => {
-    config.ignoreWarnings = [
-      { module: /node_modules\/node-fetch\/lib\/index\.js/ },
-      { module: /node_modules\/fetch-blob\/index\.js/ },
-    ];
-    return config;
   },
 };
 
