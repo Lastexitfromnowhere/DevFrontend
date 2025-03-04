@@ -2,7 +2,7 @@
 
 const config = {
   // URL de base de l'API
-  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'https://vpn-network.onrender.com',
+  API_BASE_URL: process.env.NEXT_PUBLIC_API_BASE_URL || 'http://157.245.33.144:10000',
   
   // Paramètres de l'application
   APP_NAME: 'Wind VPN',
