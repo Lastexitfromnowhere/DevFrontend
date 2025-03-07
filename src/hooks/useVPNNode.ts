@@ -231,7 +231,7 @@ export function useVPNNode() {
       localStorage.setItem('lastStatusCheck', now.toISOString());
       
       // Faire la requête API
-      const response = await api.get(`${config.API_BASE_URL}/api/status`, {
+      const response = await api.get(`${config.API_BASE_URL}/status`, {
         headers: {
           'X-Wallet-Address': account
         }
@@ -363,7 +363,7 @@ export function useVPNNode() {
       await new Promise(resolve => setTimeout(resolve, randomDelay));
       
       // Faire la requête API avec l'adresse du wallet actuel
-      const response = await api.get(`${config.API_BASE_URL}/api/available-nodes`, {
+      const response = await api.get(`${config.API_BASE_URL}/available-nodes`, {
         headers: {
           'X-Wallet-Address': account || localStorage.getItem('walletAddress') || ''
         }
@@ -467,7 +467,7 @@ export function useVPNNode() {
         console.log('Déconnexion réussie, connexion au nouveau nœud...');
       }
 
-      const response = await api.post(`${config.API_BASE_URL}/api/connect-to-node`, {
+      const response = await api.post(`${config.API_BASE_URL}/connect-to-node`, {
         clientWalletAddress: account,
         hostWalletAddress: nodeWalletAddress
       });
@@ -524,7 +524,7 @@ export function useVPNNode() {
 
       console.log('Starting node for wallet:', account);
       
-      const response = await api.post(`${config.API_BASE_URL}/api/connect`, {
+      const response = await api.post(`${config.API_BASE_URL}/connect`, {
         walletAddress: account,
         nodeInfo: {
           country: 'France',
@@ -600,7 +600,7 @@ export function useVPNNode() {
 
       console.log('Stopping node for wallet:', account);
       
-      const response = await api.post(`${config.API_BASE_URL}/api/disconnect`, {
+      const response = await api.post(`${config.API_BASE_URL}/disconnect`, {
         walletAddress: account
       });
 
@@ -674,7 +674,7 @@ export function useVPNNode() {
 
       console.log('Disconnecting client from node for wallet:', account);
       
-      const response = await api.post(`${config.API_BASE_URL}/api/client-disconnect`, {
+      const response = await api.post(`${config.API_BASE_URL}/client-disconnect`, {
         clientWalletAddress: account
       });
 
@@ -747,7 +747,7 @@ export function useVPNNode() {
 
     setIsLoading(true);
     try {
-      const response = await api.get(`${config.API_BASE_URL}/api/connected-clients`, {
+      const response = await api.get(`${config.API_BASE_URL}/connected-clients`, {
         headers: {
           'X-Wallet-Address': account
         }
@@ -783,7 +783,7 @@ export function useVPNNode() {
 
     setIsLoading(true);
     try {
-      const response = await api.post(`${config.API_BASE_URL}/api/disconnect-client`, {
+      const response = await api.post(`${config.API_BASE_URL}/disconnect-client`, {
         hostWalletAddress: account,
         clientWalletAddress: clientWalletAddress
       });
@@ -919,7 +919,7 @@ export function useVPNNode() {
     try {
       console.log('Envoi de la requête API pour les nœuds disponibles');
       // Faire la requête API avec l'adresse du wallet actuel
-      const response = await api.get(`${config.API_BASE_URL}/api/available-nodes`, {
+      const response = await api.get(`${config.API_BASE_URL}/available-nodes`, {
         headers: {
           'X-Wallet-Address': account || localStorage.getItem('walletAddress') || ''
         }

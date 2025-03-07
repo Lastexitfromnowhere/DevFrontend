@@ -14,7 +14,7 @@ export default function NetworkStats() {
     // Fonction pour récupérer les données de l'API
     const fetchNetworkStats = async () => {
       try {
-        const response = await axios.get(`${config.API_BASE_URL}/api/network-stats`);
+        const response = await axios.get(`${config.API_BASE_URL}/network-stats`);
         setStats(response.data);
         setLoading(false);
       } catch (error) {

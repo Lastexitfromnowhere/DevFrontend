@@ -30,7 +30,7 @@ export const useRewards = () => {
     setError(null);
 
     try {
-      const response = await axios.get(`${config.API_BASE_URL}/api/dailyClaims`, {
+      const response = await axios.get(`${config.API_BASE_URL}/dailyClaims`, {
         headers: {
           'X-Wallet-Address': account
         }
@@ -77,7 +77,7 @@ export const useRewards = () => {
     setError(null);
 
     try {
-      const response = await axios.post(`${config.API_BASE_URL}/api/dailyClaims/claim`, {
+      const response = await axios.post(`${config.API_BASE_URL}/dailyClaims/claim`, {
         walletAddress: account
       });
 

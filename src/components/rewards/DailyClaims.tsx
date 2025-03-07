@@ -68,10 +68,9 @@ export default function DailyClaims() {
 
     setIsLoading(true);
     try {
-      console.log('Fetching rewards from:', `${config.API_BASE_URL}/api/dailyClaims`);
-      console.log('With wallet address:', account);
+      console.log('Fetching rewards from:', `${config.API_BASE_URL}/dailyClaims`);
       
-      const response = await api.get(`${config.API_BASE_URL}/api/dailyClaims`, {
+      const response = await api.get(`${config.API_BASE_URL}/dailyClaims`, {
         headers: {
           'X-Wallet-Address': account,
           'Authorization': `Bearer ${account}`
@@ -109,10 +108,9 @@ export default function DailyClaims() {
 
     setIsClaiming(true);
     try {
-      console.log('Claiming daily rewards from:', `${config.API_BASE_URL}/api/dailyClaims/claim`);
-      console.log('With wallet address:', account);
+      console.log('Claiming daily rewards from:', `${config.API_BASE_URL}/dailyClaims/claim`);
       
-      const response = await api.post(`${config.API_BASE_URL}/api/dailyClaims/claim`, {
+      const response = await api.post(`${config.API_BASE_URL}/dailyClaims/claim`, {
         walletAddress: account
       });
       

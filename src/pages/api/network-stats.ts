@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await axios.get(`${config.API_BASE_URL}/api/networkStats`, {
+    const response = await axios.get(`${config.API_BASE_URL}/networkStats`, {
       headers: {
         'Content-Type': 'application/json',
       },
