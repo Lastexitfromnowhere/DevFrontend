@@ -1,6 +1,7 @@
 // utils/dhtUtils.js
 import axios from 'axios';
 import { config } from '../config/env';
+import { authService } from '../services/authService';
 
 // Polyfill pour CustomEvent
 if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
@@ -23,29 +24,17 @@ let lastStatusCheck = 0;
 const STATUS_CACHE_TIME = 5000; // 5 secondes
 
 // Ajouter l'en-tête d'autorisation à toutes les requêtes
-const getAuthHeaders = () => {
+const getAuthHeaders = async () => {
   // Vérifier si nous sommes dans un environnement navigateur
   if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
     return {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer dummy-token-for-server'
+      'Authorization': `Bearer ${await authService.refreshTokenIfNeeded()}`
     };
   }
 
-  const token = localStorage.getItem('auth_token') || 'dummy-token-for-dev';
-  const walletAddress = localStorage.getItem('walletAddress');
-  
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`
-  };
-  
-  // Ajouter l'adresse du wallet si disponible
-  if (walletAddress) {
-    headers['X-Wallet-Address'] = walletAddress;
-  }
-  
-  return headers;
+  // Utiliser le service d'authentification pour obtenir les en-têtes
+  return await authService.getAuthHeaders();
 };
 
 // Configuration Axios avec timeout et retry
@@ -58,8 +47,15 @@ const dhtAxios = axios.create({
 
 // Intercepteur pour ajouter les logs et gérer les erreurs
 dhtAxios.interceptors.request.use(
-  (config) => {
+  async (config) => {
     console.log(`DHT Request: ${config.method?.toUpperCase()} ${config.url}`);
+    
+    // Ajouter les en-têtes d'authentification à chaque requête
+    if (!config.headers.Authorization) {
+      const headers = await getAuthHeaders();
+      config.headers = { ...config.headers, ...headers };
+    }
+    
     return config;
   },
   (error) => {
@@ -79,6 +75,20 @@ dhtAxios.interceptors.response.use(
       console.warn('Erreur réseau détectée, vérifiez votre connexion ou la disponibilité du service DHT');
     } else if (error.response?.status === 401) {
       console.warn('Erreur d\'authentification 401: Token non fourni ou invalide');
+      // Essayer de rafraîchir le token en cas d'erreur 401
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        authService.refreshTokenIfNeeded().catch(err => {
+          console.error('Impossible de rafraîchir le token:', err);
+        });
+      }
+    } else if (error.response?.status === 403) {
+      console.warn('Erreur d\'autorisation 403: Token invalide ou expiré');
+      // Essayer de rafraîchir le token en cas d'erreur 403
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        authService.refreshTokenIfNeeded().catch(err => {
+          console.error('Impossible de rafraîchir le token:', err);
+        });
+      }
     }
     return Promise.reject(error);
   }
@@ -100,9 +110,7 @@ export const initDHTNode = async () => {
 export const startDHTNode = async () => {
   try {
     console.log('Démarrage du nœud DHT');
-    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, {}, {
-      headers: getAuthHeaders()
-    });
+    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, {});
     // Invalider le cache du statut
     cachedStatus = null;
     return response.data;
@@ -116,9 +124,7 @@ export const startDHTNode = async () => {
 export const stopDHTNode = async () => {
   try {
     console.log('Arrêt du nœud DHT');
-    const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, {}, {
-      headers: getAuthHeaders()
-    });
+    const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, {});
     // Invalider le cache du statut
     cachedStatus = null;
     return response.data;
@@ -139,9 +145,7 @@ export const getDHTStatus = async () => {
     }
     
     console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status`);
-    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
-      headers: getAuthHeaders()
-    });
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status`);
     cachedStatus = response.data;
     lastStatusCheck = now;
     return cachedStatus;
@@ -160,9 +164,7 @@ export const getDHTStatus = async () => {
 // Fonction pour obtenir la liste des nœuds DHT
 export const getDHTNodes = async () => {
   try {
-    const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
-      headers: getAuthHeaders()
-    });
+    const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds DHT:', error);
@@ -173,9 +175,7 @@ export const getDHTNodes = async () => {
 // Fonction pour obtenir la liste des nœuds WireGuard
 export const getWireGuardNodes = async () => {
   try {
-    const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`, {
-      headers: getAuthHeaders()
-    });
+    const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds WireGuard:', error);
@@ -186,10 +186,7 @@ export const getWireGuardNodes = async () => {
 // Fonction pour publier un nœud WireGuard
 export const publishWireGuardNode = async (walletAddress) => {
   try {
-    const response = await dhtAxios.post(`${DHT_API_BASE}/wireguard-publish`, 
-      { walletAddress }, 
-      { headers: getAuthHeaders() }
-    );
+    const response = await dhtAxios.post(`${DHT_API_BASE}/wireguard-publish`, { walletAddress });
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la publication du nœud WireGuard:', error);
@@ -200,10 +197,7 @@ export const publishWireGuardNode = async (walletAddress) => {
 // Fonction pour stocker une valeur dans le DHT
 export const storeDHTValue = async (key, value) => {
   try {
-    const response = await dhtAxios.post(`${DHT_API_BASE}/store`, 
-      { key, value }, 
-      { headers: getAuthHeaders() }
-    );
+    const response = await dhtAxios.post(`${DHT_API_BASE}/store`, { key, value });
     return response.data;
   } catch (error) {
     console.error('Erreur lors du stockage de la valeur:', error);
@@ -214,9 +208,7 @@ export const storeDHTValue = async (key, value) => {
 // Fonction pour récupérer une valeur depuis le DHT
 export const retrieveDHTValue = async (key) => {
   try {
-    const response = await dhtAxios.get(`${DHT_API_BASE}/retrieve/${key}`, {
-      headers: getAuthHeaders()
-    });
+    const response = await dhtAxios.get(`${DHT_API_BASE}/retrieve/${key}`);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération de la valeur:', error);
