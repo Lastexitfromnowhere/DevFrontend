@@ -1,6 +1,6 @@
 // utils/dhtUtils.js
 import axios from 'axios';
-import { config } from '../config/env';
+import { config, DHT_API_URL } from '../config/env';
 
 // Polyfill pour CustomEvent
 if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
@@ -15,7 +15,7 @@ if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
 }
 
 // URL de base pour les requêtes DHT
-const DHT_API_URL = `${config.API_BASE_URL}/dht`;
+const DHT_API_BASE = DHT_API_URL;
 
 // Variables locales pour le cache et l'état
 let cachedStatus = null;
@@ -47,7 +47,7 @@ export const initDHTNode = async () => {
 export const startDHTNode = async () => {
   try {
     console.log('Démarrage du nœud DHT');
-    const response = await axios.post(`${DHT_API_URL}/start`, {}, {
+    const response = await axios.post(`${DHT_API_BASE}/start`, {}, {
       headers: getAuthHeaders()
     });
     // Invalider le cache du statut
@@ -63,7 +63,7 @@ export const startDHTNode = async () => {
 export const stopDHTNode = async () => {
   try {
     console.log('Arrêt du nœud DHT');
-    const response = await axios.post(`${DHT_API_URL}/stop`, {}, {
+    const response = await axios.post(`${DHT_API_BASE}/stop`, {}, {
       headers: getAuthHeaders()
     });
     // Invalider le cache du statut
@@ -85,7 +85,7 @@ export const getDHTStatus = async () => {
       return cachedStatus;
     }
     
-    const response = await axios.get(`${DHT_API_URL}/status`, {
+    const response = await axios.get(`${DHT_API_BASE}/status`, {
       headers: getAuthHeaders()
     });
     cachedStatus = response.data;
@@ -106,7 +106,7 @@ export const getDHTStatus = async () => {
 // Fonction pour obtenir la liste des nœuds DHT
 export const getDHTNodes = async () => {
   try {
-    const response = await axios.get(`${DHT_API_URL}/nodes`, {
+    const response = await axios.get(`${DHT_API_BASE}/nodes`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -119,7 +119,7 @@ export const getDHTNodes = async () => {
 // Fonction pour obtenir la liste des nœuds WireGuard
 export const getWireGuardNodes = async () => {
   try {
-    const response = await axios.get(`${DHT_API_URL}/wireguard-nodes`, {
+    const response = await axios.get(`${DHT_API_BASE}/wireguard-nodes`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -132,7 +132,7 @@ export const getWireGuardNodes = async () => {
 // Fonction pour publier un nœud WireGuard
 export const publishWireGuardNode = async (walletAddress) => {
   try {
-    const response = await axios.post(`${DHT_API_URL}/wireguard-publish`, 
+    const response = await axios.post(`${DHT_API_BASE}/wireguard-publish`, 
       { walletAddress }, 
       { headers: getAuthHeaders() }
     );
@@ -146,7 +146,7 @@ export const publishWireGuardNode = async (walletAddress) => {
 // Fonction pour stocker une valeur dans le DHT
 export const storeDHTValue = async (key, value) => {
   try {
-    const response = await axios.post(`${DHT_API_URL}/store`, 
+    const response = await axios.post(`${DHT_API_BASE}/store`, 
       { key, value }, 
       { headers: getAuthHeaders() }
     );
@@ -160,7 +160,7 @@ export const storeDHTValue = async (key, value) => {
 // Fonction pour récupérer une valeur depuis le DHT
 export const retrieveDHTValue = async (key) => {
   try {
-    const response = await axios.get(`${DHT_API_URL}/retrieve/${key}`, {
+    const response = await axios.get(`${DHT_API_BASE}/retrieve/${key}`, {
       headers: getAuthHeaders()
     });
     return response.data;
