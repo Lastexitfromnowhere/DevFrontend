@@ -10,7 +10,6 @@ import WalletDisclaimer from '@/components/wallet/WalletDisclaimer';
 import WalletStatus from '@/components/wallet/WalletStatus';
 import EcosystemDescription from '@/components/ecosystem/EcosystemDescription';
 import ProjectsGrid from '@/components/ecosystem/ProjectsGrid';
-import NodeStatus from '@/components/vpn/NodeStatus';
 import VPNRewards from '@/components/vpn/VPNRewards';
 import NetworkStats from '@/components/vpn/NetworkStats';
 import NodeStatusSummary from '@/components/vpn/NodeStatusSummary';
@@ -49,13 +48,12 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <NodeStatus />
+                <DHTStatus />
               </div>
               <div>
                 <VPNRewards earnings={0} />
               </div>
             </div>
-            <NetworkStats />
             
             {/* Section DHT */}
             <div className="mt-8">
@@ -63,15 +61,6 @@ export default function Dashboard() {
                 <Network size={20} className="mr-2" />
                 Réseau DHT
               </h2>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <DHTStatus />
-                <div className="bg-[#111] border border-green-800 rounded-lg p-4">
-                  <h3 className="text-lg font-semibold mb-3">À propos du DHT</h3>
-                  <p className="text-green-300">
-                    Le DHT (Distributed Hash Table) est un système de stockage distribué qui permet de découvrir les nœuds WireGuard disponibles sur le réseau de manière décentralisée.
-                  </p>
-                </div>
-              </div>
               
               <div className="mb-6">
                 <h3 className="text-lg font-semibold mb-3">Nœuds DHT</h3>
