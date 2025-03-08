@@ -14,11 +14,7 @@ const nextConfig = {
       {
         source: '/status',
         destination: 'http://46.101.36.247:10001/dht/status',
-      },
-      {
-        source: '/lastexitvpn/:path*',
-        destination: 'https://lastexitvpn.duckdns.org/:path*',
-      },
+      }
     ];
   },
   // Augmenter le timeout pour les requêtes API

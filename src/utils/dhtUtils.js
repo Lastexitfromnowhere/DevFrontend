@@ -24,6 +24,14 @@ const STATUS_CACHE_TIME = 5000; // 5 secondes
 
 // Ajouter l'en-tête d'autorisation à toutes les requêtes
 const getAuthHeaders = () => {
+  // Vérifier si nous sommes dans un environnement navigateur
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer dummy-token-for-server'
+    };
+  }
+
   const token = localStorage.getItem('auth_token') || 'dummy-token-for-dev';
   const walletAddress = localStorage.getItem('walletAddress');
   
@@ -130,6 +138,7 @@ export const getDHTStatus = async () => {
       return cachedStatus;
     }
     
+    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status`);
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
       headers: getAuthHeaders()
     });
@@ -218,6 +227,7 @@ export const retrieveDHTValue = async (key) => {
 // Fonction pour vérifier si le backend est accessible
 export const checkBackendConnection = async () => {
   try {
+    console.log(`Vérification de la connexion au backend: ${config.API_BASE_URL}/status`);
     const response = await dhtAxios.get(`${config.API_BASE_URL}/status`, {
       timeout: 10000 // 10 secondes
     });
