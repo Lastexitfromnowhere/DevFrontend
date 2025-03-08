@@ -25,10 +25,19 @@ const STATUS_CACHE_TIME = 5000; // 5 secondes
 // Ajouter l'en-tête d'autorisation à toutes les requêtes
 const getAuthHeaders = () => {
   const token = localStorage.getItem('auth_token') || 'dummy-token-for-dev';
-  return {
+  const walletAddress = localStorage.getItem('walletAddress');
+  
+  const headers = {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`
   };
+  
+  // Ajouter l'adresse du wallet si disponible
+  if (walletAddress) {
+    headers['X-Wallet-Address'] = walletAddress;
+  }
+  
+  return headers;
 };
 
 // Configuration Axios avec timeout et retry
@@ -60,6 +69,8 @@ dhtAxios.interceptors.response.use(
     console.error('DHT Response Error:', error.message);
     if (error.code === 'ERR_NETWORK') {
       console.warn('Erreur réseau détectée, vérifiez votre connexion ou la disponibilité du service DHT');
+    } else if (error.response?.status === 401) {
+      console.warn('Erreur d\'authentification 401: Token non fourni ou invalide');
     }
     return Promise.reject(error);
   }
