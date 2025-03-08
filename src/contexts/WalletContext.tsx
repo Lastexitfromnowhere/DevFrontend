@@ -2,7 +2,7 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode, useMemo } from 'react';
+import React, { createContext, useContext, ReactNode, useMemo, useEffect } from 'react';
 import { 
   WalletProvider, 
   useWallet 
@@ -13,6 +13,7 @@ import {
 } from '@solana/wallet-adapter-wallets';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import '@solana/wallet-adapter-react-ui/styles.css';
+import { authService } from '@/services/authService';
 
 // Interface du contexte de portefeuille
 interface WalletContextType {
@@ -71,8 +72,37 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
   const disconnectWallet = () => {
     if (disconnect) {
       disconnect();
+      // Déconnexion du service d'authentification
+      authService.logout();
     }
   };
+
+  // Générer automatiquement un token JWT lorsque le wallet est connecté
+  useEffect(() => {
+    const generateAuthToken = async () => {
+      if (connected && publicKey) {
+        const walletAddress = publicKey.toBase58();
+        try {
+          console.log('Generating token for wallet:', walletAddress);
+          const storedAddress = authService.getWalletAddress();
+          
+          // Vérifier si nous avons déjà un token valide pour cette adresse
+          if (storedAddress !== walletAddress || authService.isTokenExpired()) {
+            // Générer un nouveau token pour cette adresse
+            const { token, expiresAt } = await authService.generateToken(walletAddress);
+            authService.saveToken(token, expiresAt, walletAddress);
+            console.log('New token generated and saved');
+          } else {
+            console.log('Using existing valid token');
+          }
+        } catch (error) {
+          console.error('Error generating authentication token:', error);
+        }
+      }
+    };
+
+    generateAuthToken();
+  }, [connected, publicKey]);
 
   // Valeur du contexte
   const contextValue = {
