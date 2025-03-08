@@ -88,7 +88,7 @@ export function useDHT() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, walletAddress]);
+  }, [isAuthenticated]);
 
   // Fonction pour démarrer le nœud DHT
   const startNode = useCallback(async () => {
@@ -123,7 +123,7 @@ export function useDHT() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, walletAddress, fetchStatus]);
+  }, [isAuthenticated, fetchStatus]);
 
   // Fonction pour arrêter le nœud DHT
   const stopNode = useCallback(async () => {
@@ -158,7 +158,7 @@ export function useDHT() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, walletAddress]);
+  }, [isAuthenticated]);
 
   // Fonction pour récupérer la liste des nœuds DHT
   const fetchNodes = useCallback(async () => {
@@ -193,7 +193,7 @@ export function useDHT() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, walletAddress]);
+  }, [isAuthenticated]);
 
   // Fonction pour récupérer la liste des nœuds WireGuard via DHT
   const fetchWireGuardNodes = useCallback(async () => {
@@ -228,7 +228,7 @@ export function useDHT() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, walletAddress]);
+  }, [isAuthenticated]);
 
   // Fonction pour publier un nœud WireGuard dans le DHT
   const publishWireGuardNode = useCallback(async () => {
@@ -302,7 +302,7 @@ export function useDHT() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, walletAddress]);
+  }, [isAuthenticated]);
 
   // Fonction pour récupérer une valeur depuis le DHT
   const retrieveValue = useCallback(async (key: string) => {
@@ -341,7 +341,7 @@ export function useDHT() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, walletAddress]);
+  }, [isAuthenticated]);
 
   // Effet pour récupérer le statut initial
   useEffect(() => {

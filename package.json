@@ -23,6 +23,7 @@
     "@solana/web3.js": "^1.98.0",
     "@walletconnect/sign-client": "^2.17.0",
     "axios": "^1.7.9",
+    "date-fns": "^4.1.0",
     "glob": "^11.0.1",
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.475.0",
