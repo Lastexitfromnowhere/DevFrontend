@@ -31,6 +31,40 @@ const getAuthHeaders = () => {
   };
 };
 
+// Configuration Axios avec timeout et retry
+const dhtAxios = axios.create({
+  timeout: 30000, // 30 secondes
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+
+// Intercepteur pour ajouter les logs et gérer les erreurs
+dhtAxios.interceptors.request.use(
+  (config) => {
+    console.log(`DHT Request: ${config.method?.toUpperCase()} ${config.url}`);
+    return config;
+  },
+  (error) => {
+    console.error('DHT Request Error:', error);
+    return Promise.reject(error);
+  }
+);
+
+dhtAxios.interceptors.response.use(
+  (response) => {
+    console.log(`DHT Response: ${response.status} ${response.config.url}`);
+    return response;
+  },
+  (error) => {
+    console.error('DHT Response Error:', error.message);
+    if (error.code === 'ERR_NETWORK') {
+      console.warn('Erreur réseau détectée, vérifiez votre connexion ou la disponibilité du service DHT');
+    }
+    return Promise.reject(error);
+  }
+);
+
 // Fonction pour initialiser le nœud DHT
 export const initDHTNode = async () => {
   try {
@@ -47,7 +81,7 @@ export const initDHTNode = async () => {
 export const startDHTNode = async () => {
   try {
     console.log('Démarrage du nœud DHT');
-    const response = await axios.post(`${DHT_API_BASE}/start`, {}, {
+    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, {}, {
       headers: getAuthHeaders()
     });
     // Invalider le cache du statut
@@ -63,7 +97,7 @@ export const startDHTNode = async () => {
 export const stopDHTNode = async () => {
   try {
     console.log('Arrêt du nœud DHT');
-    const response = await axios.post(`${DHT_API_BASE}/stop`, {}, {
+    const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, {}, {
       headers: getAuthHeaders()
     });
     // Invalider le cache du statut
@@ -85,7 +119,7 @@ export const getDHTStatus = async () => {
       return cachedStatus;
     }
     
-    const response = await axios.get(`${DHT_API_BASE}/status`, {
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
       headers: getAuthHeaders()
     });
     cachedStatus = response.data;
@@ -106,7 +140,7 @@ export const getDHTStatus = async () => {
 // Fonction pour obtenir la liste des nœuds DHT
 export const getDHTNodes = async () => {
   try {
-    const response = await axios.get(`${DHT_API_BASE}/nodes`, {
+    const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -119,7 +153,7 @@ export const getDHTNodes = async () => {
 // Fonction pour obtenir la liste des nœuds WireGuard
 export const getWireGuardNodes = async () => {
   try {
-    const response = await axios.get(`${DHT_API_BASE}/wireguard-nodes`, {
+    const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -132,7 +166,7 @@ export const getWireGuardNodes = async () => {
 // Fonction pour publier un nœud WireGuard
 export const publishWireGuardNode = async (walletAddress) => {
   try {
-    const response = await axios.post(`${DHT_API_BASE}/wireguard-publish`, 
+    const response = await dhtAxios.post(`${DHT_API_BASE}/wireguard-publish`, 
       { walletAddress }, 
       { headers: getAuthHeaders() }
     );
@@ -146,7 +180,7 @@ export const publishWireGuardNode = async (walletAddress) => {
 // Fonction pour stocker une valeur dans le DHT
 export const storeDHTValue = async (key, value) => {
   try {
-    const response = await axios.post(`${DHT_API_BASE}/store`, 
+    const response = await dhtAxios.post(`${DHT_API_BASE}/store`, 
       { key, value }, 
       { headers: getAuthHeaders() }
     );
@@ -160,7 +194,7 @@ export const storeDHTValue = async (key, value) => {
 // Fonction pour récupérer une valeur depuis le DHT
 export const retrieveDHTValue = async (key) => {
   try {
-    const response = await axios.get(`${DHT_API_BASE}/retrieve/${key}`, {
+    const response = await dhtAxios.get(`${DHT_API_BASE}/retrieve/${key}`, {
       headers: getAuthHeaders()
     });
     return response.data;
@@ -173,8 +207,8 @@ export const retrieveDHTValue = async (key) => {
 // Fonction pour vérifier si le backend est accessible
 export const checkBackendConnection = async () => {
   try {
-    const response = await axios.get(`${config.API_BASE_URL}/status`, {
-      timeout: 5000
+    const response = await dhtAxios.get(`${config.API_BASE_URL}/status`, {
+      timeout: 10000 // 10 secondes
     });
     return { success: true, status: response.status, data: response.data };
   } catch (error) {
