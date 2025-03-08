@@ -8,6 +8,33 @@ const AUTH_API_BASE = config.API_BASE_URL;
 // Durée de validité du token en secondes (1 heure par défaut)
 const TOKEN_EXPIRY = 3600;
 
+// Fonction pour encoder un token JWT simple côté client
+// Note: Ceci est une implémentation simplifiée pour le développement
+// En production, les tokens devraient être générés côté serveur
+const encodeJWT = (payload, secret = 'votre_secret_jwt_super_securise') => {
+  // Créer l'en-tête (header)
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT'
+  };
+
+  // Encoder l'en-tête et le payload en base64
+  const encodedHeader = btoa(JSON.stringify(header));
+  const encodedPayload = btoa(JSON.stringify(payload));
+
+  // Créer la signature (en production, cela utiliserait une vraie fonction de hachage HMAC)
+  // Ici, nous créons une signature fictive basée sur le payload pour simuler un token unique
+  const signature = btoa(
+    Array.from(payload.walletAddress)
+      .map(char => char.charCodeAt(0))
+      .reduce((acc, val) => acc + val, 0)
+      .toString(16)
+  );
+
+  // Assembler le token JWT
+  return `${encodedHeader}.${encodedPayload}.${signature}`;
+};
+
 /**
  * Service d'authentification pour gérer les tokens JWT
  */
@@ -23,12 +50,22 @@ class AuthService {
       // const response = await axios.post(`${AUTH_API_BASE}/auth/token`, { walletAddress });
       // return response.data;
       
-      // Pour le développement, on génère un token fictif
+      // Pour le développement, on génère un token basé sur l'adresse du wallet
       const now = Math.floor(Date.now() / 1000);
       const expiresAt = now + TOKEN_EXPIRY;
       
-      // En développement, on utilise un token fixe pour faciliter les tests
-      const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ3YWxsZXRBZGRyZXNzIjoiMHhWb3RyZUFkcmVzc2VXYWxsZXQiLCJyb2xlIjoidXNlciIsImlhdCI6MTc0MTQ3MDI5NSwiZXhwIjoxNzQxNDczODk1fQ.RqFjXg0vjoR-ipaDNLOltSz9qoByGcI6di5_oo3QZ4s';
+      // Créer le payload du token
+      const payload = {
+        walletAddress,
+        role: 'user',
+        iat: now,
+        exp: expiresAt
+      };
+      
+      // Générer un token unique basé sur l'adresse du wallet
+      const token = encodeJWT(payload);
+      
+      console.log(`Token généré pour ${walletAddress}`);
       
       return { token, expiresAt };
     } catch (error) {
@@ -47,6 +84,7 @@ class AuthService {
     localStorage.setItem('auth_token', token);
     localStorage.setItem('token_expires_at', expiresAt.toString());
     localStorage.setItem('walletAddress', walletAddress);
+    console.log(`Token sauvegardé pour ${walletAddress}`);
   }
 
   /**
