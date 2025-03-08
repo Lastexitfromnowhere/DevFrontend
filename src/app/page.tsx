@@ -2,7 +2,7 @@
 
 // src/app/page.tsx
 import React, { useState } from 'react';
-import { Terminal, Shield, Target } from 'lucide-react';
+import { Terminal, Shield, Target, Network } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
 
 // Components Imports
@@ -17,6 +17,9 @@ import NodeStatusSummary from '@/components/vpn/NodeStatusSummary';
 import SiteGoals from '@/components/goals/SiteGoals';
 import { DailyRewards } from '@/components/rewards/DailyRewards';
 import RSSFeed from '@/components/RSSFeed';
+import DHTStatus from '@/components/dht/DHTStatus';
+import DHTNodes from '@/components/dht/DHTNodes';
+import DHTWireGuardNodes from '@/components/dht/DHTWireGuardNodes';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
@@ -53,6 +56,33 @@ export default function Dashboard() {
               </div>
             </div>
             <NetworkStats />
+            
+            {/* Section DHT */}
+            <div className="mt-8">
+              <h2 className="text-xl font-semibold mb-4 flex items-center">
+                <Network size={20} className="mr-2" />
+                Réseau DHT
+              </h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <DHTStatus />
+                <div className="bg-[#111] border border-green-800 rounded-lg p-4">
+                  <h3 className="text-lg font-semibold mb-3">À propos du DHT</h3>
+                  <p className="text-green-300">
+                    Le DHT (Distributed Hash Table) est un système de stockage distribué qui permet de découvrir les nœuds WireGuard disponibles sur le réseau de manière décentralisée.
+                  </p>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-3">Nœuds DHT</h3>
+                <DHTNodes />
+              </div>
+              
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Nœuds WireGuard</h3>
+                <DHTWireGuardNodes />
+              </div>
+            </div>
           </div>
         );
 
