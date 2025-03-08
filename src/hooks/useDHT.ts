@@ -1,8 +1,8 @@
 // src/hooks/useDHT.ts
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
-import { config } from '@/config/env';
 import { useWalletContext } from '@/contexts/WalletContext';
+import * as dhtUtils from '@/utils/dhtUtils';
 
 interface DHTNode {
   nodeId: string;
@@ -64,19 +64,12 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/dht/status`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération du statut du nœud DHT');
+      const data = await dhtUtils.getDHTStatus();
+      
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
       }
-
-      const data = await response.json();
+      
       setStatus({
         isActive: data.isActive,
         nodeId: data.nodeId,
@@ -98,25 +91,13 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/dht/start`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors du démarrage du nœud DHT');
-      }
-
-      const data = await response.json();
+      const data = await dhtUtils.startDHTNode();
       
-      if (data.success) {
-        await fetchStatus();
-      } else {
-        throw new Error(data.message || 'Erreur lors du démarrage du nœud DHT');
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
       }
+      
+      await fetchStatus();
     } catch (err) {
       console.error('Erreur:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
@@ -133,25 +114,13 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/dht/stop`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de l\'arrêt du nœud DHT');
-      }
-
-      const data = await response.json();
+      const data = await dhtUtils.stopDHTNode();
       
-      if (data.success) {
-        setStatus({ isActive: false });
-      } else {
-        throw new Error(data.message || 'Erreur lors de l\'arrêt du nœud DHT');
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
       }
+      
+      setStatus({ isActive: false });
     } catch (err) {
       console.error('Erreur:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
@@ -168,25 +137,13 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/dht/nodes`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération des nœuds DHT');
-      }
-
-      const data = await response.json();
+      const data = await dhtUtils.getDHTNodes();
       
-      if (data.success) {
-        setNodes(data.nodes);
-      } else {
-        throw new Error(data.message || 'Erreur lors de la récupération des nœuds DHT');
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
       }
+      
+      setNodes(data.nodes || []);
     } catch (err) {
       console.error('Erreur:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
@@ -203,25 +160,13 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/dht/wireguard/nodes`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la récupération des nœuds WireGuard');
-      }
-
-      const data = await response.json();
+      const data = await dhtUtils.getWireGuardNodes();
       
-      if (data.success) {
-        setWireGuardNodes(data.nodes);
-      } else {
-        throw new Error(data.message || 'Erreur lors de la récupération des nœuds WireGuard');
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
       }
+      
+      setWireGuardNodes(data.nodes || []);
     } catch (err) {
       console.error('Erreur:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
@@ -238,23 +183,10 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/dht/wireguard/publish`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify({ walletAddress })
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la publication du nœud WireGuard');
-      }
-
-      const data = await response.json();
+      const data = await dhtUtils.publishWireGuardNode(walletAddress);
       
-      if (!data.success) {
-        throw new Error(data.message || 'Erreur lors de la publication du nœud WireGuard');
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
       }
       
       return data.success;
@@ -275,23 +207,10 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/dht/store`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        },
-        body: JSON.stringify({ key, value })
-      });
-
-      if (!response.ok) {
-        throw new Error('Erreur lors du stockage de la valeur dans le DHT');
-      }
-
-      const data = await response.json();
+      const data = await dhtUtils.storeDHTValue(key, value);
       
-      if (!data.success) {
-        throw new Error(data.message || 'Erreur lors du stockage de la valeur dans le DHT');
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
       }
       
       return true;
@@ -312,25 +231,13 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}/dht/retrieve/${key}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
+      const data = await dhtUtils.retrieveDHTValue(key);
+      
+      if (data.success === false) {
+        if (data.error && data.error.includes('not found')) {
           return null;
         }
-        throw new Error('Erreur lors de la récupération de la valeur depuis le DHT');
-      }
-
-      const data = await response.json();
-      
-      if (!data.success) {
-        throw new Error(data.message || 'Erreur lors de la récupération de la valeur depuis le DHT');
+        throw new Error(data.error);
       }
       
       return data.value;
