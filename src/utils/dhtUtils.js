@@ -1,6 +1,6 @@
 // utils/dhtUtils.js
 import axios from 'axios';
-import { config, DHT_API_URL } from '../config/env';
+import { config } from '../config/env';
 
 // Polyfill pour CustomEvent
 if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
@@ -15,7 +15,7 @@ if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
 }
 
 // URL de base pour les requêtes DHT
-const DHT_API_BASE = DHT_API_URL;
+const DHT_API_BASE = config.DHT_API_URL;
 
 // Variables locales pour le cache et l'état
 let cachedStatus = null;
