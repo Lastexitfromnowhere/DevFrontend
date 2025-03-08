@@ -64,7 +64,7 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}dht/status`, {
+      const response = await fetch(`${config.API_BASE_URL}/dht/status`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}dht/start`, {
+      const response = await fetch(`${config.API_BASE_URL}/dht/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -133,7 +133,7 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}dht/stop`, {
+      const response = await fetch(`${config.API_BASE_URL}/dht/stop`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -168,7 +168,7 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}dht/nodes`, {
+      const response = await fetch(`${config.API_BASE_URL}/dht/nodes`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -203,7 +203,7 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}dht/wireguard/nodes`, {
+      const response = await fetch(`${config.API_BASE_URL}/dht/wireguard/nodes`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -238,7 +238,7 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}dht/wireguard/publish`, {
+      const response = await fetch(`${config.API_BASE_URL}/dht/wireguard/publish`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -275,7 +275,7 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}dht/store`, {
+      const response = await fetch(`${config.API_BASE_URL}/dht/store`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -312,7 +312,7 @@ export function useDHT() {
     setError(null);
 
     try {
-      const response = await fetch(`${config.API_BASE_URL}dht/retrieve/${key}`, {
+      const response = await fetch(`${config.API_BASE_URL}/dht/retrieve/${key}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
