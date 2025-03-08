@@ -11,6 +11,14 @@ const nextConfig = {
         source: '/dht/:path*',
         destination: 'http://46.101.36.247:10001/dht/:path*',
       },
+      {
+        source: '/status',
+        destination: 'https://lastexitvpn.duckdns.org/status',
+      },
+      {
+        source: '/lastexitvpn/:path*',
+        destination: 'https://lastexitvpn.duckdns.org/:path*',
+      },
     ];
   },
 };
