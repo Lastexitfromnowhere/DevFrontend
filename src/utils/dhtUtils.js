@@ -1,6 +1,6 @@
 // utils/dhtUtils.js
 import axios from 'axios';
-import { API_BASE_URL } from '../config/env';
+import { config } from '../config/env';
 
 // Polyfill pour CustomEvent
 if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
@@ -15,7 +15,7 @@ if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
 }
 
 // URL de base pour les requêtes DHT
-const DHT_API_URL = `${API_BASE_URL}/dht`;
+const DHT_API_URL = `${config.API_BASE_URL}/dht`;
 
 // Variables locales pour le cache et l'état
 let cachedStatus = null;
@@ -173,7 +173,7 @@ export const retrieveDHTValue = async (key) => {
 // Fonction pour vérifier si le backend est accessible
 export const checkBackendConnection = async () => {
   try {
-    const response = await axios.get(`${API_BASE_URL}/status`, {
+    const response = await axios.get(`${config.API_BASE_URL}/status`, {
       timeout: 5000
     });
     return { success: true, status: response.status, data: response.data };

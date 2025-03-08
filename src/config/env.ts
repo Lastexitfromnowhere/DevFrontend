@@ -5,4 +5,7 @@ export const config = {
   CONNECT_TIMEOUT: 60000, // 60 secondes pour la connexion initiale
 };
 
+// Export individuel pour la rétrocompatibilité
+export const API_BASE_URL = config.API_BASE_URL;
+
 export default config;
