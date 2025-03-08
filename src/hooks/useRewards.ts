@@ -1,8 +1,7 @@
 // src/hooks/useRewards.ts
 import { useState, useCallback, useEffect } from 'react';
 import { useWalletContext } from '@/contexts/WalletContext';
-import axios from 'axios';
-import { config } from '@/config/env';
+import { apiService } from '@/services/apiService';
 import type { RewardStats, RewardClaim } from '@/types/rewards.types';
 
 export const useRewards = () => {
@@ -18,6 +17,16 @@ export const useRewards = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
+
+  // Écouter les changements d'état de connexion
+  useEffect(() => {
+    const unsubscribe = apiService.addOfflineListener((offline) => {
+      setIsOffline(offline);
+    });
+    
+    return () => unsubscribe();
+  }, []);
 
   // Fonction pour récupérer les récompenses disponibles
   const fetchRewards = useCallback(async () => {
@@ -30,13 +39,9 @@ export const useRewards = () => {
     setError(null);
 
     try {
-      const response = await axios.get(`${config.API_BASE_URL}/dailyClaims`, {
-        headers: {
-          'X-Wallet-Address': account
-        }
-      });
-
-      if (response.data.success) {
+      const response = await apiService.fetchRewards(account);
+      
+      if (response.status === 'success' && response.data) {
         const { 
           canClaimToday, 
           lastClaimDate, 
@@ -55,12 +60,16 @@ export const useRewards = () => {
           claimHistory: claimHistory || [],
           referralBonus: 0 // À implémenter plus tard
         });
+      } else if (response.status === 'offline') {
+        // En mode hors ligne, on garde les données existantes
+        console.warn('Impossible de récupérer les récompenses: mode hors ligne');
+        setError('Le serveur est temporairement indisponible. Certaines fonctionnalités peuvent être limitées.');
       } else {
-        throw new Error(response.data.message || 'Failed to fetch rewards');
+        throw new Error(response.error || 'Failed to fetch rewards');
       }
     } catch (err: any) {
       console.error('Error fetching rewards:', err);
-      setError(err.response?.data?.message || err.message || 'Error fetching rewards');
+      setError(err.message || 'Error fetching rewards');
     } finally {
       setIsLoading(false);
     }
@@ -70,18 +79,21 @@ export const useRewards = () => {
   const claimRewards = useCallback(async () => {
     if (!isConnected || !account) {
       setError('Wallet not connected');
-      return;
+      return { success: false, error: 'Wallet not connected' };
+    }
+
+    if (isOffline) {
+      setError('Cannot claim rewards while offline');
+      return { success: false, error: 'Cannot claim rewards while offline' };
     }
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await axios.post(`${config.API_BASE_URL}/dailyClaims/claim`, {
-        walletAddress: account
-      });
-
-      if (response.data.success) {
+      const response = await apiService.claimRewards(account);
+      
+      if (response.status === 'success' && response.data && response.data.success) {
         const { 
           claimedAmount, 
           nextClaimTime, 
@@ -113,24 +125,24 @@ export const useRewards = () => {
           amount: claimedAmount
         };
       } else {
-        throw new Error(response.data.message || 'Failed to claim rewards');
+        throw new Error(response.error || response.data?.message || 'Failed to claim rewards');
       }
     } catch (err: any) {
       console.error('Error claiming rewards:', err);
-      setError(err.response?.data?.message || err.message || 'Error claiming rewards');
+      setError(err.message || 'Error claiming rewards');
       return {
         success: false,
-        error: err.response?.data?.message || err.message || 'Error claiming rewards'
+        error: err.message || 'Error claiming rewards'
       };
     } finally {
       setIsLoading(false);
     }
-  }, [isConnected, account]);
+  }, [isConnected, account, isOffline]);
 
   // Fonction pour vérifier si l'utilisateur peut réclamer des récompenses
   const canClaim = useCallback(() => {
-    return stats.canClaimToday;
-  }, [stats.canClaimToday]);
+    return stats.canClaimToday && !isOffline;
+  }, [stats.canClaimToday, isOffline]);
 
   // Récupérer les récompenses au chargement et lorsque le portefeuille change
   useEffect(() => {
@@ -143,6 +155,7 @@ export const useRewards = () => {
     stats,
     isLoading,
     error,
+    isOffline,
     claimRewards,
     fetchRewards,
     canClaim

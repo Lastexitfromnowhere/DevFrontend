@@ -160,10 +160,14 @@ class AuthService {
     const token = await this.refreshTokenIfNeeded();
     const walletAddress = this.getWalletAddress();
     
-    const headers = {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
+    // Retourner un objet simple avec les en-têtes
+    const headers = {};
+    
+    headers['Content-Type'] = 'application/json';
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
     
     if (walletAddress) {
       headers['X-Wallet-Address'] = walletAddress;
