@@ -76,7 +76,7 @@ export function useDHT() {
         connections: data.stats.connections || 0,
         addresses: Array.isArray(data.stats.addresses) ? data.stats.addresses : [],
         isActive: Boolean(data.isActive),
-        peers: Array.isArray(data.stats.peers) ? data.stats.peers.map(peer => ({
+        peers: Array.isArray(data.stats.peers) ? data.stats.peers.map((peer: any) => ({
           id: peer?.id || '',
           direction: peer?.direction || 'N/A',
           latency: typeof peer?.latency === 'number' ? peer.latency : 0
