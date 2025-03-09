@@ -23,12 +23,13 @@ const dhtClient = axios.create({
 
 // Ajouter un intercepteur pour les requêtes DHT également
 dhtClient.interceptors.request.use(async (config) => {
-  const token = getToken();
-  if (token) {
-    config.headers = {
-      ...config.headers,
-      'Authorization': `Bearer ${token}`
-    };
+  if (!config.headers.Authorization) {
+    const authHeader = getAuthHeader();
+    Object.entries(authHeader).forEach(([key, value]) => {
+      if (config.headers && value !== undefined) {
+        config.headers[key] = value;
+      }
+    });
   }
   return config;
 });
@@ -306,11 +307,9 @@ class ApiService {
    */
   public async checkDHTStatus(): Promise<ApiResponse> {
     try {
-      const token = getToken();
       const response = await dhtClient.get('/status', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          ...getAuthHeader()
         }
       });
       return {
@@ -336,11 +335,9 @@ class ApiService {
    */
   public async fetchDHTNodes(): Promise<ApiResponse> {
     try {
-      const token = getToken();
       const response = await dhtClient.get('/nodes', {
         headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          ...getAuthHeader()
         }
       });
       return {
@@ -366,10 +363,9 @@ class ApiService {
    */
   public async startDHT(): Promise<ApiResponse> {
     try {
-      const token = getToken();
       const response = await dhtClient.post('/start', {}, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          ...getAuthHeader(),
           'Content-Type': 'application/json'
         }
       });
@@ -396,10 +392,9 @@ class ApiService {
    */
   public async stopDHT(): Promise<ApiResponse> {
     try {
-      const token = getToken();
       const response = await dhtClient.post('/stop', {}, {
         headers: {
-          'Authorization': `Bearer ${token}`,
+          ...getAuthHeader(),
           'Content-Type': 'application/json'
         }
       });
