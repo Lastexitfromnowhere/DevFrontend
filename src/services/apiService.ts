@@ -21,6 +21,24 @@ const dhtClient = axios.create({
   },
 });
 
+// Ajouter un intercepteur pour les requêtes DHT également
+dhtClient.interceptors.request.use(async (config) => {
+  if (!config.headers.Authorization) {
+    try {
+      const headers = await authService.getAuthHeaders();
+      // Utiliser la méthode correcte pour définir les en-têtes
+      Object.entries(headers).forEach(([key, value]) => {
+        if (config.headers && value !== undefined) {
+          config.headers[key] = value;
+        }
+      });
+    } catch (error) {
+      console.warn('Erreur lors de la récupération des headers d\'authentification pour DHT:', error);
+    }
+  }
+  return config;
+});
+
 // Interface pour les options de requête
 interface RequestOptions extends AxiosRequestConfig {
   retry?: boolean;
