@@ -176,9 +176,9 @@ export default function DHTStatus() {
                       <div className="bg-gray-50 p-2 rounded-md text-xs overflow-auto max-h-[150px]">
                         {status.stats.peers.map((peer: any, index: number) => (
                           <div key={index} className="mb-2 break-all">
-                            <div><strong>ID:</strong> {peer.id.substring(0, 20)}...</div>
-                            <div><strong>Direction:</strong> {peer.direction}</div>
-                            <div><strong>Latence:</strong> {peer.latency}ms</div>
+                            <div><strong>ID:</strong> {peer?.id ? `${peer.id.substring(0, 20)}...` : 'ID non disponible'}</div>
+                            <div><strong>Direction:</strong> {peer?.direction || 'N/A'}</div>
+                            <div><strong>Latence:</strong> {peer?.latency !== undefined ? `${peer.latency}ms` : 'N/A'}</div>
                           </div>
                         ))}
                       </div>
