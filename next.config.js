@@ -11,6 +11,11 @@ const nextConfig = {
       {
         source: '/dht/:path*',
         destination: 'https://lastexitvpn.duckdns.org/dht/:path*',
+      },
+      // Redirection spécifique pour l'endpoint /status
+      {
+        source: '/status',
+        destination: 'https://lastexitvpn.duckdns.org/dht/status',
       }
     ];
   },
