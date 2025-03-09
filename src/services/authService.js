@@ -167,3 +167,17 @@ export const isTokenExpired = () => {
     return true;
   }
 };
+
+// Créer et exporter un objet authService pour la compatibilité
+export const authService = {
+  register,
+  login,
+  connectWithWallet,
+  logout,
+  isAuthenticated,
+  getToken,
+  getUserInfo,
+  getUserProfile,
+  getAuthHeader,
+  isTokenExpired
+};
