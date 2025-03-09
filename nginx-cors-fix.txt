@@ -36,7 +36,7 @@ server {
 
     # Configuration pour l'API backend
     location /api {
-        proxy_pass http://localhost:10000;
+        proxy_pass http://127.0.0.1:10000;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -55,7 +55,7 @@ server {
 
     # Configuration pour le service DHT
     location /dht {
-        proxy_pass http://localhost:10001/dht;
+        proxy_pass http://127.0.0.1:10001/dht;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
