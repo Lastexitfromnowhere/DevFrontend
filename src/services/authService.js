@@ -152,6 +152,12 @@ export const getAuthHeader = () => {
   return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
+// Fonction pour configurer les en-têtes d'authentification pour les requêtes API (version plurielle)
+export const getAuthHeaders = () => {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
 // Fonction pour vérifier si le token est expiré
 export const isTokenExpired = () => {
   const token = getToken();
@@ -235,6 +241,7 @@ export const authService = {
   getUserInfo,
   getUserProfile,
   getAuthHeader,
+  getAuthHeaders,
   isTokenExpired,
   getWalletAddress,
   generateToken,
