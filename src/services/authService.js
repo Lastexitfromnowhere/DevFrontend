@@ -230,6 +230,57 @@ export const refreshTokenIfNeeded = async () => {
   return true;
 };
 
+// Fonction pour vérifier si le token JWT correspond à l'adresse du wallet
+export const verifyTokenWalletMatch = () => {
+  try {
+    // Récupérer l'adresse du wallet actuel
+    const currentWallet = localStorage.getItem(WALLET_ADDRESS_KEY);
+    const walletAddressFromLocalStorage = localStorage.getItem('walletAddress');
+    
+    // Récupérer le token JWT
+    const token = getToken();
+    
+    if (!token) {
+      console.log('Aucun token trouvé');
+      return false;
+    }
+    
+    // Décoder le token JWT (partie payload)
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+    
+    // Vérifier si l'adresse du wallet dans le token correspond à l'adresse actuelle
+    console.log('Adresse du wallet dans localStorage (wallet_address):', currentWallet);
+    console.log('Adresse du wallet dans localStorage (walletAddress):', walletAddressFromLocalStorage);
+    console.log('Adresse du wallet dans le token JWT:', payload.walletAddress);
+    console.log('Les adresses correspondent (wallet_address):', currentWallet === payload.walletAddress);
+    console.log('Les adresses correspondent (walletAddress):', walletAddressFromLocalStorage === payload.walletAddress);
+    
+    // Vérifier avec les deux clés possibles
+    return currentWallet === payload.walletAddress || walletAddressFromLocalStorage === payload.walletAddress;
+  } catch (error) {
+    console.error('Erreur lors de la vérification du token:', error);
+    return false;
+  }
+};
+
+// Fonction pour synchroniser toutes les références à l'adresse du wallet
+export const synchronizeWalletAddress = (newWalletAddress) => {
+  // Mettre à jour les clés principales
+  localStorage.setItem(WALLET_ADDRESS_KEY, newWalletAddress);
+  localStorage.setItem('walletAddress', newWalletAddress);
+  
+  // Mettre à jour l'adresse dans vpnNodeStatus
+  try {
+    const vpnNodeStatus = JSON.parse(localStorage.getItem('vpnNodeStatus') || '{}');
+    vpnNodeStatus.walletAddress = newWalletAddress;
+    localStorage.setItem('vpnNodeStatus', JSON.stringify(vpnNodeStatus));
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour du statut du nœud VPN:', error);
+  }
+};
+
 // Créer et exporter un objet authService pour la compatibilité
 export const authService = {
   register,
@@ -246,5 +297,7 @@ export const authService = {
   getWalletAddress,
   generateToken,
   saveToken,
-  refreshTokenIfNeeded
+  refreshTokenIfNeeded,
+  verifyTokenWalletMatch,
+  synchronizeWalletAddress
 };
