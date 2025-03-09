@@ -179,7 +179,19 @@ export function useDHT() {
         throw new Error(data.error);
       }
       
-      setWireGuardNodes(data.nodes || []);
+      // Validation des données reçues
+      const sanitizedNodes = Array.isArray(data.nodes) 
+        ? data.nodes.map((node: any) => ({
+            id: node?.id || '',
+            walletAddress: node?.walletAddress || '',
+            publicKey: node?.publicKey || '',
+            ip: node?.ip || '',
+            port: typeof node?.port === 'number' ? node.port : 0,
+            lastSeen: node?.lastSeen || new Date().toISOString()
+          }))
+        : [];
+      
+      setWireGuardNodes(sanitizedNodes);
     } catch (err) {
       console.error('Erreur:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
