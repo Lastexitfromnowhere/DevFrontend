@@ -1,8 +1,8 @@
 // src/services/authService.js
-import { getApiUrl } from '../config/env';
+import { API_BASE_URL } from '../config/env';
 import axios from 'axios';
 
-const API_URL = getApiUrl();
+const API_URL = API_BASE_URL;
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user_info';
 const WALLET_ADDRESS_KEY = 'wallet_address';
