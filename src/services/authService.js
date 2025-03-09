@@ -1,182 +1,169 @@
-// services/authService.js
+// src/services/authService.js
+import { getApiUrl } from '../config/env';
 import axios from 'axios';
-import { config } from '../config/env';
 
-// URL de base pour les requêtes d'authentification
-const AUTH_API_BASE = config.API_BASE_URL;
+const API_URL = getApiUrl();
+const TOKEN_KEY = 'auth_token';
+const USER_KEY = 'user_info';
 
-// Durée de validité du token en secondes (1 heure par défaut)
-const TOKEN_EXPIRY = 3600;
-
-// Fonction pour encoder un token JWT simple côté client
-// Note: Ceci est une implémentation simplifiée pour le développement
-// En production, les tokens devraient être générés côté serveur
-const encodeJWT = (payload, secret = 'votre_secret_jwt_super_securise') => {
-  // Créer l'en-tête (header)
-  const header = {
-    alg: 'HS256',
-    typ: 'JWT'
-  };
-
-  // Encoder l'en-tête et le payload en base64
-  const encodedHeader = btoa(JSON.stringify(header));
-  const encodedPayload = btoa(JSON.stringify(payload));
-
-  // Créer la signature (en production, cela utiliserait une vraie fonction de hachage HMAC)
-  // Ici, nous créons une signature fictive basée sur le payload pour simuler un token unique
-  const signature = btoa(
-    Array.from(payload.walletAddress)
-      .map(char => char.charCodeAt(0))
-      .reduce((acc, val) => acc + val, 0)
-      .toString(16)
-  );
-
-  // Assembler le token JWT
-  return `${encodedHeader}.${encodedPayload}.${signature}`;
+// Fonction pour enregistrer un nouvel utilisateur
+export const register = async (username, email, password) => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/register`, {
+      username,
+      email,
+      password
+    });
+    
+    return {
+      success: true,
+      message: response.data.message
+    };
+  } catch (error) {
+    console.error('Erreur d\'enregistrement:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Erreur lors de l\'enregistrement'
+    };
+  }
 };
 
-/**
- * Service d'authentification pour gérer les tokens JWT
- */
-class AuthService {
-  /**
-   * Génère un token JWT à partir de l'adresse du wallet
-   * @param {string} walletAddress - Adresse du wallet de l'utilisateur
-   * @returns {Promise<{token: string, expiresAt: number}>} - Token JWT et date d'expiration
-   */
-  async generateToken(walletAddress) {
-    try {
-      // En production, cette requête serait envoyée au backend
-      // const response = await axios.post(`${AUTH_API_BASE}/auth/token`, { walletAddress });
-      // return response.data;
+// Fonction pour connecter un utilisateur avec username/password
+export const login = async (username, password) => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/login`, {
+      username,
+      password
+    });
+    
+    if (response.data.success && response.data.token) {
+      // Stocker le token et les infos utilisateur
+      localStorage.setItem(TOKEN_KEY, response.data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify(response.data.user));
       
-      // Pour le développement, on génère un token basé sur l'adresse du wallet
-      const now = Math.floor(Date.now() / 1000);
-      const expiresAt = now + TOKEN_EXPIRY;
-      
-      // Créer le payload du token
-      const payload = {
-        walletAddress,
-        role: 'user',
-        iat: now,
-        exp: expiresAt
+      return {
+        success: true,
+        user: response.data.user
       };
-      
-      // Générer un token unique basé sur l'adresse du wallet
-      const token = encodeJWT(payload);
-      
-      console.log(`Token généré pour ${walletAddress}`);
-      
-      return { token, expiresAt };
-    } catch (error) {
-      console.error('Erreur lors de la génération du token:', error);
-      throw new Error('Impossible de générer un token d\'authentification');
     }
-  }
-
-  /**
-   * Stocke le token dans le localStorage
-   * @param {string} token - Token JWT
-   * @param {number} expiresAt - Date d'expiration du token (timestamp Unix)
-   * @param {string} walletAddress - Adresse du wallet de l'utilisateur
-   */
-  saveToken(token, expiresAt, walletAddress) {
-    localStorage.setItem('auth_token', token);
-    localStorage.setItem('token_expires_at', expiresAt.toString());
-    localStorage.setItem('walletAddress', walletAddress);
-    console.log(`Token sauvegardé pour ${walletAddress}`);
-  }
-
-  /**
-   * Récupère le token depuis le localStorage
-   * @returns {string|null} - Token JWT ou null si non trouvé
-   */
-  getToken() {
-    return localStorage.getItem('auth_token');
-  }
-
-  /**
-   * Vérifie si le token est expiré
-   * @returns {boolean} - true si le token est expiré ou non trouvé
-   */
-  isTokenExpired() {
-    const expiresAt = localStorage.getItem('token_expires_at');
-    if (!expiresAt) return true;
     
-    const now = Math.floor(Date.now() / 1000);
-    return now >= parseInt(expiresAt);
+    return {
+      success: false,
+      message: 'Authentification échouée'
+    };
+  } catch (error) {
+    console.error('Erreur de connexion:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Erreur lors de la connexion'
+    };
   }
+};
 
-  /**
-   * Récupère l'adresse du wallet depuis le localStorage
-   * @returns {string|null} - Adresse du wallet ou null si non trouvée
-   */
-  getWalletAddress() {
-    return localStorage.getItem('walletAddress');
+// Fonction pour connecter avec une adresse de wallet (conserver pour compatibilité)
+export const connectWithWallet = async (walletAddress) => {
+  try {
+    const response = await axios.post(`${API_URL}/auth/token`, {
+      walletAddress
+    });
+    
+    if (response.data.success && response.data.token) {
+      localStorage.setItem(TOKEN_KEY, response.data.token);
+      localStorage.setItem(USER_KEY, JSON.stringify({ walletAddress }));
+      
+      return {
+        success: true,
+        walletAddress
+      };
+    }
+    
+    return {
+      success: false,
+      message: 'Authentification échouée'
+    };
+  } catch (error) {
+    console.error('Erreur de connexion avec wallet:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Erreur lors de la connexion avec wallet'
+    };
   }
+};
 
-  /**
-   * Vérifie si l'utilisateur est authentifié
-   * @returns {boolean} - true si l'utilisateur est authentifié
-   */
-  isAuthenticated() {
-    const token = this.getToken();
-    return !!token && !this.isTokenExpired();
-  }
+// Fonction pour déconnecter l'utilisateur
+export const logout = () => {
+  localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(USER_KEY);
+};
 
-  /**
-   * Déconnecte l'utilisateur en supprimant le token
-   */
-  logout() {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('token_expires_at');
-    // On garde l'adresse du wallet pour faciliter la reconnexion
-  }
+// Fonction pour vérifier si l'utilisateur est connecté
+export const isAuthenticated = () => {
+  return localStorage.getItem(TOKEN_KEY) !== null;
+};
 
-  /**
-   * Rafraîchit le token s'il est expiré
-   * @returns {Promise<string>} - Token JWT rafraîchi
-   */
-  async refreshTokenIfNeeded() {
-    if (this.isTokenExpired()) {
-      const walletAddress = this.getWalletAddress();
-      if (!walletAddress) {
-        throw new Error('Adresse de wallet non trouvée');
+// Fonction pour obtenir le token JWT
+export const getToken = () => {
+  return localStorage.getItem(TOKEN_KEY);
+};
+
+// Fonction pour obtenir les informations de l'utilisateur
+export const getUserInfo = () => {
+  const userInfo = localStorage.getItem(USER_KEY);
+  return userInfo ? JSON.parse(userInfo) : null;
+};
+
+// Fonction pour obtenir le profil utilisateur depuis l'API
+export const getUserProfile = async () => {
+  try {
+    const token = getToken();
+    if (!token) {
+      return {
+        success: false,
+        message: 'Non authentifié'
+      };
+    }
+    
+    const response = await axios.get(`${API_URL}/auth/profile`, {
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-      
-      const { token, expiresAt } = await this.generateToken(walletAddress);
-      this.saveToken(token, expiresAt, walletAddress);
-      return token;
-    }
+    });
     
-    return this.getToken();
+    return {
+      success: true,
+      user: response.data.user
+    };
+  } catch (error) {
+    console.error('Erreur de récupération du profil:', error);
+    return {
+      success: false,
+      message: error.response?.data?.message || 'Erreur lors de la récupération du profil'
+    };
   }
+};
 
-  /**
-   * Récupère les en-têtes d'authentification pour les requêtes API
-   * @returns {Object} - En-têtes d'authentification
-   */
-  async getAuthHeaders() {
-    const token = await this.refreshTokenIfNeeded();
-    const walletAddress = this.getWalletAddress();
+// Fonction pour configurer les en-têtes d'authentification pour les requêtes API
+export const getAuthHeader = () => {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// Fonction pour vérifier si le token est expiré
+export const isTokenExpired = () => {
+  const token = getToken();
+  if (!token) return true;
+  
+  try {
+    // Décoder le token JWT (partie payload)
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
     
-    // Retourner un objet simple avec les en-têtes
-    const headers = {};
-    
-    headers['Content-Type'] = 'application/json';
-    
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    if (walletAddress) {
-      headers['X-Wallet-Address'] = walletAddress;
-    }
-    
-    return headers;
+    // Vérifier l'expiration
+    const currentTime = Math.floor(Date.now() / 1000);
+    return payload.exp < currentTime;
+  } catch (error) {
+    console.error('Erreur lors de la vérification du token:', error);
+    return true;
   }
-}
-
-// Exporter une instance unique du service
-export const authService = new AuthService();
-export default authService;
+};
