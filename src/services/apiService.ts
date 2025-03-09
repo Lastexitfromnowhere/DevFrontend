@@ -1,7 +1,7 @@
 // src/services/apiService.ts
 import axios, { AxiosRequestConfig, AxiosResponse, AxiosError, AxiosHeaders } from 'axios';
 import { config } from '@/config/env';
-import { authService } from './authService';
+import { getAuthHeader, isAuthenticated, getToken } from './authService';
 
 // Configuration de base pour axios
 const apiClient = axios.create({
@@ -24,17 +24,12 @@ const dhtClient = axios.create({
 // Ajouter un intercepteur pour les requêtes DHT également
 dhtClient.interceptors.request.use(async (config) => {
   if (!config.headers.Authorization) {
-    try {
-      const headers = await authService.getAuthHeaders();
-      // Utiliser la méthode correcte pour définir les en-têtes
-      Object.entries(headers).forEach(([key, value]) => {
-        if (config.headers && value !== undefined) {
-          config.headers[key] = value;
-        }
-      });
-    } catch (error) {
-      console.warn('Erreur lors de la récupération des headers d\'authentification pour DHT:', error);
-    }
+    const authHeader = getAuthHeader();
+    Object.entries(authHeader).forEach(([key, value]) => {
+      if (config.headers && value !== undefined) {
+        config.headers[key] = value;
+      }
+    });
   }
   return config;
 });
@@ -67,17 +62,12 @@ class ApiService {
     // Intercepteur pour ajouter les headers d'authentification
     apiClient.interceptors.request.use(async (config) => {
       if (!config.headers.Authorization) {
-        try {
-          const headers = await authService.getAuthHeaders();
-          // Utiliser la méthode correcte pour définir les en-têtes
-          Object.entries(headers).forEach(([key, value]) => {
-            if (config.headers && value !== undefined) {
-              config.headers[key] = value;
-            }
-          });
-        } catch (error) {
-          console.warn('Erreur lors de la récupération des headers d\'authentification:', error);
-        }
+        const authHeader = getAuthHeader();
+        Object.entries(authHeader).forEach(([key, value]) => {
+          if (config.headers && value !== undefined) {
+            config.headers[key] = value;
+          }
+        });
       }
       return config;
     });
@@ -257,6 +247,7 @@ class ApiService {
   public async fetchRewards(walletAddress: string): Promise<ApiResponse> {
     return this.get('/dailyClaims', null, {
       headers: {
+        ...getAuthHeader(),
         'X-Wallet-Address': walletAddress
       },
       fallbackData: {
@@ -275,7 +266,11 @@ class ApiService {
    * Réclame les récompenses quotidiennes
    */
   public async claimRewards(walletAddress: string): Promise<ApiResponse> {
-    return this.post('/dailyClaims/claim', { walletAddress });
+    return this.post('/dailyClaims/claim', { walletAddress }, {
+      headers: {
+        ...getAuthHeader()
+      }
+    });
   }
 
   /**
@@ -312,7 +307,11 @@ class ApiService {
    */
   public async checkDHTStatus(): Promise<ApiResponse> {
     try {
-      const response = await dhtClient.get('/status');
+      const response = await dhtClient.get('/status', {
+        headers: {
+          ...getAuthHeader()
+        }
+      });
       return {
         data: response.data,
         error: null,
@@ -336,7 +335,11 @@ class ApiService {
    */
   public async fetchDHTNodes(): Promise<ApiResponse> {
     try {
-      const response = await dhtClient.get('/nodes');
+      const response = await dhtClient.get('/nodes', {
+        headers: {
+          ...getAuthHeader()
+        }
+      });
       return {
         data: response.data,
         error: null,
@@ -348,6 +351,64 @@ class ApiService {
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       return {
         data: { nodes: [] },
+        error: errorMessage,
+        status: 'error',
+        isOffline: this.isOffline
+      };
+    }
+  }
+
+  /**
+   * Démarre le nœud DHT
+   */
+  public async startDHT(): Promise<ApiResponse> {
+    try {
+      const response = await dhtClient.post('/start', {}, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json'
+        }
+      });
+      return {
+        data: response.data,
+        error: null,
+        status: 'success',
+        isOffline: false
+      };
+    } catch (error) {
+      console.error('Erreur lors du démarrage du DHT:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      return {
+        data: null,
+        error: errorMessage,
+        status: 'error',
+        isOffline: this.isOffline
+      };
+    }
+  }
+
+  /**
+   * Arrête le nœud DHT
+   */
+  public async stopDHT(): Promise<ApiResponse> {
+    try {
+      const response = await dhtClient.post('/stop', {}, {
+        headers: {
+          ...getAuthHeader(),
+          'Content-Type': 'application/json'
+        }
+      });
+      return {
+        data: response.data,
+        error: null,
+        status: 'success',
+        isOffline: false
+      };
+    } catch (error) {
+      console.error('Erreur lors de l\'arrêt du DHT:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
+      return {
+        data: null,
         error: errorMessage,
         status: 'error',
         isOffline: this.isOffline
