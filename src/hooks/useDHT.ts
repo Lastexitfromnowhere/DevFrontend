@@ -70,10 +70,23 @@ export function useDHT() {
         throw new Error(data.error);
       }
       
+      // Validation des données reçues
+      const sanitizedStats = data.stats ? {
+        nodeId: data.nodeId || '',
+        connections: data.stats.connections || 0,
+        addresses: Array.isArray(data.stats.addresses) ? data.stats.addresses : [],
+        isActive: Boolean(data.isActive),
+        peers: Array.isArray(data.stats.peers) ? data.stats.peers.map(peer => ({
+          id: peer?.id || '',
+          direction: peer?.direction || 'N/A',
+          latency: typeof peer?.latency === 'number' ? peer.latency : 0
+        })) : []
+      } : undefined;
+      
       setStatus({
-        isActive: data.isActive,
-        nodeId: data.nodeId,
-        stats: data.stats
+        isActive: Boolean(data.isActive),
+        nodeId: data.nodeId || '',
+        stats: sanitizedStats
       });
     } catch (err) {
       console.error('Erreur:', err);
