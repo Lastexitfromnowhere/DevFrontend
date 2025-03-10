@@ -42,6 +42,11 @@ export default function RSSFeed() {
     <Card className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
+          <img 
+    src="/vps.gif" 
+    alt="VPS Animation" 
+    className="max-w-full h-auto mb-4"
+  />
           <NewspaperIcon className="text-gray-400" size={20} />
           <h3 className="font-bold text-gray-300">Latest Updates</h3>
         </div>
