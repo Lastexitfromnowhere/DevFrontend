@@ -45,8 +45,8 @@ export default function SiteGoals() {
     <div className="space-y-6">
       <Card>
         <div className="flex items-center space-x-2 mb-6">
-          <Target className="text-green-400" size={24} />
-          <h2 className="text-xl font-bold text-green-300">Project Roadmap</h2>
+          <Target className="text-orange-400" size={24} />
+          <h2 className="text-xl font-bold text-orange-300">Project Roadmap</h2>
         </div>
 
         <div className="space-y-8">
@@ -55,14 +55,14 @@ export default function SiteGoals() {
             return (
               <div key={index} className="space-y-2">
                 <div className="flex items-start space-x-3">
-                  <Icon className="text-green-400 mt-1" size={20} />
+                  <Icon className="text-orange-400 mt-1" size={20} />
                   <div className="flex-1">
-                    <h3 className="font-bold text-green-300">{milestone.title}</h3>
-                    <p className="text-sm text-green-400 mb-2">{milestone.description}</p>
+                    <h3 className="font-bold text-orange-300">{milestone.title}</h3>
+                    <p className="text-sm text-orange-400 mb-2">{milestone.description}</p>
                     <ProgressBar progress={milestone.progress} />
                     <div className="flex justify-between text-sm mt-1">
-                      <span className="text-green-500">Progress: {milestone.current}</span>
-                      <span className="text-green-400">Goal: {milestone.total}</span>
+                      <span className="text-orange-500">Progress: {milestone.current}</span>
+                      <span className="text-orange-400">Goal: {milestone.total}</span>
                     </div>
                   </div>
                 </div>
