@@ -45,7 +45,7 @@ export default function RSSFeed() {
           <img 
   src="/vps.gif" 
   alt="VPS Animation" 
-  className="block mx-auto max-w-full h-auto mb-4"
+  className="block mx-auto max-w-full h-auto mb-4 opacity-60"
 />
           <NewspaperIcon className="text-gray-400" size={20} />
           <h3 className="font-bold text-gray-300">Latest Updates</h3>
