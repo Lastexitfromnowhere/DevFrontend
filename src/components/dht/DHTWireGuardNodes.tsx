@@ -134,7 +134,7 @@ export default function DHTWireGuardNodes() {
 
         <div className="mb-4">
           <TerminalButton
-            variant="primary"
+            variant="poopy"
             icon={publishingNode ? <Loader2 className="h-4 w-4 animate-spin" /> : <Network className="h-4 w-4" />}
             onClick={handlePublishNode}
             disabled={publishingNode}
