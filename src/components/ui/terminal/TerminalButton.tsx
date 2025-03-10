@@ -1,6 +1,6 @@
 // src/components/ui/terminal/TerminalButton.tsx
 interface TerminalButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-    variant?: 'primary' | 'secondary' | 'danger';
+    variant?: 'primary' | 'secondary' | 'danger' | 'poopy';
     icon?: React.ReactNode;
     loading?: boolean;
   }
