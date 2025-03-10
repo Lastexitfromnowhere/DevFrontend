@@ -45,8 +45,8 @@ export default function SiteGoals() {
     <div className="space-y-6">
       <Card>
         <div className="flex items-center space-x-2 mb-6">
-          <Target className="text-orange-400" size={24} />
-          <h2 className="text-xl font-bold text-orange-300">Project Roadmap</h2>
+          <Target className="text-gray-400" size={24} />
+          <h2 className="text-xl font-bold text-gray-300">Project Roadmap</h2>
         </div>
 
         <div className="space-y-8">
@@ -55,14 +55,14 @@ export default function SiteGoals() {
             return (
               <div key={index} className="space-y-2">
                 <div className="flex items-start space-x-3">
-                  <Icon className="text-orange-400 mt-1" size={20} />
+                  <Icon className="text-gray-400 mt-1" size={20} />
                   <div className="flex-1">
-                    <h3 className="font-bold text-orange-300">{milestone.title}</h3>
-                    <p className="text-sm text-orange-400 mb-2">{milestone.description}</p>
+                    <h3 className="font-bold text-gray-300">{milestone.title}</h3>
+                    <p className="text-sm text-gray-400 mb-2">{milestone.description}</p>
                     <ProgressBar progress={milestone.progress} />
                     <div className="flex justify-between text-sm mt-1">
-                      <span className="text-orange-500">Progress: {milestone.current}</span>
-                      <span className="text-orange-400">Goal: {milestone.total}</span>
+                      <span className="text-gray-500">Progress: {milestone.current}</span>
+                      <span className="text-gray-400">Goal: {milestone.total}</span>
                     </div>
                   </div>
                 </div>
@@ -74,15 +74,15 @@ export default function SiteGoals() {
 
       <Card>
         <div className="flex items-center space-x-2 mb-6">
-          <Award className="text-green-400" size={24} />
-          <h2 className="text-xl font-bold text-green-300">Community Milestones</h2>
+          <Award className="text-gray-400" size={24} />
+          <h2 className="text-xl font-bold text-gray-300">Community Milestones</h2>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {communityStats.map((stat, index) => (
             <div key={index} className="text-center p-4 bg-black/20 rounded">
-              <p className="text-2xl font-bold text-green-300">{stat.value}</p>
-              <p className="text-sm text-green-500">{stat.label}</p>
+              <p className="text-2xl font-bold text-gray-300">{stat.value}</p>
+              <p className="text-sm text-purple-500">{stat.label}</p>
             </div>
           ))}
         </div>
