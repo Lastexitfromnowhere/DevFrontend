@@ -19,6 +19,7 @@ import RSSFeed from '@/components/RSSFeed';
 import DHTStatus from '@/components/dht/DHTStatus';
 import DHTNodes from '@/components/dht/DHTNodes';
 import DHTWireGuardNodes from '@/components/dht/DHTWireGuardNodes';
+import RewardsMechanism from '@/components/ecosystem/RewardsMechanism';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
@@ -53,6 +54,11 @@ export default function Dashboard() {
               <div>
                 <VPNRewards earnings={0} />
               </div>
+              <div>
+                <RewardsMechanism />
+              </div>
+
+              
             </div>
             
             {/* Section DHT */}
