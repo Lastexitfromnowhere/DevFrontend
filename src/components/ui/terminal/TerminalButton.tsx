@@ -15,9 +15,9 @@ interface TerminalButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
     ...props 
   }: TerminalButtonProps) {
     const variantStyles = {
-      primary: "bg-green-600 hover:bg-green-700 text-black",
-      secondary: "bg-blue-600 hover:bg-blue-700 text-white",
-      danger: "bg-red-600 hover:bg-red-700 text-white"
+      primary: "bg-[#5e8f3a] hover:bg-[#6fa44b] text-white",
+      secondary: "bg-[#333230] hover:bg-[#444340] text-white",
+      danger: "bg-[#8a4d12] hover:bg-[#9b5e23] text-white"
     };
   
     const isDisabled = disabled || loading;
