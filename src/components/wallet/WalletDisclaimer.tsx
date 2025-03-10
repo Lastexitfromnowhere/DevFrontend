@@ -18,28 +18,28 @@ export default function WalletDisclaimer({ onDismiss }: WalletDisclaimerProps) {
     >
       <div className="space-y-6">
         <div className="text-center">
-          <Shield className="mx-auto mb-4 text-green-400 w-12 h-12" />
-          <h2 className="text-xl font-bold text-green-200">
+          <Shield className="mx-auto mb-4 text-purple-400 w-12 h-12" />
+          <h2 className="text-xl font-bold text-purple-200">
             {`// Security Warning`}
           </h2>
         </div>
 
-        <div className="bg-gray-950 border border-green-800 rounded p-4 space-y-3">
+        <div className="bg-gray-950 border border-purple-800 rounded p-4 space-y-3">
           <div className="flex items-start space-x-3">
-            <p className="text-sm text-green-300">
+            <p className="text-sm text-purple-300">
               # Create a dedicated wallet for this platform
             </p>
           </div>
           <div className="flex items-start space-x-3">
-            <p className="text-sm text-green-300">
+            <p className="text-sm text-purple-300">
               # Keep experimental interactions isolated
             </p>
           </div>
         </div>
 
         <WalletMultiButton 
-          className="w-full bg-green-600 text-white py-2 rounded 
-                     hover:bg-green-700 transition-colors flex 
+          className="w-full bg-gray-600 text-purple py-2 rounded 
+                     hover:bg-gray-700 transition-colors flex 
                      items-center justify-center"
         >
           <Terminal className="w-4 h-4 mr-2" />
