@@ -42,12 +42,12 @@ export default function RSSFeed() {
     <Card className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <NewspaperIcon className="text-green-400" size={20} />
-          <h3 className="font-bold text-green-300">Latest Updates</h3>
+          <NewspaperIcon className="text-gray-400" size={20} />
+          <h3 className="font-bold text-gray-300">Latest Updates</h3>
         </div>
         <a 
           href="#" 
-          className="text-sm text-green-400 hover:text-green-300 flex items-center"
+          className="text-sm text-gray-400 hover:text-gray-300 flex items-center"
         >
           View All <ArrowRight size={16} className="ml-1" />
         </a>
@@ -60,15 +60,15 @@ export default function RSSFeed() {
             href={item.link}
             className="block p-3 rounded bg-black/20 hover:bg-black/30 
                      transition-colors border border-transparent
-                     hover:border-green-800"
+                     hover:border-gray-800"
           >
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-green-300 flex items-center">
+                <p className="text-sm font-medium text-gray-300 flex items-center">
                   {item.title}
-                  <ExternalLink size={12} className="ml-1 text-green-500" />
+                  <ExternalLink size={12} className="ml-1 text-gray-500" />
                 </p>
-                <div className="flex items-center space-x-2 text-xs text-green-500">
+                <div className="flex items-center space-x-2 text-xs text-gray-500">
                   <span>{item.source}</span>
                   <span>•</span>
                   <span>{new Date(item.date).toLocaleDateString()}</span>
@@ -79,7 +79,7 @@ export default function RSSFeed() {
         ))}
       </div>
 
-      <div className="text-center text-xs text-green-500 pt-2 border-t border-green-800/30">
+      <div className="text-center text-xs text-gray-400 pt-2 border-t border-gray-800/30">
         {`// Real-time updates from the Brand Exit ecosystem`}
       </div>
     </Card>
