@@ -12,7 +12,7 @@ const projects: Project[] = [
     name: 'GetGrass',
     category: 'AI Agent',
     description: 'Join the GetGrass testnet and earn GRASS tokens through active participation',
-    logo: 'https://imgs.search.brave.com/_kptpb7uL83AygKe2p70jJseNoeCk54OVNAOYnQHStU/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/Yml0Z2V0aW1nLmNv/bS9tdWx0aUxhbmcv/d2ViLzM4YTdhNWQy/YzYyMmY2YTMwZDQ4/NWI1MGQ0ZmUxMDRj/LnBuZw',
+    logo: '/grass.jpg',
     link: 'https://app.getgrass.io/register/?referralCode=6YkiJ8oFRgT4s9O',
     rewards: 'Early Access + GRASS Tokens'
   },
@@ -21,7 +21,7 @@ const projects: Project[] = [
     name: 'Humanity Protocol',
     category: 'Identity',
     description: 'Building decentralized identity verification with HEART token rewards',
-    logo: 'https://imgs.search.brave.com/uov8tQrcQIt0PKg04KQoOptHOdno_Z-EdN867kHUPYM/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly9zdGF0aWMud2l4c3RhdGljLmNvbS9tZWRpYS8wZGU0YWZfZDhmZThjYmNhZmJlNGRlYzlmNDg0MGUwODg2Njg5NGJ0bXYyLnBuZy92MS9maWxsL3dfNjAwLGhfMzM4LGFsX2MscV84NSx1c20_MC42Nl8xLjAwXzAuMDEsZW5jX2F2aWYscXVhbGl0eV9hdXRvL0h1bWFuaXR5JTIwcHJvdG9jb2wucG5n',
+    logo: '/human.jpg',
     link: 'https://testnet.humanity.org/login?ref=undacore',
     rewards: 'HEART Testnet Tokens'
   },
