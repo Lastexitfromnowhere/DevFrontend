@@ -188,7 +188,7 @@ export default function DailyClaims() {
       {/* En-tête avec titre */}
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          <h3 className="text-lg font-semibold">Daily Rewards</h3>
+          <h3 className="text-gray-800-lg font-semibold">Daily Rewards</h3>
           <Award className="w-5 h-5 text-yellow-500" />
         </div>
         <TerminalButton
@@ -214,7 +214,7 @@ export default function DailyClaims() {
       <div className="bg-gray-900/30 border border-gray-700 rounded p-4">
         <div className="flex justify-between items-center">
           <div>
-            <h4 className="text-orange-400 font-semibold mb-1">Available Rewards</h4>
+            <h4 className="text-orange-800 font-semibold mb-1">Available Rewards</h4>
             <div className="text-2xl font-bold text-white">
               {isLoading ? <Spinner size="sm" /> : `${rewards.availableRewards.toFixed(3)} RWRD`}
             </div>
