@@ -103,7 +103,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
+    <div className="min-h-screen bg-black text-purple p-4">
       <div className="max-w-7xl mx-auto">
         {/* Navigation Header */}
         <header className="bg-[#111] border border-purple-800 rounded-lg p-4 mb-6 shadow-lg">
