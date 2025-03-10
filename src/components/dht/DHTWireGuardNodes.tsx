@@ -199,14 +199,14 @@ export default function DHTWireGuardNodes() {
         <div className="flex items-center space-x-2">
           <span className="text-sm">Rafraîchir tous les:</span>
           <select 
-            className="border rounded p-1 text-sm"
-            value={refreshInterval}
-            onChange={(e) => setRefreshInterval(Number(e.target.value))}
-          >
-            <option value="30">30s</option>
-            <option value="60">1min</option>
-            <option value="300">5min</option>
-          </select>
+  className="border border-gray-400 rounded p-2 text-base font-medium text-gray-800 bg-white shadow-sm hover:border-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none"
+  value={refreshInterval}
+  onChange={(e) => setRefreshInterval(Number(e.target.value))}
+>
+  <option value="30" className="text-gray-800 font-medium">30s</option>
+  <option value="60" className="text-gray-800 font-medium">1min</option>
+  <option value="300" className="text-gray-800 font-medium">5min</option>
+</select>
           <TerminalButton
             variant="secondary"
             icon={<RefreshCw className="h-4 w-4" />}
