@@ -16,8 +16,8 @@ interface ProgressBarProps {
     className
   }: ProgressBarProps) {
     const variants = {
-      default: 'bg-green-600',
-      success: 'bg-green-500',
+      default: 'bg-gray-600',
+      success: 'bg-gray-500',
       warning: 'bg-yellow-500'
     };
   
@@ -27,7 +27,7 @@ interface ProgressBarProps {
           <div className="flex justify-between">
             {label && <span className="text-sm text-green-400">{label}</span>}
             {showPercentage && (
-              <span className="text-sm text-green-400">{Math.round(progress)}%</span>
+              <span className="text-sm text-orange-400">{Math.round(progress)}%</span>
             )}
           </div>
         )}
