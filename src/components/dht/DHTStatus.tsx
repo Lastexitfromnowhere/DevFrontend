@@ -192,7 +192,7 @@ export default function DHTStatus() {
       </CardContent>
       <CardFooter className="flex justify-between">
         <Button
-          variant="secondary"
+          variant="primary"
           onClick={() => fetchStatus()}
           disabled={loading}
         >
