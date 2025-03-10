@@ -12,7 +12,7 @@ const projects: Project[] = [
     name: 'GetGrass',
     category: 'AI Agent',
     description: 'Join the GetGrass testnet and earn GRASS tokens through active participation',
-    logo: 'https://app.getgrass.io/_next/image?url=%2Fimages%2Flogos%2Fgrass-logo-dark.png&w=1920&q=75',
+    logo: 'https://imgs.search.brave.com/_kptpb7uL83AygKe2p70jJseNoeCk54OVNAOYnQHStU/rs:fit:500:0:0:0/g:ce/aHR0cHM6Ly9pbWcu/Yml0Z2V0aW1nLmNv/bS9tdWx0aUxhbmcv/d2ViLzM4YTdhNWQy/YzYyMmY2YTMwZDQ4/NWI1MGQ0ZmUxMDRj/LnBuZw',
     link: 'https://app.getgrass.io/register/?referralCode=6YkiJ8oFRgT4s9O',
     rewards: 'Early Access + GRASS Tokens'
   },
