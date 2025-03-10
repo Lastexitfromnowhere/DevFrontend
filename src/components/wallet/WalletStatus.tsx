@@ -14,11 +14,11 @@ export default function WalletStatus() {
     <Card variant="terminal" className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Users className="w-4 h-4 text-green-400" />
-          <span className="text-green-300">Wallet Status</span>
+          <Users className="w-4 h-4 text-gray-400" />
+          <span className="text-gray-300">Wallet Status</span>
         </div>
         <TerminalButton
-          variant="danger"
+          variant="dark"
           onClick={disconnectWallet}
           icon={<LogOut className="w-4 h-4" />}
           className="text-xs px-2 py-1"
@@ -29,14 +29,14 @@ export default function WalletStatus() {
 
       <div className="space-y-2 text-sm">
         <div className="flex justify-between items-center">
-          <span className="text-green-500">address:</span>
-          <span className="text-green-300 font-mono">
+          <span className="text-gray-500">address:</span>
+          <span className="text-gray-300 font-mono">
             {account.slice(0, 6)}...{account.slice(-4)}
           </span>
         </div>
         <div className="flex justify-between items-center">
-          <span className="text-green-500">network:</span>
-          <span className="text-green-300">{chain}</span>
+          <span className="text-gray-500">network:</span>
+          <span className="text-gray-300">{chain}</span>
         </div>
       </div>
     </Card>
