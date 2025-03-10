@@ -17,7 +17,7 @@ interface TerminalButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
     const variantStyles = {
       primary: "bg-[#5e8f3a] hover:bg-[#6fa44b] text-white",
       secondary: "bg-[#333230] hover:bg-[#444340] text-white",
-      danger: "bg-[#8a4d12] hover:bg-[#9b5e23] text-white"
+      danger: "bg-[#8a4d12] hover:bg-[#9b5e23] text-white",
       poopy: "bg-[#5c5997] hover:bg-[#6d6aa8] text-white"
     };
   
