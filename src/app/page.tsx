@@ -31,8 +31,8 @@ export default function Dashboard() {
         flex items-center space-x-2 px-4 py-2 rounded
         transition-colors duration-200
         ${activeSection === id 
-          ? 'text-orange-300 bg-orange-900/20' 
-          : 'text-orange-600 hover:text-orange-400'
+          ? 'text-white bg-gray-700/80' 
+          : 'text-gray-400 hover:text-white'
         }
       `}
     >
@@ -103,13 +103,13 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-orange-400 p-4">
+    <div className="min-h-screen bg-gray-900 text-white p-4">
       <div className="max-w-7xl mx-auto">
         {/* Navigation Header */}
-        <header className="bg-[#111] border border-orange-800 rounded-lg p-4 mb-6">
+        <header className="bg-gray-800 border border-gray-700 rounded-lg p-4 mb-6 shadow-lg">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex items-center space-x-2">
-              <Terminal size={24} className="text-orange-400" />
+              <Terminal size={24} className="text-white" />
               <h1 className="text-xl font-bold">Brand Exit Dashboard</h1>
             </div>
             
@@ -130,7 +130,7 @@ export default function Dashboard() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-8 text-center text-sm text-orange-600 py-4 border-t border-orange-800">
+        <footer className="mt-8 text-center text-sm text-gray-400 py-4 border-t border-gray-700">
           {`> brand-exit@2025 ~ Building the decentralized future`}
         </footer>
       </div>
