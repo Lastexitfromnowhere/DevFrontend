@@ -63,15 +63,15 @@ export default function EcosystemDescription() {
           return (
             <div
               key={feature.title}
-              className="bg-[#0a0a0a] border border-green-800 rounded p-3 
-                       text-center cursor-pointer hover:border-green-600 
+              className="bg-[#0a0a0a] border border-gray-800 rounded p-3 
+                       text-center cursor-pointer hover:border-gray-600 
                        transition-all duration-300"
               onClick={() => setActiveModal(feature.title)}
             >
-              <FeatureIcon className="mx-auto mb-2 text-green-400" size={32} />
-              <p className="text-xs text-green-300">{feature.command}</p>
-              <p className="text-sm text-green-400 mt-1">{feature.title}</p>
-              <p className="text-xs text-green-500 mt-1">{feature.description}</p>
+              <FeatureIcon className="mx-auto mb-2 text-purple-400" size={32} />
+              <p className="text-xs text-gray-300">{feature.command}</p>
+              <p className="text-sm text-gray-400 mt-1">{feature.title}</p>
+              <p className="text-xs text-gray-500 mt-1">{feature.description}</p>
             </div>
           );
         })}
@@ -88,7 +88,7 @@ export default function EcosystemDescription() {
         )
       }
 
-      <div className="text-center text-xs text-green-500">
+      <div className="text-center text-xs text-gray-500">
         {`// Empowering your Web3 journey with comprehensive tools and community-driven insights`}
       </div>
     </Card>
