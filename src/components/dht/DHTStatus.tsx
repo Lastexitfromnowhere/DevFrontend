@@ -158,17 +158,17 @@ export default function DHTStatus() {
                   </div>
 
                   {status.stats.addresses.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium mb-2">Adresses d&apos;écoute:</h4>
-                      <div className="bg-gray-50 p-2 rounded-md text-xs overflow-auto max-h-[100px]">
-                        {status.stats.addresses.map((addr: string, index: number) => (
-                          <div key={index} className="mb-1 break-all">
-                            {addr}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+  <div className="mt-4">
+    <h4 className="text-sm font-medium mb-2">Adresses d&apos;écoute:</h4>
+    <div className="bg-gray-700 p-2 rounded-md text-xs overflow-auto max-h-[100px] text-gray-200">
+      {status.stats.addresses.map((addr: string, index: number) => (
+        <div key={index} className="mb-1 break-all">
+          {addr}
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
                   {status.stats.peers.length > 0 && (
                     <div className="mt-4">
