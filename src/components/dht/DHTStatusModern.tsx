@@ -1,3 +1,5 @@
+"use client";
+
 // src/components/dht/DHTStatusModern.tsx
 import React, { useEffect } from 'react';
 import { useDHT } from '@/hooks/useDHT';
