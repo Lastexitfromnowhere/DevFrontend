@@ -47,10 +47,10 @@ export default function EcosystemDescription() {
   return (
     <Card className="space-y-6">
       <div className="text-center">
-        <h2 className="text-xl font-bold mb-2 text-green-200">
+        <h2 className="text-xl font-bold mb-2 text-gray-600">
           {`// Brand Exit: Web3 Ecosystem Navigator`}
         </h2>
-        <p className="text-green-300">
+        <p className="text-gray-400">
           {`> Discover, learn, and earn with confidence.`}
         </p>
       </div>
