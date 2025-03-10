@@ -211,10 +211,10 @@ export default function DailyClaims() {
       )}
 
       {/* Récompenses disponibles */}
-      <div className="bg-blue-900/30 border border-blue-700 rounded p-4">
+      <div className="bg-gray-900/30 border border-gray-700 rounded p-4">
         <div className="flex justify-between items-center">
           <div>
-            <h4 className="text-blue-400 font-semibold mb-1">Available Rewards</h4>
+            <h4 className="text-orange-400 font-semibold mb-1">Available Rewards</h4>
             <div className="text-2xl font-bold text-white">
               {isLoading ? <Spinner size="sm" /> : `${rewards.availableRewards.toFixed(3)} RWRD`}
             </div>
