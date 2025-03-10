@@ -16,9 +16,9 @@ export function Card({
   return (
     <div
       className={cn(
-        'bg-[#111] border border-green-800 rounded-lg p-4',
+        'bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-md',
         variant === 'terminal' && 'font-mono',
-        variant === 'hover' && 'transform transition-all duration-200 hover:scale-[1.02] hover:border-green-600',
+        variant === 'hover' && 'transform transition-all duration-200 hover:scale-[1.02] hover:border-gray-500',
         className
       )}
       {...props}
