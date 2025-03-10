@@ -32,7 +32,7 @@ export default function NetworkStats() {
 
   // Couleurs associées à l'état de santé du réseau
   const healthColors = {
-    healthy: 'text-green-400',
+    healthy: 'text-white',
     warning: 'text-yellow-400',
     critical: 'text-red-400'
   };
@@ -48,7 +48,7 @@ export default function NetworkStats() {
   if (loading) {
     return (
       <Card className="p-4">
-        <div className="text-green-400 text-center">Chargement des statistiques réseau...</div>
+        <div className="text-white text-center">Chargement des statistiques réseau...</div>
       </Card>
     );
   }
@@ -65,8 +65,8 @@ export default function NetworkStats() {
     <Card className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Globe className="text-green-400" size={24} />
-          <h3 className="text-xl font-bold text-green-300">Network Statistics</h3>
+          <Globe className="text-white" size={24} />
+          <h3 className="text-xl font-bold text-white">Network Statistics</h3>
         </div>
         <div className={`flex items-center space-x-1 ${stats && stats.networkHealth ? healthColors[stats.networkHealth] : 'text-gray-500'}`}>
           <Activity size={16} />
@@ -75,29 +75,29 @@ export default function NetworkStats() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="text-center p-4 bg-black/20 rounded">
-          <Cpu className="mx-auto mb-2 text-green-400" size={20} />
-          <p className="text-sm text-green-500">Total Nodes</p>
-          <p className="text-xl font-bold text-green-300">{stats?.totalNodes || 0}</p>
+        <div className="text-center p-4 bg-gray-700/50 rounded shadow-inner">
+          <Cpu className="mx-auto mb-2 text-white" size={20} />
+          <p className="text-sm text-gray-400">Total Nodes</p>
+          <p className="text-xl font-bold text-white">{stats?.totalNodes || 0}</p>
         </div>
-        <div className="text-center p-4 bg-black/20 rounded">
-          <Wifi className="mx-auto mb-2 text-green-400" size={20} />
-          <p className="text-sm text-green-500">Active Nodes</p>
-          <p className="text-xl font-bold text-green-300">{stats?.activeNodes || 0}</p>
+        <div className="text-center p-4 bg-gray-700/50 rounded shadow-inner">
+          <Wifi className="mx-auto mb-2 text-white" size={20} />
+          <p className="text-sm text-gray-400">Active Nodes</p>
+          <p className="text-xl font-bold text-white">{stats?.activeNodes || 0}</p>
         </div>
-        <div className="text-center p-4 bg-black/20 rounded">
-          <Upload className="mx-auto mb-2 text-green-400" size={20} />
-          <p className="text-sm text-green-500">Total Bandwidth</p>
-          <p className="text-xl font-bold text-green-300">{stats?.totalBandwidth || 0} TB</p>
+        <div className="text-center p-4 bg-gray-700/50 rounded shadow-inner">
+          <Upload className="mx-auto mb-2 text-white" size={20} />
+          <p className="text-sm text-gray-400">Total Bandwidth</p>
+          <p className="text-xl font-bold text-white">{stats?.totalBandwidth || 0} TB</p>
         </div>
-        <div className="text-center p-4 bg-black/20 rounded">
-          <Activity className="mx-auto mb-2 text-green-400" size={20} />
-          <p className="text-sm text-green-500">Avg. Uptime</p>
-          <p className="text-xl font-bold text-green-300">{stats?.averageUptime || 0}%</p>
+        <div className="text-center p-4 bg-gray-700/50 rounded shadow-inner">
+          <Activity className="mx-auto mb-2 text-white" size={20} />
+          <p className="text-sm text-gray-400">Avg. Uptime</p>
+          <p className="text-xl font-bold text-white">{stats?.averageUptime || 0}%</p>
         </div>
       </div>
 
-      <div className="text-center text-xs text-green-500">
+      <div className="text-center text-xs text-gray-400">
         {`// Network data updates every 5 minutes`}
       </div>
     </Card>
