@@ -25,6 +25,15 @@ const projects: Project[] = [
     link: 'https://testnet.humanity.org/login?ref=undacore',
     rewards: 'HEART Testnet Tokens'
   },
+  {
+   id: 3,
+   name: 'Bless Network',
+   category: 'AI Agent',
+   description: 'Community-driven network with innovative reward mechanisms',
+   logo: 'bless.jpg',
+   link: 'https://bless.network/dashboard?ref=LHT6I4',
+   rewards: 'BLESS Network Tokens'
+ },
   // ... autres projets
 ];
 
