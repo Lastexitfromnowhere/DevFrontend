@@ -18,7 +18,7 @@ export default function WalletStatus() {
           <span className="text-gray-300">Wallet Status</span>
         </div>
         <TerminalButton
-          variant="dark"
+          variant="primary"
           onClick={disconnectWallet}
           icon={<LogOut className="w-4 h-4" />}
           className="text-xs px-2 py-1"
