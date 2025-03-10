@@ -130,7 +130,7 @@ export default function Dashboard() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-8 text-center text-sm text-gray-500 py-4 border-t border-orange-700">
+        <footer className="mt-8 text-center text-sm text-gray-50 py-4 border-t border-gray-700">
           {`> brand-exit@2025 ~ Building the decentralized future`}
         </footer>
       </div>
