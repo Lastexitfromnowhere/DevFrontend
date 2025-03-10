@@ -14,7 +14,7 @@ export function CardHeader({
 }: CardHeaderProps) {
   return (
     <div
-      className={cn('mb-4 bg-gray-800 text-white', className)}
+      className={cn('mb-4 bg-[#111] text-white', className)}
       {...props}
     >
       {children}
@@ -74,7 +74,7 @@ export function CardContent({
 }: CardContentProps) {
   return (
     <div
-      className={cn('bg-gray-900 text-white', className)}
+      className={cn('bg-black text-white', className)}
       {...props}
     >
       {children}
@@ -94,7 +94,7 @@ export function CardFooter({
 }: CardFooterProps) {
   return (
     <div
-      className={cn('mt-4 pt-4 border-t border-gray-700/50 bg-gray-800 text-white', className)}
+      className={cn('mt-4 pt-4 border-t border-gray-800/50 bg-[#111] text-white', className)}
       {...props}
     >
       {children}
