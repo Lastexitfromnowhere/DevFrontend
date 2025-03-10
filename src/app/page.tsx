@@ -55,7 +55,10 @@ export default function Dashboard() {
                 <VPNRewards earnings={0} />
               </div>
               <div>
-                <RewardsMechanism />
+                <RewardsMechanism onClose={() => {
+  // Logique de fermeture ici, peut être vide si vous n'avez pas besoin d'action spécifique
+  console.log('Rewards mechanism closed');
+}} />
               </div>
 
               
