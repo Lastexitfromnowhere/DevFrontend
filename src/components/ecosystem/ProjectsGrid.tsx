@@ -1,4 +1,3 @@
-// src/components/ecosystem/ProjectsGrid.tsx
 import React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
@@ -69,14 +68,14 @@ export default function ProjectsGrid() {
               </div>
   
               <div className="space-y-4">
-                <h3 className="text-xl font-medium text-green-300">
+                <h3 className="text-xl font-medium text-orange-700">
                   {project.name}
                 </h3>
-                <p className="text-sm text-green-400">
+                <p className="text-sm text-orange-800">
                   {project.description}
                 </p>
-                <div className="pt-4 border-t border-green-800/30">
-                  <p className="text-sm text-green-500">Current Rewards</p>
+                <div className="pt-4 border-t border-gray-300">
+                  <p className="text-sm text-orange-700">Current Rewards</p>
                   <p className="text-purple-400">{project.rewards}</p>
                 </div>
               </div>
@@ -85,7 +84,7 @@ export default function ProjectsGrid() {
                 href={project.link}
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="mt-4 inline-flex items-center text-green-400 hover:text-green-300 transition-colors"
+                className="mt-4 inline-flex items-center text-orange-700 hover:text-orange-600 transition-colors"
               >
                 Join Project <ArrowUpRight className="ml-1 w-4 h-4" />
               </a>
