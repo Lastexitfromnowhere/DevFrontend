@@ -1,3 +1,5 @@
+"use client";
+
 // src/app/page.tsx
 import React, { useState } from 'react';
 import { Terminal, Shield, Target } from 'lucide-react';
@@ -47,7 +49,7 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <WalletStatus />
-              <VPNRewards />
+              <VPNRewards earnings={0} />
             </div>
             <NetworkStats />
             <NodeStatusSummary />
