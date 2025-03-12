@@ -3,10 +3,10 @@
 import React from 'react';
 import { Card } from '../ui/Card';
 import { useDHTNode } from '@/hooks/useDHTNode';
-import { Network, Clock, Activity } from 'lucide-react';
+import { Network, Clock, Activity, Server } from 'lucide-react';
 
 export default function NodeStatusSummary() {
-  const { status } = useDHTNode();
+  const { status, loading, error } = useDHTNode();
   
   // Formater la dernière mise à jour
   const formatLastUpdated = (lastUpdated?: string) => {
@@ -56,9 +56,13 @@ export default function NodeStatusSummary() {
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center space-x-2">
-            <Network className={status.active ? "text-green-400" : "text-gray-500"} size={20} />
+            {status.protocol === 'WireGuard' ? (
+              <Server className={status.active ? "text-purple-400" : "text-gray-500"} size={20} />
+            ) : (
+              <Network className={status.active ? "text-green-400" : "text-gray-500"} size={20} />
+            )}
             <h3 className="font-medium">
-              {status.active ? 'Nœud DHT actif' : 'Nœud DHT inactif'}
+              {status.active ? `Nœud ${status.protocol || 'DHT'} actif` : `Nœud ${status.protocol || 'DHT'} inactif`}
             </h3>
           </div>
           
@@ -96,6 +100,12 @@ export default function NodeStatusSummary() {
                   : 'N/A'}
               </span>
             </div>
+          </div>
+        )}
+        
+        {error && (
+          <div className="mt-2 text-red-400 text-xs">
+            {error}
           </div>
         )}
       </div>
