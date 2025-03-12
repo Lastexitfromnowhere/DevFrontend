@@ -2,11 +2,11 @@
 
 import React from 'react';
 import { Card } from '../ui/Card';
-import { useVPNNode } from '@/hooks/useVPNNode';
-import { Wifi, WifiOff, Clock, Activity } from 'lucide-react';
+import { useDHTNode } from '@/hooks/useDHTNode';
+import { Network, Clock, Activity } from 'lucide-react';
 
 export default function NodeStatusSummary() {
-  const { status } = useVPNNode();
+  const { status } = useDHTNode();
   
   // Formater la dernière mise à jour
   const formatLastUpdated = (lastUpdated?: string) => {
@@ -46,16 +46,19 @@ export default function NodeStatusSummary() {
               {status.nodeType === 'HOST' ? 'Hébergeur' : 'Client'}
             </span>
           )}
+          {status.active && status.protocol && (
+            <span className={`text-xs px-2 py-0.5 rounded ${
+              status.protocol === 'WireGuard' ? 'bg-purple-100 text-purple-800' : 'bg-yellow-100 text-yellow-800'
+            }`}>
+              {status.protocol}
+            </span>
+          )}
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center space-x-2">
-            {status.active ? (
-              <Wifi className="text-green-400" size={20} />
-            ) : (
-              <WifiOff className="text-gray-500" size={20} />
-            )}
+            <Network className={status.active ? "text-green-400" : "text-gray-500"} size={20} />
             <h3 className="font-medium">
-              {status.active ? 'Nœud VPN actif' : 'Nœud VPN inactif'}
+              {status.active ? 'Nœud DHT actif' : 'Nœud DHT inactif'}
             </h3>
           </div>
           
@@ -70,12 +73,28 @@ export default function NodeStatusSummary() {
         {status.active && (
           <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
             <div className="flex items-center">
-              <span className="text-gray-400 mr-1">IP:</span>
-              <span className="text-green-300">{status.nodeIp || 'N/A'}</span>
+              <span className="text-gray-400 mr-1">ID:</span>
+              <span className="text-green-300">{status.nodeId ? status.nodeId.substring(0, 8) + '...' : 'N/A'}</span>
             </div>
             <div className="flex items-center">
-              <span className="text-gray-400 mr-1">Utilisateurs:</span>
-              <span className="text-green-300">{status.connectedUsers}</span>
+              <span className="text-gray-400 mr-1">Pairs:</span>
+              <span className="text-green-300">{status.connectedPeers || 0}</span>
+            </div>
+            <div className="flex items-center">
+              <span className="text-gray-400 mr-1">Stockage:</span>
+              <span className="text-green-300">
+                {status.storageUsed !== undefined && status.totalStorage !== undefined 
+                  ? `${Math.round(status.storageUsed / 1024 / 1024)}MB / ${Math.round(status.totalStorage / 1024 / 1024)}MB`
+                  : 'N/A'}
+              </span>
+            </div>
+            <div className="flex items-center">
+              <span className="text-gray-400 mr-1">Uptime:</span>
+              <span className="text-green-300">
+                {status.uptime !== undefined 
+                  ? `${Math.floor(status.uptime / 3600)}h ${Math.floor((status.uptime % 3600) / 60)}m`
+                  : 'N/A'}
+              </span>
             </div>
           </div>
         )}
