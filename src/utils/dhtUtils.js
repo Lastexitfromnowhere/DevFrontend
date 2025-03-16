@@ -186,7 +186,23 @@ export const getWireGuardNodes = async () => {
 // Fonction pour publier un nœud WireGuard
 export const publishWireGuardNode = async (walletAddress) => {
   try {
-    const response = await dhtAxios.post(`${DHT_API_BASE}/publish-node`, { walletAddress });
+    // Récupérer la clé publique WireGuard si disponible
+    // Note: Cette partie doit être adaptée selon la façon dont vous stockez la clé publique
+    // Par exemple, vous pourriez la récupérer depuis localStorage ou une API
+    const publicKey = localStorage.getItem('wireguard_public_key') || '';
+    
+    // Préparer les données complètes pour l'API
+    const nodeInfo = {
+      walletAddress,
+      publicKey,
+      // Ajouter d'autres informations si nécessaires
+      ip: localStorage.getItem('wireguard_ip') || '',
+      port: 51820, // Port standard WireGuard
+      lastSeen: new Date().toISOString()
+    };
+    
+    // Appeler l'endpoint avec les données complètes
+    const response = await dhtAxios.post(`${DHT_API_BASE}/publish-node`, nodeInfo);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la publication du nœud WireGuard:', error);
