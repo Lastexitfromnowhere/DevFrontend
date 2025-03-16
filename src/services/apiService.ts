@@ -1,7 +1,11 @@
 // src/services/apiService.ts
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError, AxiosHeaders } from 'axios';
+import axios from 'axios';
 import { config } from '@/config/env';
 import { getAuthHeader, isAuthenticated, getToken } from './authService';
+
+// Types pour Axios compatibles avec différentes versions
+type AxiosConfig = any;
+type AxiosResponseType = any;
 
 // Configuration de base pour axios
 const apiClient = axios.create({
@@ -22,7 +26,11 @@ const dhtClient = axios.create({
 });
 
 // Ajouter un intercepteur pour les requêtes DHT également
-dhtClient.interceptors.request.use(async (config) => {
+dhtClient.interceptors.request.use(async (config: AxiosConfig) => {
+  if (!config.headers) {
+    config.headers = {};
+  }
+  
   if (!config.headers.Authorization) {
     const authHeader = getAuthHeader();
     Object.entries(authHeader).forEach(([key, value]) => {
@@ -31,28 +39,25 @@ dhtClient.interceptors.request.use(async (config) => {
       }
     });
   }
+  
   return config;
 });
 
 // Interface pour les options de requête
-interface RequestOptions extends AxiosRequestConfig {
+interface RequestOptions {
   retry?: boolean;
   maxRetries?: number;
   retryDelay?: number;
-  fallbackData?: any;
-  silentError?: boolean;
-}
-
-// Interface pour les résultats API
-interface ApiResponse<T = any> {
-  data: T | null;
-  error: string | null;
-  status: 'success' | 'error' | 'offline';
-  isOffline: boolean;
+  retryStatusCodes?: number[];
+  headers?: Record<string, string>;
+  params?: Record<string, any>;
+  data?: any;
+  timeout?: number;
 }
 
 /**
- * Service API pour gérer les requêtes au backend avec gestion des erreurs
+ * Service API pour effectuer des requêtes HTTP
+ * Gère l'authentification, les retries, et les erreurs
  */
 class ApiService {
   private isOffline: boolean = false;
@@ -60,7 +65,11 @@ class ApiService {
 
   constructor() {
     // Intercepteur pour ajouter les headers d'authentification
-    apiClient.interceptors.request.use(async (config) => {
+    apiClient.interceptors.request.use(async (config: AxiosConfig) => {
+      if (!config.headers) {
+        config.headers = {};
+      }
+      
       if (!config.headers.Authorization) {
         const authHeader = getAuthHeader();
         Object.entries(authHeader).forEach(([key, value]) => {
@@ -69,6 +78,16 @@ class ApiService {
           }
         });
       }
+      
+      // Ajouter le wallet address si disponible (pour WireGuard)
+      const walletAddress = localStorage.getItem('walletAddress');
+      if (walletAddress) {
+        if (!config.headers) {
+          config.headers = {};
+        }
+        config.headers['X-Wallet-Address'] = walletAddress;
+      }
+      
       return config;
     });
 
@@ -122,6 +141,27 @@ class ApiService {
   }
 
   /**
+   * Vérifie si une erreur est due à un timeout ou une erreur réseau
+   */
+  private isNetworkError(error: any): boolean {
+    // Vérifier si c'est une erreur réseau
+    return (
+      error &&
+      (error.message === 'Network Error' ||
+       // Vérifier si c'est une erreur Axios
+       (typeof error === 'object' && 
+        // Utiliser une vérification de propriété plus sûre pour isAxiosError
+        (error.isAxiosError === true) &&
+        // Vérifier les propriétés spécifiques aux erreurs Axios
+        ((typeof error.code === 'string' && error.code === 'ECONNABORTED') ||
+         (typeof error.message === 'string' && error.message.includes('timeout')) ||
+         // Vérifier si la propriété response existe
+         !('response' in error)))
+      )
+    );
+  }
+
+  /**
    * Effectue une requête API avec gestion des erreurs et retry
    */
   private async request<T>(
@@ -129,45 +169,42 @@ class ApiService {
     url: string,
     data?: any,
     options: RequestOptions = {}
-  ): Promise<ApiResponse<T>> {
+  ): Promise<AxiosResponseType> {
     const {
       retry = true,
       maxRetries = 3,
       retryDelay = 1000,
-      fallbackData = null,
-      silentError = false,
+      retryStatusCodes = [408, 429, 500, 502, 503, 504],
+      headers = {},
+      params = {},
+      timeout = config.DEFAULT_TIMEOUT,
       ...axiosOptions
     } = options;
 
     let retries = 0;
-    let lastError: AxiosError | Error | null = null;
+    let lastError: any = null;
 
     // Fonction pour effectuer la requête avec retry
-    const executeRequest = async (): Promise<AxiosResponse<T>> => {
+    const executeRequest = async (): Promise<AxiosResponseType> => {
       try {
-        const config: AxiosRequestConfig = {
+        const config: AxiosConfig = {
           method,
           url,
+          headers: { ...headers },
+          params,
+          data,
+          timeout,
           ...axiosOptions,
         };
 
-        if (data && ['post', 'put', 'patch'].includes(method.toLowerCase())) {
-          config.data = data;
-        } else if (data) {
-          config.params = data;
-        }
-
-        return await apiClient(config);
+        const response = await apiClient(config);
+        return response;
       } catch (error) {
         if (error instanceof Error) {
           lastError = error;
           
           // Vérifier si c'est une erreur réseau
-          const isNetworkError = 
-            axios.isAxiosError(error) && 
-            (error.code === 'ECONNABORTED' || 
-             error.message.includes('Network Error') ||
-             !error.response);
+          const isNetworkError = this.isNetworkError(error);
 
           // Si c'est une erreur réseau et qu'on peut réessayer
           if (isNetworkError && retry && retries < maxRetries) {
@@ -190,22 +227,15 @@ class ApiService {
       // Si la requête réussit, on est en ligne
       this.setOfflineStatus(false);
       
-      return {
-        data: response.data,
-        error: null,
-        status: 'success',
-        isOffline: false
-      };
+      return response;
     } catch (error) {
-      if (!silentError) {
-        console.error(`Erreur lors de la requête ${method} ${url}:`, error);
-      }
-
+      console.error(`Erreur lors de la requête ${method} ${url}:`, error);
+      
       // Préparer la réponse d'erreur avec gestion correcte du type d'erreur
       const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
       
       return {
-        data: fallbackData,
+        data: null,
         error: errorMessage,
         status: this.isOffline ? 'offline' : 'error',
         isOffline: this.isOffline
@@ -216,73 +246,79 @@ class ApiService {
   /**
    * Effectue une requête GET
    */
-  public async get<T>(url: string, params?: any, options?: RequestOptions): Promise<ApiResponse<T>> {
+  public async get<T>(url: string, params?: any, options?: RequestOptions): Promise<AxiosResponseType> {
     return this.request<T>('get', url, params, options);
   }
 
   /**
    * Effectue une requête POST
    */
-  public async post<T>(url: string, data?: any, options?: RequestOptions): Promise<ApiResponse<T>> {
+  public async post<T>(url: string, data?: any, options?: RequestOptions): Promise<AxiosResponseType> {
     return this.request<T>('post', url, data, options);
   }
 
   /**
    * Effectue une requête PUT
    */
-  public async put<T>(url: string, data?: any, options?: RequestOptions): Promise<ApiResponse<T>> {
+  public async put<T>(url: string, data?: any, options?: RequestOptions): Promise<AxiosResponseType> {
     return this.request<T>('put', url, data, options);
   }
 
   /**
    * Effectue une requête DELETE
    */
-  public async delete<T>(url: string, params?: any, options?: RequestOptions): Promise<ApiResponse<T>> {
+  public async delete<T>(url: string, params?: any, options?: RequestOptions): Promise<AxiosResponseType> {
     return this.request<T>('delete', url, params, options);
   }
 
   /**
    * Récupère les récompenses quotidiennes
    */
-  public async fetchRewards(walletAddress: string): Promise<ApiResponse> {
-    return this.get('/dailyClaims', null, {
-      headers: {
-        ...getAuthHeader(),
-        'X-Wallet-Address': walletAddress
-      },
-      fallbackData: {
-        success: true,
-        canClaimToday: false,
-        lastClaimDate: null,
-        nextClaimTime: null,
-        claimHistory: [],
-        totalClaimed: 0,
-        consecutiveDays: 0
+  public async fetchRewards(walletAddress: string): Promise<AxiosResponseType> {
+    const headers: Record<string, string> = {};
+    
+    // Ajouter les headers d'authentification
+    const authHeader = getAuthHeader();
+    Object.entries(authHeader).forEach(([key, value]) => {
+      if (value !== undefined) {
+        headers[key] = value as string;
       }
     });
+    
+    // Ajouter l'adresse du wallet
+    headers['X-Wallet-Address'] = walletAddress;
+    
+    return this.get('/dailyClaims', null, { headers });
   }
 
   /**
    * Réclame les récompenses quotidiennes
    */
-  public async claimRewards(walletAddress: string): Promise<ApiResponse> {
-    return this.post('/dailyClaims/claim', { walletAddress }, {
-      headers: {
-        ...getAuthHeader()
+  public async claimRewards(walletAddress: string): Promise<AxiosResponseType> {
+    const headers: Record<string, string> = {};
+    
+    // Ajouter les headers d'authentification
+    const authHeader = getAuthHeader();
+    Object.entries(authHeader).forEach(([key, value]) => {
+      if (value !== undefined) {
+        headers[key] = value as string;
       }
     });
+    
+    return this.post('/dailyClaims/claim', { walletAddress }, { headers });
   }
 
   /**
    * Vérifie le statut du backend API (pas spécifiquement les nœuds DHT)
    * Cette méthode est utilisée pour déterminer si le backend est accessible
    */
-  public async checkBackendStatus(): Promise<ApiResponse> {
+  public async checkBackendStatus(): Promise<AxiosResponseType> {
     try {
       const response = await axios.get(`${config.API_BASE_URL}/status`, {
         timeout: 5000 // Timeout court pour cette vérification
       });
       
+      this.setOfflineStatus(false);
       return {
         data: response.data,
         error: null,
@@ -290,11 +326,12 @@ class ApiService {
         isOffline: false
       };
     } catch (error) {
+      console.error('Erreur lors de la vérification du statut du backend:', error);
       this.setOfflineStatus(true);
-      const errorMessage = error instanceof Error ? error.message : 'Serveur inaccessible';
+      
       return {
         data: null,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : 'Erreur de connexion',
         status: 'offline',
         isOffline: true
       };
@@ -305,13 +342,13 @@ class ApiService {
    * Vérifie spécifiquement le statut des nœuds DHT
    * Cette méthode interroge le service DHT pour obtenir l'état des nœuds
    */
-  public async checkDHTStatus(): Promise<ApiResponse> {
+  public async checkDHTStatus(): Promise<AxiosResponseType> {
     try {
       const response = await dhtClient.get('/status', {
-        headers: {
-          ...getAuthHeader()
-        }
+        headers: getAuthHeader() as Record<string, string>
       });
+      
+      this.setOfflineStatus(false);
       return {
         data: response.data,
         error: null,
@@ -320,10 +357,10 @@ class ApiService {
       };
     } catch (error) {
       console.error('Erreur lors de la vérification du statut DHT:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Service DHT inaccessible';
+      
       return {
         data: null,
-        error: errorMessage,
+        error: error instanceof Error ? error.message : 'Erreur de connexion DHT',
         status: 'error',
         isOffline: this.isOffline
       };
@@ -333,12 +370,10 @@ class ApiService {
   /**
    * Récupère les nœuds DHT disponibles
    */
-  public async fetchDHTNodes(): Promise<ApiResponse> {
+  public async fetchDHTNodes(): Promise<AxiosResponseType> {
     try {
       const response = await dhtClient.get('/nodes', {
-        headers: {
-          ...getAuthHeader()
-        }
+        headers: getAuthHeader() as Record<string, string>
       });
       return {
         data: response.data,
@@ -361,13 +396,10 @@ class ApiService {
   /**
    * Démarre le nœud DHT
    */
-  public async startDHT(): Promise<ApiResponse> {
+  public async startDHT(): Promise<AxiosResponseType> {
     try {
       const response = await dhtClient.post('/start', {}, {
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeader() as Record<string, string>
       });
       return {
         data: response.data,
@@ -390,13 +422,10 @@ class ApiService {
   /**
    * Arrête le nœud DHT
    */
-  public async stopDHT(): Promise<ApiResponse> {
+  public async stopDHT(): Promise<AxiosResponseType> {
     try {
       const response = await dhtClient.post('/stop', {}, {
-        headers: {
-          ...getAuthHeader(),
-          'Content-Type': 'application/json'
-        }
+        headers: getAuthHeader() as Record<string, string>
       });
       return {
         data: response.data,

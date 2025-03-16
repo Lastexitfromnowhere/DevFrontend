@@ -32,7 +32,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Access-Control-Allow-Methods', 'GET')
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
-    if (response.data.status === 'healthy') {
+    // Utiliser une assertion de type plus précise pour response.data
+    const healthData = response.data as { status?: string };
+    
+    if (healthData.status === 'healthy') {
       res.status(200).json({ status: 'healthy' })
     } else {
       res.status(503).json({ status: 'unhealthy' })

@@ -20,6 +20,10 @@ api.interceptors.request.use(
     
     // Si l'adresse existe, l'ajouter aux en-têtes
     if (walletAddress) {
+      // S'assurer que headers existe avant d'y accéder
+      if (!config.headers) {
+        config.headers = {};
+      }
       config.headers['X-Wallet-Address'] = walletAddress;
     }
     
@@ -43,6 +47,10 @@ api.interceptors.request.use(request => {
   // Récupérer le wallet depuis le contexte
   const walletAddress = localStorage.getItem('walletAddress');
   if (walletAddress) {
+    // S'assurer que headers existe avant d'y accéder
+    if (!request.headers) {
+      request.headers = {};
+    }
     request.headers['Authorization'] = `Bearer ${walletAddress}`;
   }
   
@@ -176,7 +184,7 @@ export function useVPNNode() {
       const response = await api.get(`${config.API_BASE_URL}/health`, {
         timeout: 10000 // 10 secondes
       });
-      return response.data.status === 'healthy';
+      return (response.data as { status?: string }).status === 'healthy';
     } catch (error) {
       console.error('Server connection test failed:', error);
       return false;
@@ -239,8 +247,31 @@ export function useVPNNode() {
       
       console.log('Status response:', response.data);
       
-      if (response.data.success) {
-        const nodeData = response.data;
+      if ((response.data as { success?: boolean }).success) {
+        const nodeData = response.data as {
+          active?: boolean;
+          status?: string;
+          clientIP?: string;
+          ip?: string;
+          connectedUsers?: number;
+          performance?: {
+            bandwidth?: number;
+            latency?: number;
+            packetLoss?: number;
+          };
+          stats?: {
+            uptime?: number;
+            earnings?: number;
+          };
+          nodeType?: string;
+          connectedClients?: Array<{
+            connectionId?: string;
+            walletAddress: string;
+            ip?: string;
+            connectedSince: string;
+            lastActivity?: string;
+          }>;
+        };
         
         // Mettre à jour l'état avec les données du serveur
         const updatedStatus = {
@@ -254,7 +285,7 @@ export function useVPNNode() {
           earnings: nodeData.stats?.earnings || 0,
           lastUpdated: new Date().toISOString().toString(),
           // Préserver le type de nœud existant s'il est défini, sinon utiliser celui du serveur
-          nodeType: status.nodeType || nodeData.nodeType || 'USER',
+          nodeType: (status.nodeType || nodeData.nodeType || 'USER') as 'HOST' | 'USER',
           performance: {
             bandwidth: nodeData.performance?.bandwidth || 0,
             latency: nodeData.performance?.latency || 0,
@@ -323,7 +354,7 @@ export function useVPNNode() {
         // Ne pas afficher d'erreur à l'utilisateur, juste attendre et réessayer
         setTimeout(fetchNodeStatus, backoffDelay);
       } else {
-        setError(error.response?.data?.message || error.message || 'Erreur lors de la vérification du statut');
+        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors de la vérification du statut');
       }
     } finally {
       setIsLoading(false);
@@ -369,8 +400,8 @@ export function useVPNNode() {
         }
       });
       
-      if (response.data.success) {
-        const nodes = response.data.nodes || [];
+      if ((response.data as { success?: boolean }).success) {
+        const nodes = (response.data as { nodes?: any[] }).nodes || [];
         console.log('Nœuds reçus du serveur:', nodes);
         
         // Filtrer les nœuds pour ne garder que ceux qui sont valides
@@ -472,12 +503,12 @@ export function useVPNNode() {
         hostWalletAddress: nodeWalletAddress
       });
       
-      if (response.data.success) {
+      if ((response.data as { success?: boolean }).success) {
         // Mettre à jour le statut avec les informations du nœud
         const updatedStatus = {
           ...status,
           active: true,
-          nodeIp: response.data.nodeIp,
+          nodeIp: (response.data as { nodeIp?: string }).nodeIp || null,
           connectedToNode: nodeWalletAddress,
           lastUpdated: new Date().toISOString().toString()
         };
@@ -497,12 +528,12 @@ export function useVPNNode() {
         setError(null);
         return true;
       } else {
-        setError(response.data.message || 'Failed to connect to node');
+        setError((response.data as { message?: string }).message || 'Failed to connect to node');
         return false;
       }
     } catch (error) {
       console.error('Error connecting to node:', error);
-      setError(error instanceof Error ? error.message : 'Failed to connect to node');
+      setError((error as any).response?.data?.message || (error as any).message || 'Failed to connect to node');
       return false;
     } finally {
       setIsLoading(false);
@@ -536,12 +567,18 @@ export function useVPNNode() {
 
       console.log('Start node response:', response.data);
       
-      if (response.data.success) {
+      const responseData = response.data as {
+        success?: boolean;
+        ip?: string;
+        bandwidth?: number;
+      };
+      
+      if (responseData.success) {
         const newStatus = {
           ...status,
           active: true,
-          nodeIp: response.data.ip || 'N/A',
-          bandwidth: response.data.bandwidth || 0,
+          nodeIp: responseData.ip || null,
+          bandwidth: responseData.bandwidth || 0,
           lastUpdated: new Date().toISOString().toString(),
           walletAddress: account,
           nodeType: isHost ? 'HOST' as const : 'USER' as const // Utiliser 'as const' pour garantir le type exact
@@ -555,7 +592,7 @@ export function useVPNNode() {
         // Réinitialiser le compteur de tentatives après un succès
         startRetryCount.current = 0;
       } else {
-        throw new Error(response.data.message || 'Failed to start node');
+        throw new Error((responseData as { message?: string }).message || 'Failed to start node');
       }
     } catch (error: any) {
       console.error('Failed to start node:', error);
@@ -578,7 +615,7 @@ export function useVPNNode() {
         // Ne pas afficher d'erreur à l'utilisateur, juste attendre et réessayer
         setTimeout(startNode, backoffDelay);
       } else {
-        setError(error.response?.data?.message || error.message || 'Erreur lors du démarrage du nœud');
+        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors du démarrage du nœud');
       }
     } finally {
       setIsLoading(false);
@@ -606,7 +643,7 @@ export function useVPNNode() {
 
       console.log('Stop node response:', response.data);
       
-      if (response.data.success) {
+      if ((response.data as { success?: boolean }).success) {
         // Préserver le type de nœud pour pouvoir le restaurer plus tard
         const currentNodeType = status.nodeType;
         
@@ -627,7 +664,7 @@ export function useVPNNode() {
         stopRetryCount.current = 0;
         return true;
       } else {
-        setError(response.data.message || 'Failed to stop node');
+        setError((response.data as { message?: string }).message || 'Failed to stop node');
         return false;
       }
     } catch (error: any) {
@@ -651,7 +688,7 @@ export function useVPNNode() {
         // Ne pas afficher d'erreur à l'utilisateur, juste attendre et réessayer
         setTimeout(stopNode, backoffDelay);
       } else {
-        setError(error.response?.data?.message || error.message || 'Erreur lors de l\'arrêt du nœud');
+        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors de l\'arrêt du nœud');
       }
       return false;
     } finally {
@@ -680,7 +717,7 @@ export function useVPNNode() {
 
       console.log('Disconnect client response:', response.data);
       
-      if (response.data.success) {
+      if ((response.data as { success?: boolean }).success) {
         // Update status to inactive for client
         const newStatus = {
           ...status,
@@ -703,7 +740,7 @@ export function useVPNNode() {
         setError(null);
         return true;
       } else {
-        setError(response.data.message || 'Failed to disconnect from node');
+        setError((response.data as { message?: string }).message || 'Failed to disconnect from node');
         return false;
       }
     } catch (error: any) {
@@ -730,7 +767,7 @@ export function useVPNNode() {
           }
         }
       } else {
-        setError(error.response?.data?.message || error.message || 'Error disconnecting from node');
+        setError((error.response?.data as { message?: string }).message || error.message || 'Error disconnecting from node');
       }
       return false;
     } finally {
@@ -753,21 +790,27 @@ export function useVPNNode() {
         }
       });
       
-      if (response.data.success) {
+      if ((response.data as { success?: boolean }).success) {
+        const responseData = response.data as {
+          success?: boolean;
+          connectedClients?: any[];
+          totalConnections?: number;
+        };
+        
         // Mettre à jour l'état avec les clients connectés
         setStatus(prevStatus => ({
           ...prevStatus,
-          connectedClients: response.data.connectedClients || [],
-          connectedUsers: response.data.totalConnections || 0
+          connectedClients: responseData.connectedClients || [],
+          connectedUsers: responseData.totalConnections || 0
         }));
         
-        return response.data.connectedClients || [];
+        return responseData.connectedClients || [];
       } else {
-        throw new Error(response.data.message || 'Failed to fetch connected clients');
+        throw new Error((response.data as { message?: string }).message || 'Failed to fetch connected clients');
       }
     } catch (error: any) {
       console.error('Error fetching connected clients:', error);
-      setError(error.response?.data?.message || error.message || 'Error fetching connected clients');
+      setError((error.response?.data as { message?: string }).message || error.message || 'Error fetching connected clients');
       return [];
     } finally {
       setIsLoading(false);
@@ -775,8 +818,8 @@ export function useVPNNode() {
   };
 
   // Fonction pour déconnecter un client spécifique (pour les hôtes)
-  const disconnectClient = async (clientWalletAddress: string) => {
-    if (!isConnected || !account) {
+  const disconnectClient = async (clientWalletAddress: string): Promise<boolean> => {
+    if (!account) {
       setError('Wallet not connected');
       return false;
     }
@@ -788,7 +831,9 @@ export function useVPNNode() {
         clientWalletAddress: clientWalletAddress
       });
       
-      if (response.data.success) {
+      const responseData = response.data as { success?: boolean };
+      
+      if (responseData.success) {
         // Mettre à jour l'état en retirant le client déconnecté
         setStatus(prevStatus => {
           const updatedClients = (prevStatus.connectedClients || [])
@@ -803,11 +848,12 @@ export function useVPNNode() {
         
         return true;
       } else {
-        throw new Error(response.data.message || 'Failed to disconnect client');
+        setError((responseData as { message?: string }).message || 'Failed to disconnect client');
+        return false;
       }
     } catch (error: any) {
       console.error('Error disconnecting client:', error);
-      setError(error.response?.data?.message || error.message || 'Error disconnecting client');
+      setError((error.response?.data as { message?: string }).message || error.message || 'Error disconnecting client');
       return false;
     } finally {
       setIsLoading(false);
@@ -925,8 +971,8 @@ export function useVPNNode() {
         }
       });
       
-      if (response.data.success) {
-        const nodes = response.data.nodes || [];
+      if ((response.data as { success?: boolean }).success) {
+        const nodes = (response.data as { nodes?: any[] }).nodes || [];
         console.log('Nœuds reçus du serveur (non filtrés):', nodes);
         
         // Filtrer les nœuds pour ne garder que ceux qui sont valides
