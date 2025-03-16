@@ -498,7 +498,7 @@ export function useVPNNode() {
         console.log('Déconnexion réussie, connexion au nouveau nœud...');
       }
 
-      const response = await api.post(`${config.API_BASE_URL}/vpn/connect-to-node`, {
+      const response = await api.post(`${config.API_BASE_URL}/connect`, {
         clientWalletAddress: account,
         hostWalletAddress: nodeWalletAddress
       });
