@@ -171,8 +171,8 @@ export function useDHTNode() {
       // Appel API pour récupérer les données fraîches
       const response = await api.get<DHTNodeResponse>(`${config.API_BASE_URL}/dht/status`);
       
-      if (response.data && response.data.success) {
-        const nodeData = response.data.data;
+      if (response.data && (response.data as { success?: boolean; data?: any }).success) {
+        const nodeData = (response.data as { data?: any }).data;
         
         // Mettre à jour l'état avec les nouvelles données
         const updatedStatus: DHTNodeStatus = {
@@ -203,7 +203,7 @@ export function useDHTNode() {
         
         statusRetryCount.current = 0; // Réinitialiser le compteur de tentatives
       } else {
-        throw new Error(response.data?.message || 'Failed to fetch DHT node status');
+        throw new Error((response.data as { message?: string })?.message || 'Failed to fetch DHT node status');
       }
     } catch (error: unknown) {
       console.error('Error fetching DHT node status:', error);
@@ -241,12 +241,11 @@ export function useDHTNode() {
     setWireGuardError(null);
     
     try {
-      const response = await api.get(`${config.API_BASE_URL}/wireguard/config`);
-      
       // Type assertion pour response.data
+      const response = await api.get(`${config.API_BASE_URL}/wireguard/config`);
       const responseData = response.data as any;
       
-      if (responseData && responseData.success) {
+      if (response.data && (response.data as { success?: boolean }).success) {
         const wireGuardConfig = responseData.config as WireGuardConfig;
         setWireGuardConfig(wireGuardConfig);
         
@@ -260,7 +259,7 @@ export function useDHTNode() {
         
         return wireGuardConfig;
       } else {
-        const errorMessage = responseData?.message || 'Failed to fetch WireGuard configuration';
+        const errorMessage = (response.data as { message?: string })?.message || 'Failed to fetch WireGuard configuration';
         throw new Error(errorMessage);
       }
     } catch (error: unknown) {
@@ -297,12 +296,12 @@ export function useDHTNode() {
     try {
       const response = await api.post(`${config.API_BASE_URL}/wireguard/enable`);
       
-      if (response.data && response.data.success) {
+      if (response.data && (response.data as { success?: boolean }).success) {
         // Récupérer la nouvelle configuration
         await fetchWireGuardConfig();
         return true;
       } else {
-        throw new Error(response.data?.message || 'Failed to enable WireGuard');
+        throw new Error((response.data as { message?: string })?.message || 'Failed to enable WireGuard');
       }
     } catch (error: unknown) {
       console.error('Error enabling WireGuard:', error);
@@ -326,18 +325,21 @@ export function useDHTNode() {
     try {
       const response = await api.post(`${config.API_BASE_URL}/wireguard/disable`);
       
-      if (response.data && response.data.success) {
-        // Mettre à jour le statut
+      if (response.data && (response.data as { success?: boolean }).success) {
+        // Réinitialiser la configuration
         setWireGuardConfig(null);
+        
+        // Mettre à jour le statut
         setStatus(prevStatus => ({
           ...prevStatus,
           wireGuardEnabled: false,
           wireGuardConfig: undefined,
           protocol: 'DHT'
         }));
+        
         return true;
       } else {
-        throw new Error(response.data?.message || 'Failed to disable WireGuard');
+        throw new Error((response.data as { message?: string })?.message || 'Failed to disable WireGuard');
       }
     } catch (error: unknown) {
       console.error('Error disabling WireGuard:', error);
@@ -369,7 +371,7 @@ export function useDHTNode() {
         endpoint
       });
       
-      if (response.data && response.data.success) {
+      if (response.data && (response.data as { success?: boolean }).success) {
         // Mettre à jour la configuration
         const updatedConfig = {
           ...wireGuardConfig,
@@ -387,7 +389,7 @@ export function useDHTNode() {
         
         return true;
       } else {
-        throw new Error(response.data?.message || 'Failed to connect to WireGuard peer');
+        throw new Error((response.data as { message?: string })?.message || 'Failed to connect to WireGuard peer');
       }
     } catch (error: unknown) {
       console.error('Error connecting to WireGuard peer:', error);
