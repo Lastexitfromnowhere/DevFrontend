@@ -15,7 +15,7 @@ export default function NetworkStats() {
     const fetchNetworkStats = async () => {
       try {
         const response = await axios.get(`${config.API_BASE_URL}/network-stats`);
-        setStats(response.data);
+        setStats(response.data as NetworkStatsType);
         setLoading(false);
       } catch (error) {
         console.error('Erreur lors de la récupération des statistiques du réseau:', error);
