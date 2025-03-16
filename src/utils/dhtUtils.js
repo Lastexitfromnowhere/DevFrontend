@@ -16,7 +16,8 @@ if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
 }
 
 // URL de base pour les requêtes DHT
-const DHT_API_BASE = config.DHT_API_URL;
+const API_BASE = config.API_BASE_URL;
+const DHT_API_BASE = `${API_BASE}/dht`;
 
 // Variables locales pour le cache et l'état
 let cachedStatus = null;
@@ -278,8 +279,8 @@ export const retrieveDHTValue = async (key) => {
 // Fonction pour vérifier si le backend est accessible
 export const checkBackendConnection = async () => {
   try {
-    console.log(`Vérification de la connexion au backend: ${config.API_BASE_URL}/status`);
-    const response = await dhtAxios.get(`${config.API_BASE_URL}/status`, {
+    console.log(`Vérification de la connexion au backend: ${API_BASE}/status`);
+    const response = await dhtAxios.get(`${API_BASE}/status`, {
       timeout: 10000 // 10 secondes
     });
     return { success: true, status: response.status, data: response.data };
