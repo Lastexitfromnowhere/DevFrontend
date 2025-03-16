@@ -23,6 +23,8 @@ api.interceptors.request.use(
     
     // Si l'adresse existe, l'ajouter aux en-têtes
     if (walletAddress) {
+      // S'assurer que headers existe
+      config.headers = config.headers || {};
       config.headers['X-Wallet-Address'] = walletAddress;
       config.headers['Authorization'] = `Bearer ${walletAddress}`;
     }
@@ -79,17 +81,20 @@ export default function DailyClaims() {
       
       console.log('API response:', response);
       
-      if (response.data.success) {
+      // Type assertion pour response.data
+      const responseData = response.data as any;
+      
+      if (responseData.success) {
         setRewards({
-          availableRewards: response.data.availableRewards || 0,
-          lastClaimDate: response.data.lastClaimDate,
-          canClaim: response.data.canClaim || false,
-          nextClaimTime: response.data.nextClaimTime,
-          claimHistory: response.data.claimHistory || []
+          availableRewards: responseData.availableRewards || 0,
+          lastClaimDate: responseData.lastClaimDate,
+          canClaim: responseData.canClaim || false,
+          nextClaimTime: responseData.nextClaimTime,
+          claimHistory: responseData.claimHistory || []
         });
         setError(null);
       } else {
-        setError(response.data.message || 'Failed to fetch rewards');
+        setError(responseData.message || 'Failed to fetch rewards');
       }
     } catch (error: any) {
       console.error('Error fetching rewards:', error);
@@ -116,17 +121,20 @@ export default function DailyClaims() {
       
       console.log('API response:', response);
       
-      if (response.data.success) {
+      // Type assertion pour response.data
+      const responseData = response.data as any;
+      
+      if (responseData.success) {
         // Mettre à jour l'état des récompenses après une réclamation réussie
         setRewards({
           ...rewards,
           availableRewards: 0, // Réinitialiser à 0 après réclamation
           lastClaimDate: new Date().toISOString(),
           canClaim: false,
-          nextClaimTime: response.data.nextClaimTime,
+          nextClaimTime: responseData.nextClaimTime,
           claimHistory: [
             {
-              amount: response.data.claimedAmount || rewards.availableRewards,
+              amount: responseData.claimedAmount || rewards.availableRewards,
               timestamp: new Date().toISOString(),
               status: 'success'
             },
@@ -135,7 +143,7 @@ export default function DailyClaims() {
         });
         setError(null);
       } else {
-        setError(response.data.message || 'Failed to claim rewards');
+        setError(responseData.message || 'Failed to claim rewards');
       }
     } catch (error: any) {
       console.error('Error claiming rewards:', error);

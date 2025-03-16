@@ -233,21 +233,25 @@ export function useDHTNode() {
     try {
       const response = await api.get(`${config.API_BASE_URL}/wireguard/config`);
       
-      if (response.data && response.data.success) {
-        const config = response.data.config;
-        setWireGuardConfig(config);
+      // Type assertion pour response.data
+      const responseData = response.data as any;
+      
+      if (responseData && responseData.success) {
+        const wireGuardConfig = responseData.config as WireGuardConfig;
+        setWireGuardConfig(wireGuardConfig);
         
         // Mettre à jour le statut pour refléter que WireGuard est activé
         setStatus(prevStatus => ({
           ...prevStatus,
           wireGuardEnabled: true,
-          wireGuardConfig: config,
+          wireGuardConfig: wireGuardConfig,
           protocol: 'WireGuard'
         }));
         
-        return config;
+        return wireGuardConfig;
       } else {
-        throw new Error(response.data?.message || 'Failed to fetch WireGuard configuration');
+        const errorMessage = responseData?.message || 'Failed to fetch WireGuard configuration';
+        throw new Error(errorMessage);
       }
     } catch (error: unknown) {
       console.error('Error fetching WireGuard configuration:', error);
