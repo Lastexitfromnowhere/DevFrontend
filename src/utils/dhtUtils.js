@@ -202,6 +202,18 @@ export const getWireGuardNodes = async () => {
     const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`, {
       headers: await getAuthHeaders()
     });
+    
+    // S'assurer que tous les nœuds ont un ID valide
+    if (response.data.success && Array.isArray(response.data.nodes)) {
+      response.data.nodes = response.data.nodes.map(node => {
+        // Si l'ID n'est pas défini ou est vide, utiliser l'adresse wallet comme ID
+        if (!node.id || node.id === '') {
+          return { ...node, id: node.walletAddress || `unknown-${Date.now()}` };
+        }
+        return node;
+      });
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds WireGuard:', error);
