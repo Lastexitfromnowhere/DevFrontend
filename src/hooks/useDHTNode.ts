@@ -64,6 +64,15 @@ interface WireGuardPeer {
   transferTx?: number;
 }
 
+// Interface pour les erreurs Axios
+interface AxiosErrorResponse {
+  response?: {
+    status: number;
+    data?: any;
+  };
+  message?: string;
+}
+
 // Configuration de base d'Axios avec logs
 const api = axios.create({
   timeout: config.DEFAULT_TIMEOUT,
@@ -205,7 +214,8 @@ export function useDHTNode() {
       console.log(`Retrying in ${retryDelay}ms (attempt ${statusRetryCount.current})`);
       
       // Si l'erreur est liée à l'authentification, réinitialiser l'état
-      if (axios.isAxiosError && axios.isAxiosError(error) && error.response && error.response.status === 401) {
+      const axiosError = error as AxiosErrorResponse;
+      if (axiosError.response && axiosError.response.status === 401) {
         setError('Authentication failed. Please reconnect your wallet.');
       } else {
         setError('Failed to fetch DHT node status. Retrying...');
@@ -256,7 +266,8 @@ export function useDHTNode() {
     } catch (error: unknown) {
       console.error('Error fetching WireGuard configuration:', error);
       
-      if (axios.isAxiosError && axios.isAxiosError(error) && error.response && error.response.status === 404) {
+      const axiosError = error as AxiosErrorResponse;
+      if (axiosError.response && axiosError.response.status === 404) {
         // WireGuard n'est pas configuré
         setWireGuardConfig(null);
         setStatus(prevStatus => ({
