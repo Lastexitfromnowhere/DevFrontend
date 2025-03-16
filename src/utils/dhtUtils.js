@@ -144,8 +144,17 @@ export const getDHTStatus = async () => {
       return cachedStatus;
     }
     
+    // Récupérer l'adresse du wallet pour l'authentification
+    const walletAddress = authService.getWalletAddress();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible');
+    }
+    
     console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status`);
-    const response = await dhtAxios.get(`${DHT_API_BASE}/status`);
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
+      headers: await getAuthHeaders()
+    });
+    
     cachedStatus = response.data;
     lastStatusCheck = now;
     return cachedStatus;
@@ -164,7 +173,15 @@ export const getDHTStatus = async () => {
 // Fonction pour obtenir la liste des nœuds DHT
 export const getDHTNodes = async () => {
   try {
-    const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`);
+    // Récupérer l'adresse du wallet pour l'authentification
+    const walletAddress = authService.getWalletAddress();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible');
+    }
+    
+    const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
+      headers: await getAuthHeaders()
+    });
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds DHT:', error);
@@ -175,7 +192,15 @@ export const getDHTNodes = async () => {
 // Fonction pour obtenir la liste des nœuds WireGuard
 export const getWireGuardNodes = async () => {
   try {
-    const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`);
+    // Récupérer l'adresse du wallet pour l'authentification
+    const walletAddress = authService.getWalletAddress();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible');
+    }
+    
+    const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`, {
+      headers: await getAuthHeaders()
+    });
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds WireGuard:', error);
@@ -213,7 +238,16 @@ export const publishWireGuardNode = async (walletAddress) => {
 // Fonction pour stocker une valeur dans le DHT
 export const storeDHTValue = async (key, value) => {
   try {
-    const response = await dhtAxios.post(`${DHT_API_BASE}/store`, { key, value });
+    // Récupérer l'adresse du wallet pour l'authentification
+    const walletAddress = authService.getWalletAddress();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible');
+    }
+    
+    const response = await dhtAxios.post(`${DHT_API_BASE}/store`, 
+      { key, value, walletAddress },
+      { headers: await getAuthHeaders() }
+    );
     return response.data;
   } catch (error) {
     console.error('Erreur lors du stockage de la valeur:', error);
@@ -224,11 +258,20 @@ export const storeDHTValue = async (key, value) => {
 // Fonction pour récupérer une valeur depuis le DHT
 export const retrieveDHTValue = async (key) => {
   try {
-    const response = await dhtAxios.get(`${DHT_API_BASE}/retrieve/${key}`);
+    // Récupérer l'adresse du wallet pour l'authentification
+    const walletAddress = authService.getWalletAddress();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible');
+    }
+    
+    const response = await dhtAxios.get(`${DHT_API_BASE}/retrieve`, {
+      params: { key, walletAddress },
+      headers: await getAuthHeaders()
+    });
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération de la valeur:', error);
-    return { success: false, error: error.message };
+    return { success: false, value: null, error: error.message };
   }
 };
 
