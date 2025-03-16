@@ -110,7 +110,7 @@ export const initDHTNode = async () => {
 export const startDHTNode = async () => {
   try {
     console.log('Démarrage du nœud DHT');
-    const response = await dhtAxios.post(`${DHT_API_BASE}/dht/start`, {});
+    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, {});
     // Invalider le cache du statut
     cachedStatus = null;
     return response.data;
@@ -124,7 +124,7 @@ export const startDHTNode = async () => {
 export const stopDHTNode = async () => {
   try {
     console.log('Arrêt du nœud DHT');
-    const response = await dhtAxios.post(`${DHT_API_BASE}/dht/stop`, {});
+    const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, {});
     // Invalider le cache du statut
     cachedStatus = null;
     return response.data;
@@ -150,8 +150,8 @@ export const getDHTStatus = async () => {
       throw new Error('Adresse de wallet non disponible');
     }
     
-    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/dht/status`);
-    const response = await dhtAxios.get(`${DHT_API_BASE}/dht/status`, {
+    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status`);
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
       headers: await getAuthHeaders()
     });
     
@@ -179,7 +179,7 @@ export const getDHTNodes = async () => {
       throw new Error('Adresse de wallet non disponible');
     }
     
-    const response = await dhtAxios.get(`${DHT_API_BASE}/dht/nodes`, {
+    const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
       headers: await getAuthHeaders()
     });
     return response.data;
@@ -198,7 +198,7 @@ export const getWireGuardNodes = async () => {
       throw new Error('Adresse de wallet non disponible');
     }
     
-    const response = await dhtAxios.get(`${DHT_API_BASE}/dht/wireguard-nodes`, {
+    const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`, {
       headers: await getAuthHeaders()
     });
     return response.data;
@@ -227,7 +227,7 @@ export const publishWireGuardNode = async (walletAddress) => {
     };
     
     // Appeler l'endpoint avec les données complètes
-    const response = await dhtAxios.post(`${DHT_API_BASE}/dht/publish-node`, nodeInfo);
+    const response = await dhtAxios.post(`${DHT_API_BASE}/publish-node`, nodeInfo);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la publication du nœud WireGuard:', error);
@@ -244,7 +244,7 @@ export const storeDHTValue = async (key, value) => {
       throw new Error('Adresse de wallet non disponible');
     }
     
-    const response = await dhtAxios.post(`${DHT_API_BASE}/dht/store`, 
+    const response = await dhtAxios.post(`${DHT_API_BASE}/store`, 
       { key, value, walletAddress },
       { headers: await getAuthHeaders() }
     );
@@ -264,7 +264,7 @@ export const retrieveDHTValue = async (key) => {
       throw new Error('Adresse de wallet non disponible');
     }
     
-    const response = await dhtAxios.get(`${DHT_API_BASE}/dht/retrieve`, {
+    const response = await dhtAxios.get(`${DHT_API_BASE}/retrieve`, {
       params: { key, walletAddress },
       headers: await getAuthHeaders()
     });
