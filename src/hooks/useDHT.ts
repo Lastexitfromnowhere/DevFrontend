@@ -58,13 +58,14 @@ export function useDHT() {
 
   // Fonction pour récupérer le statut du nœud DHT
   const fetchStatus = useCallback(async () => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !walletAddress) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const data = await dhtUtils.getDHTStatus();
+      // Utiliser la nouvelle fonction pour récupérer le statut spécifique au wallet
+      const data = await dhtUtils.getDHTStatusByWallet(walletAddress);
       
       if (data.success === false && data.error) {
         throw new Error(data.error);
@@ -94,7 +95,7 @@ export function useDHT() {
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, walletAddress]);
 
   // Fonction pour démarrer le nœud DHT
   const startNode = useCallback(async () => {

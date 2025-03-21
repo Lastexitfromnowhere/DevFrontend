@@ -171,6 +171,31 @@ export const getDHTStatus = async () => {
   }
 };
 
+// Nouvelle fonction pour obtenir le statut du nœud DHT par wallet
+export const getDHTStatusByWallet = async (walletAddress) => {
+  if (!walletAddress) {
+    console.error('Erreur: adresse de wallet non fournie');
+    return { success: false, error: 'Adresse de wallet non fournie' };
+  }
+  
+  try {
+    const headers = await getAuthHeaders();
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status/${walletAddress}`, { headers });
+    return response.data;
+  } catch (error) {
+    console.error('Erreur lors de la récupération du statut du nœud DHT par wallet:', error);
+    // Si l'erreur est 403, cela signifie que l'utilisateur n'est pas autorisé
+    if (error.response && error.response.status === 403) {
+      return { 
+        success: false, 
+        isActive: false,
+        message: 'Non autorisé à voir ce nœud DHT' 
+      };
+    }
+    return { success: false, error: error.message };
+  }
+};
+
 // Fonction pour obtenir la liste des nœuds DHT
 export const getDHTNodes = async () => {
   try {
@@ -311,6 +336,7 @@ export default {
   startDHTNode,
   stopDHTNode,
   getDHTStatus,
+  getDHTStatusByWallet,
   getDHTNodes,
   getWireGuardNodes,
   publishWireGuardNode,

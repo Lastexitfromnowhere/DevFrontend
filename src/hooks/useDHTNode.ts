@@ -3,6 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { config } from '@/config/env';
+import * as dhtUtils from '@/utils/dhtUtils'; // Corriger l'importation
 
 // Définir les types pour les réponses API
 interface DHTNodeStatus {
@@ -130,101 +131,62 @@ export function useDHTNode() {
   // Contexte du wallet
   const { isConnected, account } = useWalletContext();
   
-  // Fonction pour récupérer le statut du noeud DHT
-  const fetchDHTNodeStatus = useCallback(async () => {
-    if (!isConnected || !account) {
-      setStatus({
-        active: false,
-        nodeType: '',
-        nodeId: '',
-        nodeIp: '',
-        connectedPeers: 0,
-        storageUsed: 0,
-        totalStorage: 0,
-        uptime: 0,
-        lastUpdated: '',
-        protocol: '',
-        wireGuardEnabled: false
-      });
-      return;
-    }
+  // Fonction pour récupérer le statut du nœud DHT
+  const fetchStatus = useCallback(async (forceRefresh = false) => {
+    if (!isConnected || !account) return;
+
+    // Si nous ne forçons pas le rafraîchissement et que nous avons un cache récent
+    const now = Date.now();
+    const cacheKey = `dht-status-${account}`;
     
+    const cachedData = localStorage.getItem(cacheKey);
+    
+    if (!forceRefresh && cachedData) {
+      try {
+        const { data, timestamp } = JSON.parse(cachedData);
+        if (now - timestamp < 30000) { // 30 secondes
+          setStatus(data);
+          return;
+        }
+      } catch (e) {
+        console.error('Erreur lors de la lecture du cache:', e);
+        // En cas d'erreur de parsing, continuer avec la récupération depuis l'API
+      }
+    }
+
     setLoading(true);
     setError(null);
-    
+
     try {
-      // Vérifier si nous avons des données en cache
-      const cachedData = localStorage.getItem('dhtNodeStatus');
-      let cachedStatus: DHTNodeStatus | null = null;
+      // Utiliser la nouvelle fonction pour récupérer le statut spécifique au wallet
+      const data = await dhtUtils.getDHTStatusByWallet(account);
       
-      if (cachedData) {
-        try {
-          cachedStatus = JSON.parse(cachedData) as DHTNodeStatus;
-          // Utiliser les données en cache pendant le chargement
-          setStatus(cachedStatus);
-        } catch (e) {
-          console.error('Error parsing cached DHT node status:', e);
-          localStorage.removeItem('dhtNodeStatus');
+      if (data.success === false) {
+        if (data.error) {
+          throw new Error(data.error);
         }
+        // Si pas d'erreur spécifique mais succès = false, définir un statut inactif
+        setStatus({ active: false });
+        // Mettre à jour le cache
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: { active: false },
+          timestamp: now
+        }));
+        setLoading(false);
+        return;
       }
       
-      // Appel API pour récupérer les données fraîches
-      const response = await api.get<DHTNodeResponse>(`${config.API_BASE_URL}/dht/status`);
+      // Mettre à jour l'état
+      setStatus(data);
       
-      if (response.data && (response.data as { success?: boolean; data?: any }).success) {
-        const nodeData = (response.data as { data?: any }).data;
-        
-        // Mettre à jour l'état avec les nouvelles données
-        const updatedStatus: DHTNodeStatus = {
-          active: nodeData?.active || false,
-          nodeType: nodeData?.nodeType || '',
-          nodeId: nodeData?.nodeId || '',
-          nodeIp: nodeData?.nodeIp || '',
-          connectedPeers: nodeData?.connectedPeers || 0,
-          storageUsed: nodeData?.storageUsed || 0,
-          totalStorage: nodeData?.totalStorage || 0,
-          uptime: nodeData?.uptime || 0,
-          lastUpdated: nodeData?.lastUpdated || new Date().toISOString(),
-          protocol: nodeData?.protocol || 'DHT',
-          wireGuardEnabled: nodeData?.wireGuardEnabled || false,
-          wireGuardConfig: nodeData?.wireGuardConfig || undefined
-        };
-        
-        // Mettre en cache les données
-        localStorage.setItem('dhtNodeStatus', JSON.stringify(updatedStatus));
-        
-        // Mettre à jour l'état
-        setStatus(updatedStatus);
-        
-        // Si WireGuard est activé, mettre à jour la configuration
-        if (updatedStatus.wireGuardEnabled && updatedStatus.wireGuardConfig) {
-          setWireGuardConfig(updatedStatus.wireGuardConfig);
-        }
-        
-        statusRetryCount.current = 0; // Réinitialiser le compteur de tentatives
-      } else {
-        throw new Error((response.data as { message?: string })?.message || 'Failed to fetch DHT node status');
-      }
-    } catch (error: unknown) {
-      console.error('Error fetching DHT node status:', error);
-      statusRetryCount.current += 1;
-      
-      // Calculer un délai exponentiel pour la prochaine tentative
-      const retryDelay = Math.min(1000 * Math.pow(2, statusRetryCount.current), maxRetryDelay);
-      console.log(`Retrying in ${retryDelay}ms (attempt ${statusRetryCount.current})`);
-      
-      // Si l'erreur est liée à l'authentification, réinitialiser l'état
-      const axiosError = error as AxiosErrorResponse;
-      if (axiosError.response && axiosError.response.status === 401) {
-        setError('Authentication failed. Please reconnect your wallet.');
-      } else {
-        setError('Failed to fetch DHT node status. Retrying...');
-      }
-      
-      // Planifier une nouvelle tentative après un délai
-      setTimeout(() => {
-        fetchDHTNodeStatus();
-      }, retryDelay);
+      // Mettre à jour le cache
+      localStorage.setItem(cacheKey, JSON.stringify({
+        data,
+        timestamp: now
+      }));
+    } catch (err) {
+      console.error('Erreur lors de la récupération du statut du nœud DHT:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }
@@ -410,11 +372,11 @@ export function useDHTNode() {
       }
       
       // Récupérer immédiatement le statut
-      fetchDHTNodeStatus();
+      fetchStatus();
       
       // Configurer le polling toutes les 30 secondes
       pollingInterval.current = setInterval(() => {
-        fetchDHTNodeStatus();
+        fetchStatus();
       }, 30000);
     };
     
@@ -456,13 +418,13 @@ export function useDHTNode() {
         pollingInterval.current = null;
       }
     };
-  }, [isConnected, account, fetchDHTNodeStatus, fetchWireGuardConfig]);
+  }, [isConnected, account, fetchStatus, fetchWireGuardConfig]);
   
   return {
     status,
     error,
     loading,
-    fetchStatus: fetchDHTNodeStatus,
+    fetchStatus,
     
     // Fonctionnalités WireGuard
     wireGuard: {
