@@ -153,7 +153,8 @@ export const getDHTStatus = async () => {
     
     console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status`);
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
-      headers: await getAuthHeaders()
+      headers: await getAuthHeaders(),
+      params: { walletAddress } 
     });
     
     cachedStatus = response.data;
