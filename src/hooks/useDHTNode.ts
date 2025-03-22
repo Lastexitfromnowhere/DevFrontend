@@ -228,10 +228,9 @@ export function useDHTNode() {
     
     try {
       // Type assertion pour response.data
-      const response = await api.post('/api/connect-to-node', 
-        { hostWalletAddress: account }, // Ajouter l'adresse du wallet comme hôte
-        { params: { walletAddress: account } }
-      );
+      const response = await api.post('/dht/wireguard-publish', {
+        walletAddress: account
+      });
       const responseData = response.data as any;
       
       if (response.data && (response.data as { success?: boolean }).success) {
@@ -296,10 +295,10 @@ export function useDHTNode() {
       
       console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      const response = await api.post('/api/connect', {
+      const response = await api.post('/dht/wireguard-publish', {
         serverIp,
         serverPublicKey,
-        isHost: true // Indiquer que c'est un nœud hôte
+        walletAddress: account
       });
       
       if (response.data && (response.data as { success?: boolean }).success) {
@@ -329,7 +328,7 @@ export function useDHTNode() {
     setWireGuardError(null);
     
     try {
-      const response = await api.post('/api/disconnect');
+      const response = await api.post('/dht/stop');
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Réinitialiser la configuration
@@ -379,9 +378,10 @@ export function useDHTNode() {
       console.log('Connexion à WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
       const response = await api.post('/api/connect-to-node', {
+        hostWalletAddress: account,
         peerPublicKey,
         endpoint,
-        serverIp,
+        serverIp
       });
       
       if (response.data && (response.data as { success?: boolean }).success) {
