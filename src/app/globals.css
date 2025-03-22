@@ -34,13 +34,16 @@ body {
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 5px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 0 5px rgba(120, 120, 220, 0.2);
+    border-color: rgba(100, 100, 150, 0.3);
   }
   50% {
-    box-shadow: 0 0 20px rgba(79, 70, 229, 0.7);
+    box-shadow: 0 0 15px rgba(120, 120, 220, 0.4);
+    border-color: rgba(100, 100, 150, 0.6);
   }
   100% {
-    box-shadow: 0 0 5px rgba(79, 70, 229, 0.3);
+    box-shadow: 0 0 5px rgba(120, 120, 220, 0.2);
+    border-color: rgba(100, 100, 150, 0.3);
   }
 }
 
@@ -49,5 +52,5 @@ body {
 }
 
 .animate-pulse-shadow {
-  animation: pulse 2s infinite;
+  animation: pulse 3s infinite;
 }
