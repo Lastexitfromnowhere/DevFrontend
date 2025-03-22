@@ -137,26 +137,22 @@ export const stopDHTNode = async () => {
 
 // Fonction pour obtenir le statut du nœud DHT
 export const getDHTStatus = async () => {
-  // Modification pour forcer Git à détecter une modification
-  console.log('Modification pour forcer Git à détecter une modification');
+  const now = Date.now();
+  
+  // Utiliser le cache si disponible et récent (moins de 5 secondes)
+  if (cachedStatus && lastStatusCheck && (now - lastStatusCheck < 5000)) {
+    return cachedStatus;
+  }
+  
   try {
-    const now = Date.now();
-    
-    // Utiliser le cache si disponible et récent
-    if (cachedStatus && (now - lastStatusCheck < STATUS_CACHE_TIME)) {
-      return cachedStatus;
-    }
-    
-    // Récupérer l'adresse du wallet pour l'authentification
     const walletAddress = authService.getWalletAddress();
     if (!walletAddress) {
       throw new Error('Adresse de wallet non disponible');
     }
     
-    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status`);
-    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
-      headers: await getAuthHeaders(),
-      params: { walletAddress } 
+    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status/${walletAddress}`);
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status/${walletAddress}`, {
+      headers: await getAuthHeaders()
     });
     
     cachedStatus = response.data;
