@@ -150,9 +150,10 @@ export const getDHTStatus = async () => {
       throw new Error('Adresse de wallet non disponible');
     }
     
-    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status/${walletAddress}`);
-    const response = await dhtAxios.get(`${DHT_API_BASE}/status/${walletAddress}`, {
-      headers: await getAuthHeaders()
+    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status?walletAddress=${walletAddress}`);
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
+      headers: await getAuthHeaders(),
+      params: { walletAddress }
     });
     
     cachedStatus = response.data;
