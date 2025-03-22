@@ -91,7 +91,10 @@ export default function DHTNodes() {
   // Charger les nœuds au démarrage
   useEffect(() => {
     if (isAuthenticated) {
-      fetchNodes();
+      console.log('Chargement des nœuds DHT au démarrage...');
+      fetchNodes().then(loadedNodes => {
+        console.log(`${loadedNodes?.length || 0} nœuds DHT chargés au démarrage`);
+      });
       setLastRefreshed(new Date());
     }
   }, [isAuthenticated, fetchNodes]);

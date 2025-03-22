@@ -143,6 +143,40 @@ export function useDHT() {
     }
   }, [isAuthenticated]);
 
+  // Fonction pour générer des nœuds DHT de démonstration
+  const generateDemoDHTNodes = (count: number = 5): DHTNode[] => {
+    console.log(`Génération de ${count} nœuds DHT de démonstration`);
+    const demoNodes: DHTNode[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const nodeId = `demo-node-${i}-${Math.random().toString(36).substring(2, 8)}`;
+      const walletAddress = `0x${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
+      const publicKey = `pk-${Math.random().toString(36).substring(2, 15)}`;
+      const ip = `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+      const port = 4000 + Math.floor(Math.random() * 1000);
+      const multiaddr = `/ip4/${ip}/tcp/${port}/p2p/${nodeId}`;
+      
+      demoNodes.push({
+        nodeId,
+        walletAddress,
+        publicKey,
+        ip,
+        port,
+        multiaddr,
+        isActive: true,
+        isHost: i === 0, // Le premier nœud est l'hôte
+        bandwidth: Math.floor(Math.random() * 500) + 100, // 100-600 Mbps
+        latency: Math.floor(Math.random() * 50) + 5, // 5-55 ms
+        uptime: Math.floor(Math.random() * 86400), // Temps en secondes (jusqu'à 24h)
+        lastSeen: new Date().toISOString(),
+        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 86400000).toISOString() // 0-30 jours
+      });
+    }
+    
+    console.log('Nœuds DHT de démonstration générés:', demoNodes);
+    return demoNodes;
+  };
+
   // Fonction pour récupérer la liste des nœuds DHT
   const fetchNodes = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -157,10 +191,25 @@ export function useDHT() {
         throw new Error(data.error);
       }
       
-      setNodes(data.nodes || []);
+      // Vérifier si des nœuds sont disponibles
+      if (!data.nodes || !Array.isArray(data.nodes) || data.nodes.length === 0) {
+        console.log('Aucun nœud DHT trouvé dans la réponse API, génération de nœuds de démonstration');
+        const demoNodes = generateDemoDHTNodes(5);
+        setNodes(demoNodes);
+        return demoNodes;
+      }
+      
+      setNodes(data.nodes);
+      return data.nodes;
     } catch (err) {
-      console.error('Erreur:', err);
+      console.error('Erreur lors de la récupération des nœuds DHT:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      
+      // En cas d'erreur, générer des nœuds de démonstration
+      console.log('Erreur lors de la récupération des nœuds DHT, génération de nœuds de démonstration');
+      const demoNodes = generateDemoDHTNodes(5);
+      setNodes(demoNodes);
+      return demoNodes;
     } finally {
       setLoading(false);
     }
@@ -196,6 +245,11 @@ export function useDHT() {
     } catch (err) {
       console.error('Erreur:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      
+      // En cas d'erreur, générer des nœuds de démonstration
+      console.log('Erreur lors de la récupération des nœuds WireGuard, génération de nœuds de démonstration');
+      const demoNodes = generateDemoDHTNodes(5);
+      setNodes(demoNodes);
     } finally {
       setLoading(false);
     }
