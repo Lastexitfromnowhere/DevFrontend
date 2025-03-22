@@ -45,10 +45,10 @@ export default function ProjectsGrid() {
             className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-black/50 relative overflow-hidden"
           >
             <div 
-              className="absolute inset-0 bg-cover bg-center opacity-10"
+              className="absolute inset-0 bg-cover bg-center opacity-20"
               style={{ 
                 backgroundImage: `url(${project.logo})`,
-                filter: 'blur(8px)'
+                filter: 'blur(3px)'
               }}
             />
             
