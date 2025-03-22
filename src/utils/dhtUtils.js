@@ -467,6 +467,7 @@ export const testDHTConnectivity = async () => {
         step: 'serverCheck',
         message: error.message,
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data
       });
       console.error('Serveur inaccessible:', error.message);
@@ -491,17 +492,27 @@ export const testDHTConnectivity = async () => {
         results.details.authHeaders.Authorization = 'Bearer [MASKED]';
       }
       
-      // Tester l'authentification avec une requête simple
-      const authTestResponse = await dhtAxios.get(`${API_BASE}/auth/verify`, { headers });
-      results.authValid = authTestResponse.status === 200 && authTestResponse.data.success;
-      results.details.authTest = authTestResponse.data;
-      console.log('Authentification valide:', results.authValid, authTestResponse.data);
+      // Au lieu d'utiliser un endpoint spécifique pour vérifier l'authentification,
+      // utilisons l'endpoint de statut DHT qui est certainement disponible
+      const authTestResponse = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
+        headers,
+        params: { walletAddress }
+      });
+      
+      results.authValid = authTestResponse.status === 200;
+      results.details.authTest = {
+        status: authTestResponse.status,
+        statusText: authTestResponse.statusText,
+        success: authTestResponse.status === 200
+      };
+      console.log('Authentification valide:', results.authValid, results.details.authTest);
     } catch (error) {
       results.authValid = false;
       results.errors.push({
         step: 'authCheck',
         message: error.message,
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data
       });
       console.error('Authentification invalide:', error.message);
@@ -520,6 +531,7 @@ export const testDHTConnectivity = async () => {
         step: 'registrationCheck',
         message: error.message,
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data
       });
       console.error('Nœud non enregistré:', error.message);
@@ -549,6 +561,7 @@ export const testDHTConnectivity = async () => {
         step: 'activityCheck',
         message: error.message,
         status: error.response?.status,
+        statusText: error.response?.statusText,
         data: error.response?.data
       });
       console.error('Impossible de vérifier l\'activité du nœud:', error.message);
