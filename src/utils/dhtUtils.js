@@ -178,11 +178,22 @@ export const getDHTStatusByWallet = async (walletAddress) => {
   }
   
   try {
+    console.log('Starting Request:', {
+      url: `${DHT_API_BASE}/status`,
+      method: 'get',
+      data: undefined,
+      headers: await getAuthHeaders(),
+      baseURL: undefined
+    });
+    
     const headers = await getAuthHeaders();
-    const response = await dhtAxios.get(`${DHT_API_BASE}/status/${walletAddress}`, { headers });
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
+      headers,
+      params: { walletAddress }
+    });
     return response.data;
   } catch (error) {
-    console.error('Erreur lors de la récupération du statut du nœud DHT par wallet:', error);
+    console.error('Response Error:', error);
     // Si l'erreur est 403, cela signifie que l'utilisateur n'est pas autorisé
     if (error.response && error.response.status === 403) {
       return { 
