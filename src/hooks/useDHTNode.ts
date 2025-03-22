@@ -182,9 +182,12 @@ export function useDHTNode() {
     setError(null);
 
     try {
-      // Utiliser la fonction getDHTStatusByWallet qui utilise le bon format d'URL
-      console.log('Récupération du statut DHT pour le wallet:', account);
-      const data = await dhtUtils.getDHTStatusByWallet(account);
+      // Utiliser la fonction getDHTStatus sans spécifier de wallet
+      // Cela récupérera le statut global du nœud DHT, peu importe quel wallet l'a démarré
+      console.log('Récupération du statut DHT global');
+      const data = await dhtUtils.getDHTStatus();
+      
+      console.log('Statut DHT reçu:', data);
       
       if (data.success === false) {
         if (data.error) {
@@ -201,12 +204,18 @@ export function useDHTNode() {
         return;
       }
       
+      // Convertir isActive en active pour la cohérence
+      const formattedData = {
+        ...data,
+        active: data.isActive || data.active || false
+      };
+      
       // Mettre à jour l'état
-      setStatus(data);
+      setStatus(formattedData);
       
       // Mettre à jour le cache
       localStorage.setItem(cacheKey, JSON.stringify({
-        data,
+        data: formattedData,
         timestamp: now
       }));
     } catch (err: any) {
