@@ -407,7 +407,7 @@ export default function UnifiedDHTView() {
                 <div className="bg-black/30 p-3 rounded-md">
                   <div className="text-gray-400 mb-1">Pairs:</div>
                   <div className="text-green-300">
-                    {myNodeStatus.peers || 0}
+                    {myNodeStatus.connectedPeers || 0}
                   </div>
                 </div>
                 <div className="bg-black/30 p-3 rounded-md">
