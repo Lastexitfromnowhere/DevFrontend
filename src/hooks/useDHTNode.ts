@@ -208,9 +208,9 @@ export function useDHTNode() {
         data,
         timestamp: now
       }));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to check node status:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      setError(err.message || 'Une erreur est survenue');
     } finally {
       setLoading(false);
     }
@@ -260,6 +260,7 @@ export function useDHTNode() {
         setStatus(prevStatus => ({
           ...prevStatus,
           wireGuardEnabled: false,
+          wireGuardConfig: undefined,
           protocol: 'DHT'
         }));
       }
@@ -348,6 +349,7 @@ export function useDHTNode() {
       }
     } catch (error: unknown) {
       console.error('Error disabling WireGuard:', error);
+      
       setWireGuardError(error instanceof Error ? error.message : 'Failed to disable WireGuard');
       return false;
     } finally {
@@ -426,26 +428,36 @@ export function useDHTNode() {
     setError(null);
     
     try {
-      const response = await api.post('/dht/start', {
-        walletAddress: account
-      });
+      // Récupérer le JWT depuis le localStorage
+      const token = localStorage.getItem('authToken');
+      
+      const response = await api.post('/dht/start', 
+        { walletAddress: account },
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'X-Wallet-Address': account
+          } 
+        }
+      );
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Mettre à jour le statut
         await fetchStatus(true);
         return true;
       } else {
-        throw new Error((response.data as { message?: string })?.message || 'Failed to start DHT node');
+        setError((response.data as { message?: string })?.message || 'Failed to start DHT node');
+        return false;
       }
-    } catch (error: unknown) {
-      console.error('Error starting DHT node:', error);
-      setError(error instanceof Error ? error.message : 'Failed to start DHT node');
+    } catch (err: any) {
+      console.error('Error starting DHT node:', err);
+      setError(err.message || 'Unknown error starting DHT node');
       return false;
     } finally {
       setLoading(false);
     }
   }, [isConnected, account, fetchStatus]);
-  
+
   // Fonction pour arrêter le nœud DHT
   const stopDHTNode = useCallback(async () => {
     if (!isConnected || !account) {
@@ -457,30 +469,35 @@ export function useDHTNode() {
     setError(null);
     
     try {
-      const response = await api.post('/dht/stop', {
-        walletAddress: account
-      });
+      // Récupérer le JWT depuis le localStorage
+      const token = localStorage.getItem('authToken');
+      
+      const response = await api.post('/dht/stop', 
+        { walletAddress: account },
+        { 
+          headers: { 
+            'Authorization': `Bearer ${token}`,
+            'X-Wallet-Address': account
+          } 
+        }
+      );
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Mettre à jour le statut
-        setStatus(prevStatus => ({
-          ...prevStatus,
-          active: false,
-          wireGuardEnabled: false,
-          wireGuardConfig: undefined
-        }));
+        await fetchStatus(true);
         return true;
       } else {
-        throw new Error((response.data as { message?: string })?.message || 'Failed to stop DHT node');
+        setError((response.data as { message?: string })?.message || 'Failed to stop DHT node');
+        return false;
       }
-    } catch (error: unknown) {
-      console.error('Error stopping DHT node:', error);
-      setError(error instanceof Error ? error.message : 'Failed to stop DHT node');
+    } catch (err: any) {
+      console.error('Error stopping DHT node:', err);
+      setError(err.message || 'Unknown error stopping DHT node');
       return false;
     } finally {
       setLoading(false);
     }
-  }, [isConnected, account]);
+  }, [isConnected, account, fetchStatus]);
   
   // Effet pour démarrer le polling lorsque le wallet est connecté
   useEffect(() => {
