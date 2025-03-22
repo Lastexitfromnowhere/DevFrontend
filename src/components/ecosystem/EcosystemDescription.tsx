@@ -45,13 +45,16 @@ export default function EcosystemDescription() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
 
   return (
-    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6">
-    <div 
-      className="text-center bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-700/30"
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6"
       style={{
         backgroundImage: `url(https://imgs.search.brave.com/XM523QAmeVG592m9BanovDtQZ7vZxSfoJKhBZnzTVgU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJhY2Nlc3Mu/Y29tL2Z1bGwvNTM5/MzQ0Mi5qcGc)`,
-        filter: 'blur(3px)'
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundBlendMode: 'overlay'
       }}
+    >
+    <div 
+      className="text-center bg-black/60 backdrop-blur-sm p-4 rounded-lg border border-gray-700/30"
     >
       <h2 className="text-xl font-semibold mb-2 text-white">
         {`// Brand Exit: Web3 Ecosystem Navigator`}

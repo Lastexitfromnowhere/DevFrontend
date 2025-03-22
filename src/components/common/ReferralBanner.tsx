@@ -6,9 +6,14 @@ import { Copy, Check, ExternalLink, X } from 'lucide-react';
 interface ReferralBannerProps {
   referralCode: string;
   referralUrl: string;
+  fixed?: boolean;
 }
 
-const ReferralBanner: React.FC<ReferralBannerProps> = ({ referralCode, referralUrl }) => {
+const ReferralBanner: React.FC<ReferralBannerProps> = ({ 
+  referralCode, 
+  referralUrl,
+  fixed = true 
+}) => {
   const [copied, setCopied] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [isShimmering, setIsShimmering] = useState(true);
@@ -37,8 +42,12 @@ const ReferralBanner: React.FC<ReferralBannerProps> = ({ referralCode, referralU
 
   if (!isVisible) return null;
 
+  const containerClasses = fixed 
+    ? "fixed top-4 right-4 z-50 max-w-md animate-fade-in-down" 
+    : "relative w-full";
+
   return (
-    <div className="fixed top-4 right-4 z-50 max-w-md animate-fade-in-down">
+    <div className={containerClasses}>
       <div 
         className={`
           backdrop-blur-md bg-black/40 border border-gray-700/50

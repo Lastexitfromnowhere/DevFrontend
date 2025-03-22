@@ -142,6 +142,7 @@ export default function Dashboard() {
           <ReferralBanner 
             referralCode="l3p0z3udr96rtohg" 
             referralUrl="https://codeium.com/refer?referral_code=l3p0z3udr96rtohg" 
+            fixed={false}
           />
         </div>
 
