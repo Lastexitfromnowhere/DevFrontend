@@ -178,30 +178,51 @@ export const getDHTStatusByWallet = async (walletAddress) => {
   }
   
   try {
+    // Vérifier que le token est valide et correspond à l'adresse du wallet
+    await authService.refreshTokenIfNeeded();
+    
+    const headers = await getAuthHeaders();
+    console.log('Entêtes d\'authentification:', headers);
+    console.log('Adresse du wallet utilisée pour la requête:', walletAddress);
+    
+    // Vérifier si le token JWT correspond à l'adresse du wallet
+    const tokenMatch = await authService.verifyTokenWalletMatch();
+    console.log('Le token correspond à l\'adresse du wallet:', tokenMatch);
+    
     console.log('Starting Request:', {
       url: `${DHT_API_BASE}/status`,
       method: 'get',
-      data: undefined,
-      headers: await getAuthHeaders(),
-      baseURL: undefined
+      params: { walletAddress },
+      headers: headers
     });
     
-    const headers = await getAuthHeaders();
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
       headers,
       params: { walletAddress }
     });
+    
+    console.log('Réponse du serveur:', response.status, response.data);
     return response.data;
   } catch (error) {
     console.error('Response Error:', error);
+    console.error('Détails de l\'erreur:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
+    
     // Si l'erreur est 403, cela signifie que l'utilisateur n'est pas autorisé
     if (error.response && error.response.status === 403) {
+      console.log('Génération d\'un statut de nœud inactif suite à une erreur 403');
       return { 
         success: false, 
         isActive: false,
         message: 'Non autorisé à voir ce nœud DHT' 
       };
     }
+    
+    // Pour toute autre erreur, retourner un statut d'erreur
     return { success: false, error: error.message };
   }
 };
