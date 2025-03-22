@@ -128,7 +128,7 @@ export default function DailyClaims() {
       console.log('Entêtes d\'authentification pour claim:', headers);
       console.log('Adresse du wallet utilisée pour la requête de claim:', walletAddressToUse);
       
-      const response = await axios.post(DAILY_CLAIMS_API_BASE, null, {
+      const response = await axios.post(`${DAILY_CLAIMS_API_BASE}/claim`, null, {
         headers,
         params: { walletAddress: walletAddressToUse }
       });
