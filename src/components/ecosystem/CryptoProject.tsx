@@ -56,9 +56,9 @@ export default function CryptoProject({ onClose }: { onClose: () => void }) {
       isOpen={true}
       onClose={onClose}
       title="Available Crypto Projects"
-      className="max-w-4xl"
+      className="max-w-4xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg"
     >
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fade-in-down">
         <div className="grid md:grid-cols-2 gap-4">
           {projects.map((project, index) => {
             const ProjectIcon = project.icon;
@@ -66,32 +66,35 @@ export default function CryptoProject({ onClose }: { onClose: () => void }) {
               <Card 
                 key={index}
                 variant="hover"
-                className="space-y-4"
+                className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg transition-all duration-500 space-y-4 hover:shadow-xl"
               >
                 <div className="flex items-center space-x-3">
-                  <ProjectIcon className="text-green-400" size={32} />
+                  <div className="p-2 bg-gray-800/60 backdrop-blur-sm border border-gray-700/30 rounded-lg">
+                    <ProjectIcon className="text-blue-400" size={32} />
+                  </div>
                   <div>
-                    <h3 className="font-bold text-green-300">{project.name}</h3>
+                    <h3 className="font-bold text-white text-lg">{project.name}</h3>
                     <Badge variant={
                       project.difficulty === 'Easy' ? 'success' :
                       project.difficulty === 'Medium' ? 'warning' :
                       'default'
-                    }>
+                    }
+                    className="bg-gray-800/60 backdrop-blur-sm border border-gray-700/30 text-gray-200">
                       {project.difficulty}
                     </Badge>
                   </div>
                 </div>
 
-                <p className="text-sm text-green-400">{project.description}</p>
+                <p className="text-sm text-gray-300">{project.description}</p>
 
-                <div className="pt-4 border-t border-green-800/30 space-y-2 text-sm">
+                <div className="pt-4 border-t border-gray-700/30 space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-green-500">Reward Type:</span>
-                    <span className="text-green-300">{project.rewardType}</span>
+                    <span className="text-gray-400">Reward Type:</span>
+                    <span className="text-gray-200">{project.rewardType}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-green-500">Monthly Est.:</span>
-                    <span className="text-green-300">
+                    <span className="text-gray-400">Monthly Est.:</span>
+                    <span className="text-gray-200">
                       {project.estimatedMonthlyRewards}
                     </span>
                   </div>
@@ -101,7 +104,7 @@ export default function CryptoProject({ onClose }: { onClose: () => void }) {
                   href={project.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm"
+                  className="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm bg-gray-800/40 backdrop-blur-sm border border-gray-700/30 rounded p-2 transition-all duration-200"
                 >
                   Visit Project
                   <ArrowUpRight className="ml-1 w-4 h-4" />
@@ -111,7 +114,7 @@ export default function CryptoProject({ onClose }: { onClose: () => void }) {
           })}
         </div>
 
-        <p className="text-center text-xs text-green-500">
+        <p className="text-center text-xs text-gray-400">
           {`// Projects subject to change. Always DYOR (Do Your Own Research)`}
         </p>
       </div>

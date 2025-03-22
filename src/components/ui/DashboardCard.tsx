@@ -1,0 +1,108 @@
+"use client";
+
+import React from 'react';
+
+interface DashboardCardProps {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  className?: string;
+  headerAction?: React.ReactNode;
+}
+
+interface CardHeaderProps {
+  title: string;
+  description?: string;
+  action?: React.ReactNode;
+}
+
+interface CardContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+interface CardFooterProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export const DashboardCardHeader: React.FC<CardHeaderProps> = ({ 
+  title, 
+  description, 
+  action 
+}) => {
+  return (
+    <div className="mb-4 flex justify-between items-start">
+      <div>
+        <h3 className="text-white font-bold text-lg mb-1">{title}</h3>
+        {description && (
+          <p className="text-gray-300 text-sm">{description}</p>
+        )}
+      </div>
+      {action && (
+        <div className="ml-4">
+          {action}
+        </div>
+      )}
+    </div>
+  );
+};
+
+export const DashboardCardContent: React.FC<CardContentProps> = ({ 
+  children,
+  className = ""
+}) => {
+  return (
+    <div className={`py-2 ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+export const DashboardCardFooter: React.FC<CardFooterProps> = ({ 
+  children,
+  className = ""
+}) => {
+  return (
+    <div className={`mt-4 pt-3 border-t border-gray-700/30 flex justify-between items-center ${className}`}>
+      {children}
+    </div>
+  );
+};
+
+export const DashboardCard: React.FC<DashboardCardProps> = ({
+  title,
+  description,
+  children,
+  footer,
+  className = "",
+  headerAction
+}) => {
+  return (
+    <div 
+      className={`
+        backdrop-blur-md bg-black/40 border border-gray-700/50
+        p-4 rounded-lg shadow-lg transition-all duration-300
+        hover:shadow-xl hover:border-gray-600/50
+        ${className}
+      `}
+    >
+      <DashboardCardHeader 
+        title={title} 
+        description={description}
+        action={headerAction}
+      />
+      <DashboardCardContent>
+        {children}
+      </DashboardCardContent>
+      {footer && (
+        <DashboardCardFooter>
+          {footer}
+        </DashboardCardFooter>
+      )}
+    </div>
+  );
+};
+
+export default DashboardCard;

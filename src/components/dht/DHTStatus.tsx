@@ -163,29 +163,30 @@ export default function DHTStatus() {
     return (
       <Card variant="default">
         <CardHeader>
-          <CardTitle>Statut du nœud DHT</CardTitle>
-          <CardDescription>
+          <div className="text-white font-bold text-lg mb-1">Statut du nœud DHT</div>
+          <div className="text-gray-300 text-sm">
             Connectez-vous pour voir le statut de votre nœud DHT
-          </CardDescription>
+          </div>
         </CardHeader>
       </Card>
     );
   }
 
   return (
-    <Card variant="default">
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow" variant="default">
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle>Statut du nœud DHT</CardTitle>
-            <CardDescription>
+            <div className="text-white font-bold text-lg mb-1">Nœud DHT</div>
+            <div className="text-gray-300 text-sm">
               Réseau décentralisé Kademlia
-            </CardDescription>
+            </div>
           </div>
           <Button 
             variant="secondary"
             onClick={() => fetchStatus()}
             disabled={loading}
+            className="bg-gray-700/50 hover:bg-gray-600/50 p-2 rounded transition-all duration-200"
           >
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           </Button>
@@ -193,36 +194,36 @@ export default function DHTStatus() {
       </CardHeader>
       <CardContent>
         {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
+          <div className="bg-red-500/20 text-red-400 border border-red-500/30 p-3 rounded-md mb-4 backdrop-blur-sm">
             {error}
           </div>
         )}
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <span className="font-medium">État du nœud:</span>
-            <BadgeComponent variant={status.isActive ? "success" : "default"}>
+            <span className="font-medium text-gray-300">État du nœud:</span>
+            <div className={`inline-flex items-center rounded-full font-medium ${status.isActive ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-gray-700/50 text-gray-300 border border-gray-600/30'} px-2.5 py-0.5 text-sm`}>
               {status.isActive ? "Actif" : "Inactif"}
-            </BadgeComponent>
+            </div>
           </div>
 
           {status.isActive && status.nodeId && (
             <>
               <div className="flex items-center justify-between">
-                <span className="font-medium">ID du nœud:</span>
-                <span className="text-sm text-gray-500 truncate max-w-[200px]">{status.nodeId}</span>
+                <span className="font-medium text-gray-300">ID du nœud:</span>
+                <span className="text-sm text-gray-400 truncate max-w-[200px] bg-gray-800/60 backdrop-blur-sm border border-gray-700/30 rounded p-1 font-mono">{status.nodeId}</span>
               </div>
 
               {status.stats && (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Connexions:</span>
-                    <span className="text-sm">{status.stats.connections}</span>
+                    <span className="font-medium text-gray-300">Connexions:</span>
+                    <span className="text-sm text-gray-200 bg-gray-800/60 backdrop-blur-sm border border-gray-700/30 rounded px-2 py-1">{status.stats.connections}</span>
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Pairs:</span>
-                    <span className="text-sm">{status.stats.peers?.length || 0}</span>
+                    <span className="font-medium text-gray-300">Pairs:</span>
+                    <span className="text-sm text-gray-200 bg-gray-800/60 backdrop-blur-sm border border-gray-700/30 rounded px-2 py-1">{status.stats.peers?.length || 0}</span>
                   </div>
                 </>
               )}
@@ -230,7 +231,7 @@ export default function DHTStatus() {
           )}
         </div>
       </CardContent>
-      <CardFooter className="space-x-2">
+      <CardFooter className="space-x-2 border-t border-gray-700/30 pt-4">
         {status.isActive ? (
           <Button
             variant="danger"
@@ -238,6 +239,7 @@ export default function DHTStatus() {
             onClick={stopNode}
             disabled={loading}
             loading={loading}
+            className="bg-red-600/80 hover:bg-red-700/80 text-white backdrop-blur-sm transition-all duration-200"
           >
             Arrêter
           </Button>
@@ -248,6 +250,7 @@ export default function DHTStatus() {
             onClick={startNode}
             disabled={loading}
             loading={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all duration-200"
           >
             Démarrer
           </Button>
@@ -261,6 +264,7 @@ export default function DHTStatus() {
             onClick={runDiagnostic}
             disabled={isDiagnosticRunning}
             loading={isDiagnosticRunning}
+            className="bg-gray-700/50 hover:bg-gray-600/50 p-2 rounded transition-all duration-200"
           >
             {isDiagnosticRunning ? 'Diagnostic en cours' : 'Exécuter le diagnostic'}
           </Button>
