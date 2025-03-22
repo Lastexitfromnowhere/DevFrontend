@@ -21,6 +21,7 @@ import DHTStatus from '@/components/dht/DHTStatus';
 import DHTNodes from '@/components/dht/DHTNodes';
 import DHTWireGuardNodes from '@/components/dht/DHTWireGuardNodes';
 import RewardsMechanism from '@/components/ecosystem/RewardsMechanism';
+import ReferralBanner from '@/components/common/ReferralBanner';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
@@ -109,6 +110,10 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-black text-purple p-4">
+      <ReferralBanner 
+        referralCode="l3p0z3udr96rtohg" 
+        referralUrl="https://codeium.com/refer?referral_code=l3p0z3udr96rtohg" 
+      />
       <div className="max-w-7xl mx-auto">
         {/* Navigation Header */}
         <header className="bg-[#111] border border-gray-950 rounded-lg p-4 mb-6 shadow-lg">
