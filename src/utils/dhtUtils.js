@@ -110,14 +110,67 @@ export const initDHTNode = async () => {
 // Fonction pour démarrer le nœud DHT
 export const startDHTNode = async () => {
   try {
-    console.log('Démarrage du nœud DHT');
-    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, {});
+    console.log('Démarrage du nœud DHT...');
+    
+    // Récupérer l'adresse du wallet depuis le token JWT
+    const walletAddress = authService.getWalletAddressFromToken();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible dans le token JWT');
+    }
+    
+    const headers = await getAuthHeaders();
+    console.log('Entêtes d\'authentification pour startDHTNode:', headers);
+    
+    // Démarrer le nœud DHT
+    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, {}, {
+      headers,
+      params: { walletAddress }
+    });
+    
+    console.log('Réponse du démarrage du nœud DHT:', response.status, response.data);
+    
     // Invalider le cache du statut
     cachedStatus = null;
-    return response.data;
+    
+    // Attendre que le nœud soit actif (avec un timeout de 10 secondes)
+    let isActive = false;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (!isActive && attempts < maxAttempts) {
+      attempts++;
+      console.log(`Vérification de l'activation du nœud DHT (tentative ${attempts}/${maxAttempts})...`);
+      
+      // Attendre 1 seconde entre chaque vérification
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Vérifier le statut du nœud
+      const status = await getDHTStatus();
+      console.log('Statut du nœud DHT:', status);
+      
+      if (status.success && status.isActive) {
+        isActive = true;
+        console.log('Le nœud DHT est maintenant actif !');
+      }
+    }
+    
+    if (!isActive) {
+      console.warn('Le nœud DHT a été démarré mais n\'est pas devenu actif dans le délai imparti.');
+    }
+    
+    return {
+      ...response.data,
+      isActive
+    };
   } catch (error) {
     console.error('Erreur lors du démarrage du nœud DHT:', error);
-    return { success: false, error: error.message };
+    console.error('Détails de l\'erreur:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
+    return { success: false, isActive: false, error: error.message };
   }
 };
 
@@ -540,6 +593,15 @@ export const testDHTConnectivity = async () => {
     // Étape 4: Vérifier si le nœud est actif
     console.log('Test de connectivité DHT: Vérification de l\'activité du nœud...');
     try {
+      // Vérifier d'abord le statut local du nœud
+      const statusResponse = await getDHTStatus();
+      results.details.localNodeStatus = statusResponse;
+      
+      // Vérifier si le nœud est considéré comme actif localement
+      const isLocallyActive = statusResponse.success && statusResponse.isActive;
+      console.log('Nœud actif localement:', isLocallyActive, statusResponse);
+      
+      // Récupérer la liste des nœuds actifs
       const nodesResponse = await getDHTNodes();
       
       // Récupérer l'adresse du wallet depuis le token JWT
@@ -550,9 +612,24 @@ export const testDHTConnectivity = async () => {
         const ownNode = nodesResponse.nodes.find(node => node.walletAddress === walletAddress);
         results.nodeActive = !!ownNode;
         results.details.ownNode = ownNode || null;
-        console.log('Nœud actif:', results.nodeActive, ownNode);
+        results.details.allNodes = nodesResponse.nodes;
+        results.details.locallyActive = isLocallyActive;
+        
+        if (!results.nodeActive && isLocallyActive) {
+          console.log('Le nœud est considéré comme actif localement mais n\'apparaît pas dans la liste des nœuds actifs');
+          results.errors.push({
+            step: 'activityCheck',
+            message: 'Le nœud est considéré comme actif localement mais n\'apparaît pas dans la liste des nœuds actifs',
+            status: 'INCONSISTENCY'
+          });
+        } else if (!results.nodeActive && !isLocallyActive) {
+          console.log('Le nœud n\'est pas actif localement et n\'apparaît pas dans la liste des nœuds actifs');
+        } else {
+          console.log('Nœud actif:', results.nodeActive, ownNode);
+        }
       } else {
         results.nodeActive = false;
+        results.details.locallyActive = isLocallyActive;
         console.log('Nœud non trouvé dans la liste des nœuds actifs');
       }
     } catch (error) {
