@@ -54,7 +54,7 @@ export default function EcosystemDescription() {
       }}
     >
     <div 
-      className="text-center bg-black/60 backdrop-blur-sm p-4 rounded-lg border border-gray-700/30"
+      className="text-center bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-700/30"
     >
       <h2 className="text-xl font-semibold mb-2 text-white">
         {`// Brand Exit: Web3 Ecosystem Navigator`}
