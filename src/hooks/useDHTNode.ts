@@ -429,17 +429,31 @@ export function useDHTNode() {
     setError(null);
     
     try {
+      // Rafraîchir le token si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Récupérer l'adresse du wallet depuis le token JWT
+      const walletAddressFromToken = authService.getWalletAddressFromToken();
+      if (!walletAddressFromToken) {
+        throw new Error('Adresse de wallet non disponible dans le token JWT');
+      }
+      
+      console.log('Démarrage du nœud DHT pour le wallet:', walletAddressFromToken);
+      
       // Utiliser le service d'authentification pour obtenir les en-têtes
       const headers = await authService.getAuthHeaders();
+      console.log('Entêtes d\'authentification pour startDHTNode:', headers);
       
       // Envoyer l'adresse du wallet comme paramètre de requête au lieu du corps
       const response = await api.post('/dht/start', 
         {}, // Corps vide
         { 
           headers,
-          params: { walletAddress: account } // Paramètre de requête
+          params: { walletAddress: walletAddressFromToken } // Utiliser l'adresse du token
         }
       );
+      
+      console.log('Réponse du démarrage du nœud DHT:', response.status, response.data);
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Mettre à jour le statut
@@ -469,17 +483,31 @@ export function useDHTNode() {
     setError(null);
     
     try {
+      // Rafraîchir le token si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Récupérer l'adresse du wallet depuis le token JWT
+      const walletAddressFromToken = authService.getWalletAddressFromToken();
+      if (!walletAddressFromToken) {
+        throw new Error('Adresse de wallet non disponible dans le token JWT');
+      }
+      
+      console.log('Arrêt du nœud DHT pour le wallet:', walletAddressFromToken);
+      
       // Utiliser le service d'authentification pour obtenir les en-têtes
       const headers = await authService.getAuthHeaders();
+      console.log('Entêtes d\'authentification pour stopDHTNode:', headers);
       
       // Envoyer l'adresse du wallet comme paramètre de requête au lieu du corps
       const response = await api.post('/dht/stop', 
         {}, // Corps vide
         { 
           headers,
-          params: { walletAddress: account } // Paramètre de requête
+          params: { walletAddress: walletAddressFromToken } // Utiliser l'adresse du token
         }
       );
+      
+      console.log('Réponse de l\'arrêt du nœud DHT:', response.status, response.data);
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Mettre à jour le statut
