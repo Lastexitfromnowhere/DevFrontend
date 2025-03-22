@@ -321,30 +321,66 @@ export const getDHTNodes = async () => {
     const headers = await getAuthHeaders();
     console.log('Entêtes d\'authentification pour getDHTNodes:', headers);
     
-    // Utiliser les query params comme pour getDHTStatusByWallet
-    const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
-      headers,
-      params: { walletAddress }
-    });
-    
-    console.log('Réponse de l\'API pour les nœuds DHT:', response.status, response.data);
-    
-    // Vérifier si la réponse contient des nœuds
-    if (response.data && Array.isArray(response.data.nodes)) {
-      console.log(`${response.data.nodes.length} nœuds DHT récupérés depuis l'API`);
+    // Essayer d'abord avec l'endpoint /nodes
+    try {
+      // Utiliser les query params comme pour getDHTStatusByWallet
+      const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
+        headers,
+        params: { walletAddress }
+      });
       
-      // Si la réponse contient des nœuds mais que le tableau est vide, on le signale clairement
-      if (response.data.nodes.length === 0) {
-        console.log('La réponse API contient un tableau de nœuds vide');
-        return { success: true, nodes: [] };
+      console.log('Réponse de l\'API pour les nœuds DHT (endpoint /nodes):', response.status, response.data);
+      
+      // Vérifier si la réponse contient des nœuds
+      if (response.data && Array.isArray(response.data.nodes)) {
+        console.log(`${response.data.nodes.length} nœuds DHT récupérés depuis l'API (endpoint /nodes)`);
+        
+        // Si la réponse contient des nœuds mais que le tableau est vide, on le signale clairement
+        if (response.data.nodes.length === 0) {
+          console.log('La réponse API contient un tableau de nœuds vide (endpoint /nodes)');
+        } else {
+          return response.data;
+        }
       }
+    } catch (error) {
+      console.warn('Erreur avec l\'endpoint /nodes, tentative avec /dht/nodes:', error.message);
+    }
+    
+    // Si l'endpoint /nodes a échoué ou n'a pas retourné de nœuds, essayer avec /dht/nodes
+    try {
+      const altResponse = await dhtAxios.get(`${DHT_API_BASE}/dht/nodes`, {
+        headers,
+        params: { walletAddress }
+      });
       
-      return response.data;
-    } else {
-      console.log('Format de réponse inattendu: la propriété "nodes" est manquante ou n\'est pas un tableau');
+      console.log('Réponse de l\'API pour les nœuds DHT (endpoint /dht/nodes):', altResponse.status, altResponse.data);
       
-      // Normaliser la réponse pour éviter les erreurs dans les composants qui utilisent ces données
-      return { success: false, nodes: [], error: 'Format de réponse inattendu' };
+      // Vérifier si la réponse contient des nœuds
+      if (altResponse.data && Array.isArray(altResponse.data.nodes)) {
+        console.log(`${altResponse.data.nodes.length} nœuds DHT récupérés depuis l'API (endpoint /dht/nodes)`);
+        
+        // Si la réponse contient des nœuds mais que le tableau est vide, on le signale clairement
+        if (altResponse.data.nodes.length === 0) {
+          console.log('La réponse API contient un tableau de nœuds vide (endpoint /dht/nodes)');
+          return { success: true, nodes: [] };
+        }
+        
+        return altResponse.data;
+      } else {
+        console.log('Format de réponse inattendu: la propriété "nodes" est manquante ou n\'est pas un tableau (endpoint /dht/nodes)');
+        
+        // Normaliser la réponse pour éviter les erreurs dans les composants qui utilisent ces données
+        return { success: false, nodes: [], error: 'Format de réponse inattendu' };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération des nœuds DHT (endpoint /dht/nodes):', error);
+      console.error('Détails de l\'erreur:', {
+        message: error.message,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data
+      });
+      return { success: false, nodes: [], error: error.message };
     }
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds DHT:', error);
@@ -601,11 +637,43 @@ export const testDHTConnectivity = async () => {
       const isLocallyActive = statusResponse.success && statusResponse.isActive;
       console.log('Nœud actif localement:', isLocallyActive, statusResponse);
       
-      // Récupérer la liste des nœuds actifs
-      const nodesResponse = await getDHTNodes();
-      
       // Récupérer l'adresse du wallet depuis le token JWT
       const walletAddress = authService.getWalletAddressFromToken();
+      
+      // Essayer de récupérer le statut directement avec l'endpoint /status
+      try {
+        const directStatusResponse = await dhtAxios.get(`${DHT_API_BASE}/status`, {
+          headers: await getAuthHeaders(),
+          params: { walletAddress }
+        });
+        results.details.directStatusResponse = directStatusResponse.data;
+        console.log('Réponse directe du statut:', directStatusResponse.data);
+      } catch (error) {
+        console.warn('Erreur lors de la récupération directe du statut:', error.message);
+        results.details.directStatusError = {
+          message: error.message,
+          status: error.response?.status
+        };
+      }
+      
+      // Essayer de récupérer le nœud avec l'endpoint /node
+      try {
+        const nodeResponse = await dhtAxios.get(`${DHT_API_BASE}/node`, {
+          headers: await getAuthHeaders(),
+          params: { walletAddress }
+        });
+        results.details.nodeResponse = nodeResponse.data;
+        console.log('Réponse de l\'endpoint /node:', nodeResponse.data);
+      } catch (error) {
+        console.warn('Erreur lors de la récupération du nœud avec /node:', error.message);
+        results.details.nodeError = {
+          message: error.message,
+          status: error.response?.status
+        };
+      }
+      
+      // Récupérer la liste des nœuds actifs
+      const nodesResponse = await getDHTNodes();
       
       // Vérifier si notre nœud est dans la liste des nœuds actifs
       if (nodesResponse.success && Array.isArray(nodesResponse.nodes)) {
@@ -630,6 +698,7 @@ export const testDHTConnectivity = async () => {
       } else {
         results.nodeActive = false;
         results.details.locallyActive = isLocallyActive;
+        results.details.nodesResponse = nodesResponse;
         console.log('Nœud non trouvé dans la liste des nœuds actifs');
       }
     } catch (error) {

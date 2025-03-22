@@ -104,8 +104,6 @@ export default function DHTStatus() {
     fetchNodes
   } = useDHT();
   
-  const [useDemoNodes, setUseDemoNodes] = useState(true);
-  
   // Définir un type pour les résultats du diagnostic
   type DiagnosticResult = {
     success: boolean;
@@ -128,24 +126,10 @@ export default function DHTStatus() {
   
   useEffect(() => {
     if (isAuthenticated) {
-      // Par défaut, ne pas utiliser les nœuds de démonstration
-      setUseDemoNodes(false);
       fetchStatus();
       fetchNodes(false); // false = ne pas utiliser les nœuds de démonstration
     }
   }, [isAuthenticated, fetchStatus, fetchNodes]);
-
-  // Fonction pour rafraîchir les nœuds sans utiliser les nœuds de démonstration
-  const refreshRealNodes = async () => {
-    setUseDemoNodes(false);
-    await fetchNodes(false); // false = ne pas utiliser les nœuds de démonstration
-  };
-
-  // Fonction pour rafraîchir les nœuds avec les nœuds de démonstration si nécessaire
-  const refreshWithDemoNodes = async () => {
-    setUseDemoNodes(true);
-    await fetchNodes(true); // true = utiliser les nœuds de démonstration si nécessaire
-  };
 
   // Fonction pour exécuter le diagnostic de connectivité
   const runDiagnostic = async () => {
@@ -271,22 +255,6 @@ export default function DHTStatus() {
         
         {/* Boutons pour rafraîchir les nœuds avec ou sans nœuds de démonstration */}
         <div className="flex ml-auto space-x-2">
-          <Button
-            variant="secondary"
-            icon={<AlertTriangle className="h-4 w-4" />}
-            onClick={refreshRealNodes}
-            disabled={loading}
-          >
-            Afficher nœuds réels uniquement
-          </Button>
-          <Button
-            variant="secondary"
-            icon={<RefreshCw className="h-4 w-4" />}
-            onClick={refreshWithDemoNodes}
-            disabled={loading}
-          >
-            Inclure nœuds démo
-          </Button>
           <Button
             variant="secondary"
             icon={<RefreshCw className="h-4 w-4" />}
