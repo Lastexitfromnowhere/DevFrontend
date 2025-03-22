@@ -516,9 +516,20 @@ export const retrieveDHTValue = async (key) => {
 // Fonction pour vérifier si le backend est accessible
 export const checkBackendConnection = async () => {
   try {
+    // Récupérer l'adresse du wallet et le token
+    const walletAddress = localStorage.getItem('walletAddress');
+    const token = localStorage.getItem('token');
+    
     console.log(`Vérification de la connexion au backend: ${API_BASE}/status`);
     const response = await dhtAxios.get(`${API_BASE}/status`, {
-      timeout: 10000 // 10 secondes
+      timeout: 10000, // 10 secondes
+      headers: {
+        'X-Wallet-Address': walletAddress || '',
+        'Authorization': `Bearer ${token || ''}`
+      },
+      params: {
+        walletAddress: walletAddress || ''
+      }
     });
     return { success: true, status: response.status, data: response.data };
   } catch (error) {

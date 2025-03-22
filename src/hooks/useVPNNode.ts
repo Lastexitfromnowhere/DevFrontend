@@ -6,6 +6,7 @@ import { config } from '@/config/env';
 
 // Configuration de base d'Axios avec logs
 const api = axios.create({
+  baseURL: config.API_BASE_URL,
   timeout: config.DEFAULT_TIMEOUT,
   headers: {
     'Content-Type': 'application/json'
@@ -201,7 +202,7 @@ export function useVPNNode() {
   const testConnection = async (): Promise<boolean> => {
     try {
       console.log('Testing server connection...');
-      const response = await api.get(`${config.API_BASE_URL}/health`, {
+      const response = await api.get('health', {
         timeout: 10000 // 10 secondes
       });
       return (response.data as { status?: string }).status === 'healthy';
@@ -259,7 +260,7 @@ export function useVPNNode() {
       localStorage.setItem('lastStatusCheck', now.toISOString());
       
       // Faire la requête API
-      const response = await api.get(`${config.API_BASE_URL}/dht/status`, {
+      const response = await api.get('dht/status', {
         headers: {
           'X-Wallet-Address': account
         },
@@ -417,7 +418,7 @@ export function useVPNNode() {
       await new Promise(resolve => setTimeout(resolve, randomDelay));
       
       // Faire la requête API avec l'adresse du wallet actuel
-      const response = await api.get(`${config.API_BASE_URL}/dht/available-nodes`, {
+      const response = await api.get('dht/available-nodes', {
         headers: {
           'X-Wallet-Address': account || localStorage.getItem('walletAddress') || ''
         }
@@ -521,7 +522,7 @@ export function useVPNNode() {
         console.log('Déconnexion réussie, connexion au nouveau nœud...');
       }
 
-      const response = await api.post(`${config.API_BASE_URL}/connect`, {
+      const response = await api.post('connect', {
         clientWalletAddress: account,
         hostWalletAddress: nodeWalletAddress
       });
@@ -578,7 +579,7 @@ export function useVPNNode() {
 
       console.log('Starting node for wallet:', account);
       
-      const response = await api.post(`${config.API_BASE_URL}/dht/connect`, {
+      const response = await api.post('dht/connect', {
         walletAddress: account,
         nodeInfo: {
           country: 'France',
@@ -660,7 +661,7 @@ export function useVPNNode() {
 
       console.log('Stopping node for wallet:', account);
       
-      const response = await api.post(`${config.API_BASE_URL}/dht/disconnect`, {
+      const response = await api.post('dht/disconnect', {
         walletAddress: account
       });
 
@@ -734,7 +735,7 @@ export function useVPNNode() {
 
       console.log('Disconnecting client from node for wallet:', account);
       
-      const response = await api.post(`${config.API_BASE_URL}/dht/client-disconnect`, {
+      const response = await api.post('dht/client-disconnect', {
         clientWalletAddress: account
       });
 
@@ -807,7 +808,7 @@ export function useVPNNode() {
 
     setIsLoading(true);
     try {
-      const response = await api.get(`${config.API_BASE_URL}/dht/connected-clients`, {
+      const response = await api.get('dht/connected-clients', {
         headers: {
           'X-Wallet-Address': account
         }
@@ -849,7 +850,7 @@ export function useVPNNode() {
 
     setIsLoading(true);
     try {
-      const response = await api.post(`${config.API_BASE_URL}/dht/disconnect-client`, {
+      const response = await api.post('dht/disconnect-client', {
         hostWalletAddress: account,
         clientWalletAddress: clientWalletAddress
       });

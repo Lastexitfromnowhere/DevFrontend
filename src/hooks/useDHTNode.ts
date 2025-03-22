@@ -79,6 +79,7 @@ interface AxiosErrorResponse {
 
 // Configuration de base d'Axios avec logs
 const api = axios.create({
+  baseURL: config.API_BASE_URL,
   timeout: config.DEFAULT_TIMEOUT,
   headers: { 'Content-Type': 'application/json' }
 });
@@ -227,7 +228,7 @@ export function useDHTNode() {
     
     try {
       // Type assertion pour response.data
-      const response = await api.post(`/api/vpn/connect-to-node`, 
+      const response = await api.post(`/vpn/connect-to-node`, 
         { hostWalletAddress: account }, // Ajouter l'adresse du wallet comme hôte
         { params: { walletAddress: account } }
       );
@@ -295,7 +296,7 @@ export function useDHTNode() {
       
       console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      const response = await api.post(`${config.API_BASE_URL}/wireguard/enable`, {
+      const response = await api.post('/wireguard/enable', {
         serverIp,
         serverPublicKey
       });
@@ -327,7 +328,7 @@ export function useDHTNode() {
     setWireGuardError(null);
     
     try {
-      const response = await api.post(`${config.API_BASE_URL}/wireguard/disable`);
+      const response = await api.post('/wireguard/disable');
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Réinitialiser la configuration
@@ -376,7 +377,7 @@ export function useDHTNode() {
       
       console.log('Connexion à WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      const response = await api.post(`${config.API_BASE_URL}/wireguard/connect`, {
+      const response = await api.post('/wireguard/connect', {
         peerPublicKey,
         endpoint,
         serverIp,
