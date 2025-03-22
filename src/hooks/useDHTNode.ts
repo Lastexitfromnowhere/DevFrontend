@@ -420,8 +420,8 @@ export function useDHTNode() {
   
   // Fonction pour démarrer le nœud DHT
   const startDHTNode = useCallback(async () => {
-    if (!isConnected || !account) {
-      setError('Wallet not connected');
+    if (!account) {
+      setError('No wallet address available');
       return false;
     }
     
@@ -432,9 +432,13 @@ export function useDHTNode() {
       // Utiliser le service d'authentification pour obtenir les en-têtes
       const headers = await authService.getAuthHeaders();
       
+      // Envoyer l'adresse du wallet comme paramètre de requête au lieu du corps
       const response = await api.post('/dht/start', 
-        { walletAddress: account },
-        { headers }
+        {}, // Corps vide
+        { 
+          headers,
+          params: { walletAddress: account } // Paramètre de requête
+        }
       );
       
       if (response.data && (response.data as { success?: boolean }).success) {
@@ -452,12 +456,12 @@ export function useDHTNode() {
     } finally {
       setLoading(false);
     }
-  }, [isConnected, account, fetchStatus]);
+  }, [account, fetchStatus]);
 
   // Fonction pour arrêter le nœud DHT
   const stopDHTNode = useCallback(async () => {
-    if (!isConnected || !account) {
-      setError('Wallet not connected');
+    if (!account) {
+      setError('No wallet address available');
       return false;
     }
     
@@ -468,9 +472,13 @@ export function useDHTNode() {
       // Utiliser le service d'authentification pour obtenir les en-têtes
       const headers = await authService.getAuthHeaders();
       
+      // Envoyer l'adresse du wallet comme paramètre de requête au lieu du corps
       const response = await api.post('/dht/stop', 
-        { walletAddress: account },
-        { headers }
+        {}, // Corps vide
+        { 
+          headers,
+          params: { walletAddress: account } // Paramètre de requête
+        }
       );
       
       if (response.data && (response.data as { success?: boolean }).success) {
@@ -488,7 +496,7 @@ export function useDHTNode() {
     } finally {
       setLoading(false);
     }
-  }, [isConnected, account, fetchStatus]);
+  }, [account, fetchStatus]);
   
   // Effet pour démarrer le polling lorsque le wallet est connecté
   useEffect(() => {
