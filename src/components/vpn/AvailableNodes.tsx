@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useVPNNode } from '@/hooks/useVPNNode';
 import { Card } from '../ui/Card';
-import { TerminalButton as Button } from '../ui/terminal/TerminalButton';
+import { DashboardButton } from '../ui/DashboardButton';
+import { DashboardBadge } from '../ui/DashboardBadge';
 import { Wifi, Server, Activity, RefreshCw, AlertTriangle, Users, Globe, Award } from 'lucide-react';
 import { Spinner } from '../ui/Spinner';
 
@@ -220,51 +221,53 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">Nœuds VPN disponibles</h2>
+        <h2 className="text-xl font-semibold text-white">Nœuds VPN disponibles</h2>
         <div className="flex space-x-2">
-          <Button 
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 flex items-center space-x-2"
+          <DashboardButton 
+            variant="secondary"
             onClick={() => refreshNodes(false)}
             disabled={isRefreshing}
           >
-            {isRefreshing ? <Spinner size="sm" /> : <AlertTriangle className="h-4 w-4" />}
+            {isRefreshing ? <Spinner size="sm" /> : <AlertTriangle className="h-4 w-4 mr-2" />}
             <span>Nœuds réels uniquement</span>
-          </Button>
-          <Button 
-            className="bg-gray-200 hover:bg-gray-300 text-gray-800 flex items-center space-x-2"
+          </DashboardButton>
+          <DashboardButton 
+            variant="secondary"
             onClick={() => refreshNodes(true)}
             disabled={isRefreshing}
           >
-            {isRefreshing ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
+            {isRefreshing ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4 mr-2" />}
             <span>Inclure nœuds démo</span>
-          </Button>
+          </DashboardButton>
         </div>
       </div>
       
       {errorState && (
-        <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
+        <div className="backdrop-blur-md bg-red-900/40 border border-red-700/50 p-3 rounded-md mb-4 text-red-100">
           {errorState}
         </div>
       )}
       
       {availableNodes.length === 0 ? (
-        <div className="text-center py-8">
+        <div className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-8 rounded-lg text-center">
           <Server className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-500">Aucun nœud VPN disponible actuellement.</p>
+          <p className="text-gray-300">Aucun nœud VPN disponible actuellement.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4">
           {availableNodes.map((node, index) => (
-            <Card key={index} className="p-4 hover:shadow-md transition-shadow">
+            <Card key={index} className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg hover:bg-black/50 transition-all duration-300 shadow-lg">
               <div className="flex justify-between items-start">
                 <div className="flex items-center space-x-3">
-                  <Wifi className="h-8 w-8 text-blue-500" />
+                  <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+                    <Wifi className="h-6 w-6 text-blue-400" />
+                  </div>
                   <div>
-                    <h3 className="font-medium">
+                    <h3 className="font-medium text-white">
                       {node.location?.country || 'Location inconnue'} 
                       {node.location?.region && ` (${node.location.region})`}
                     </h3>
-                    <p className="text-sm text-gray-500 truncate max-w-[200px]">
+                    <p className="text-sm text-gray-400 truncate max-w-[200px]">
                       {node.walletAddress?.substring(0, 10)}...{node.walletAddress?.substring(node.walletAddress.length - 8)}
                     </p>
                   </div>
@@ -272,56 +275,62 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
                 
                 <div>
                   {selectedNode === node.walletAddress && isConnectedToThisNode ? (
-                    <Button
-                      className="bg-red-600 hover:bg-red-700 text-white"
+                    <DashboardButton
+                      variant="danger"
                       onClick={handleDisconnectFromNode}
                       disabled={isLoading}
                     >
                       {isLoading ? <Spinner size="sm" /> : 'Déconnecter'}
-                    </Button>
+                    </DashboardButton>
                   ) : (
-                    <Button
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    <DashboardButton
+                      variant="primary"
                       onClick={() => handleConnectToNode(node)}
                       disabled={isLoading || (selectedNode !== null && selectedNode !== node.walletAddress)}
                     >
                       {isLoading && selectedNode === node.walletAddress ? <Spinner size="sm" /> : 'Connecter'}
-                    </Button>
+                    </DashboardButton>
                   )}
                 </div>
               </div>
               
-              <div className="mt-4 grid grid-cols-2 gap-4">
+              <div className="mt-4 grid grid-cols-2 gap-4 bg-black/20 p-3 rounded-md backdrop-blur-sm">
                 <div className="flex items-center space-x-2">
-                  <Activity className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">
+                  <Activity className="h-4 w-4 text-blue-400" />
+                  <span className="text-sm text-gray-300">
                     {node.performance?.bandwidth ? `${node.performance.bandwidth} Mbps` : 'Bande passante inconnue'}
                   </span>
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Globe className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">
+                  <Globe className="h-4 w-4 text-blue-400" />
+                  <span className="text-sm text-gray-300">
                     {node.performance?.latency ? `${node.performance.latency} ms` : 'Latence inconnue'}
                   </span>
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">
+                  <Users className="h-4 w-4 text-blue-400" />
+                  <span className="text-sm text-gray-300">
                     {node.connectedUsers !== undefined ? `${node.connectedUsers} utilisateurs` : 'Utilisateurs inconnus'}
                   </span>
                 </div>
                 
                 <div className="flex items-center space-x-2">
-                  <Award className="h-4 w-4 text-gray-500" />
-                  <span className="text-sm">
-                    {node.score !== undefined ? `Score: ${node.score.toFixed(1)}/5` : 'Score inconnu'}
+                  <Award className="h-4 w-4 text-blue-400" />
+                  <span className="text-sm text-gray-300">
+                    {node.score !== undefined ? (
+                      <span>
+                        Score: <DashboardBadge variant={node.score > 3.5 ? "success" : node.score > 2.5 ? "warning" : "danger"}>
+                          {node.score.toFixed(1)}/5
+                        </DashboardBadge>
+                      </span>
+                    ) : 'Score inconnu'}
                   </span>
                 </div>
               </div>
               
-              <div className="mt-2 text-xs text-gray-500 text-right">
+              <div className="mt-2 text-xs text-gray-400 text-right">
                 Dernière activité: {formatRelativeTime(node.lastSeen)}
               </div>
             </Card>

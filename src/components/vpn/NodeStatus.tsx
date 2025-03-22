@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
-import { TerminalButton } from '../ui/terminal/TerminalButton';
+import { DashboardButton } from '../ui/DashboardButton';
+import { DashboardBadge } from '../ui/DashboardBadge';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useVPNNode } from '@/hooks/useVPNNode';
 import { Activity, Signal, Award, Zap, Clock, AlertTriangle, Wifi, RefreshCw, Power, WifiOff, Server, Users } from 'lucide-react';
@@ -73,8 +74,8 @@ export default function NodeStatus() {
 
   if (!isConnected) {
     return (
-      <Card className="text-center p-6">
-        <p className="text-gray-500">Please connect your wallet to start a VPN node</p>
+      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg text-center">
+        <p className="text-gray-300">Please connect your wallet to start a VPN node</p>
       </Card>
     );
   }
@@ -82,17 +83,16 @@ export default function NodeStatus() {
   return (
     <div className="space-y-4">
       {/* Carte principale */}
-      <Card className="p-6 space-y-6">
+      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6">
         {/* En-tête avec statut */}
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <h3 className="text-lg font-semibold">Node Status</h3>
-            <span className={`flex items-center ${status.status === 'ACTIVE' ? 'text-green-500' : 'text-red-500'}`}>
-              <Activity className="w-4 h-4 mr-1" />
+            <h3 className="text-lg font-semibold text-white">Node Status</h3>
+            <DashboardBadge variant={status.status === 'ACTIVE' ? "success" : "danger"} dot>
               {status.status === 'ACTIVE' ? 'Active' : 'Inactive'}
-            </span>
+            </DashboardBadge>
             {status.status && ((status.status === 'ACTIVE') !== status.active) ? (
-              <span className="text-xs text-yellow-500">
+              <span className="text-xs text-yellow-400 ml-2">
                 (Statut incohérent: DB={status.status}, Cache={status.active ? 'ACTIVE' : 'INACTIVE'})
               </span>
             ) : null}
@@ -100,43 +100,47 @@ export default function NodeStatus() {
           <div className="flex items-center space-x-2">
             {/* Host Mode: Start/Stop Node Button */}
             {isHost && (
-              <TerminalButton
+              <DashboardButton
                 variant={status.active ? 'danger' : 'primary'}
                 onClick={status.active ? stopNode : () => startNode(true)}
-                loading={isLoading}
+                disabled={isLoading}
               >
-                {status.active ? 'Stop Node' : 'Start Node'}
-              </TerminalButton>
+                {isLoading ? 'Processing...' : status.active ? 'Stop Node' : 'Start Node'}
+              </DashboardButton>
             )}
 
             {/* Client Mode: Disconnect Button (only when connected to a node) */}
             {!isHost && status.active && status.connectedToNode && (
-              <TerminalButton
+              <DashboardButton
                 variant="danger"
                 onClick={disconnectFromNode}
-                loading={isLoading}
+                disabled={isLoading}
               >
-                Disconnect
-              </TerminalButton>
+                {isLoading ? 'Processing...' : 'Disconnect'}
+              </DashboardButton>
             )}
           </div>
         </div>
 
         {/* Sélection du type de nœud */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-4 bg-black/20 backdrop-blur-sm p-3 rounded-md">
           <div className="flex items-center space-x-2">
             {isHost ? (
-              <Server className="w-5 h-5 text-green-500" />
+              <div className="p-2 rounded-full bg-green-500/20 backdrop-blur-sm">
+                <Server className="w-5 h-5 text-green-400" />
+              </div>
             ) : (
-              <Wifi className="w-5 h-5 text-blue-500" />
+              <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+                <Wifi className="w-5 h-5 text-blue-400" />
+              </div>
             )}
-            <span className="font-semibold">
+            <span className="font-semibold text-white">
               {isHost ? 'Host Mode' : 'Client Mode'}
             </span>
           </div>
           
           <div className="flex items-center space-x-2">
-            <span className={`text-sm ${isHost ? 'text-gray-500' : 'text-blue-500 font-semibold'}`}>Client</span>
+            <span className={`text-sm ${isHost ? 'text-gray-400' : 'text-blue-400 font-semibold'}`}>Client</span>
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
@@ -159,41 +163,43 @@ export default function NodeStatus() {
               />
               <div className="w-11 h-6 bg-gray-700 rounded-full peer peer-checked:bg-green-600 peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all"></div>
             </label>
-            <span className={`text-sm ${isHost ? 'text-green-500 font-semibold' : 'text-gray-500'}`}>Host</span>
+            <span className={`text-sm ${isHost ? 'text-green-400 font-semibold' : 'text-gray-400'}`}>Host</span>
             {status.active && (
-              <span className="text-xs text-yellow-500 ml-2">(Will stop current node)</span>
+              <span className="text-xs text-yellow-400 ml-2">(Will stop current node)</span>
             )}
           </div>
         </div>
 
         {/* Host Mode: Connected Clients (only when active and in host mode) */}
         {isHost && status.active && (
-          <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700 rounded">
+          <div className="mt-4 backdrop-blur-md bg-blue-900/20 border border-blue-700/50 p-4 rounded-lg">
             <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center text-blue-500">
+              <div className="flex items-center text-blue-400">
                 <Users className="w-4 h-4 mr-2" />
                 <span className="font-semibold">Connected Clients ({status.connectedUsers || 0})</span>
               </div>
-              <TerminalButton
+              <DashboardButton
                 variant="secondary"
                 onClick={() => {
                   fetchConnectedClients();
                 }}
-                loading={isLoading}
+                disabled={isLoading}
                 className="text-xs py-1 px-2"
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
                 Refresh
-              </TerminalButton>
+              </DashboardButton>
             </div>
             
             {status.connectedClients && status.connectedClients.length > 0 ? (
               <div className="mt-2 space-y-2 max-h-[200px] overflow-y-auto">
                 {status.connectedClients.map((client, index) => (
-                  <div key={index} className="flex justify-between items-center bg-blue-900/20 p-2 rounded">
+                  <div key={index} className="flex justify-between items-center backdrop-blur-sm bg-blue-900/10 border border-blue-700/30 p-3 rounded-md">
                     <div className="flex items-center">
-                      <Wifi className="w-3 h-3 mr-2 text-blue-400" />
-                      <span className="text-sm">
+                      <div className="p-1 rounded-full bg-blue-500/20 backdrop-blur-sm mr-2">
+                        <Wifi className="w-3 h-3 text-blue-400" />
+                      </div>
+                      <span className="text-sm text-gray-300">
                         {client.walletAddress ? 
                           `${client.walletAddress.substring(0, 8)}...${client.walletAddress.substring(client.walletAddress.length - 6)}` : 
                           'Unknown Client'}
@@ -205,20 +211,20 @@ export default function NodeStatus() {
                           `Connected: ${new Date(client.connectedSince).toLocaleTimeString()}` : 
                           'Recently connected'}
                       </div>
-                      <TerminalButton
+                      <DashboardButton
                         variant="danger"
                         onClick={() => disconnectClient(client.walletAddress)}
                         className="text-xs py-1 px-2"
                       >
                         <WifiOff className="w-3 h-3 mr-1" />
                         Disconnect
-                      </TerminalButton>
+                      </DashboardButton>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center py-2 text-gray-400 text-sm">
+              <div className="text-center py-2 text-gray-400 text-sm backdrop-blur-sm bg-black/20 rounded-md p-3">
                 {status.connectedUsers > 0 ? 
                   `${status.connectedUsers} clients connected. Click Refresh to see details.` : 
                   'No clients currently connected to your node.'}
@@ -229,13 +235,15 @@ export default function NodeStatus() {
 
         {/* Client connected status */}
         {!isHost && status.active && status.connectedToNode && (
-          <div className="mt-4 p-3 bg-green-900/30 border border-green-700 rounded">
-            <div className="flex items-center text-green-500">
-              <Server className="w-4 h-4 mr-2" />
+          <div className="mt-4 backdrop-blur-md bg-green-900/20 border border-green-700/50 p-4 rounded-lg">
+            <div className="flex items-center text-green-400">
+              <div className="p-1 rounded-full bg-green-500/20 backdrop-blur-sm mr-2">
+                <Server className="w-4 h-4" />
+              </div>
               <span>Connected to node: {status.connectedToNode.substring(0, 8)}...{status.connectedToNode.substring(status.connectedToNode.length - 6)}</span>
             </div>
             {status.nodeIp && (
-              <div className="mt-2 text-sm text-gray-400">
+              <div className="mt-2 text-sm text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
                 Node IP: {status.nodeIp}
               </div>
             )}
@@ -260,7 +268,7 @@ export default function NodeStatus() {
               <span>{error}</span>
             </div>
             {error.includes('authentification') && (
-              <TerminalButton
+              <DashboardButton
                 variant="secondary"
                 onClick={() => {
                   // Forcer la reconnexion du wallet
@@ -272,7 +280,7 @@ export default function NodeStatus() {
               >
                 <RefreshCw className="w-3 h-3 mr-1" />
                 Reconnect
-              </TerminalButton>
+              </DashboardButton>
             )}
           </div>
         )}

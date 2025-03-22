@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Card } from '../ui/Card';
+import { DashboardBadge } from '../ui/DashboardBadge';
 import { useDHTNode } from '@/hooks/useDHTNode';
 import { Network, Clock, Activity, Server } from 'lucide-react';
 
@@ -32,41 +33,40 @@ export default function NodeStatusSummary() {
   };
 
   return (
-    <Card className="p-4 border-green-800 bg-black/50">
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow">
       <div className="flex flex-col">
         <div className="flex items-center space-x-2">
-          <span className={`flex items-center ${status.active ? 'text-green-500' : 'text-red-500'}`}>
-            <Activity className="w-4 h-4 mr-1" />
+          <DashboardBadge variant={status.active ? "success" : "danger"} dot>
             {status.active ? 'Actif' : 'Inactif'}
-          </span>
+          </DashboardBadge>
           {status.active && status.nodeType && (
-            <span className={`text-xs px-2 py-0.5 rounded ${
-              status.nodeType === 'HOST' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
-            }`}>
+            <DashboardBadge variant={status.nodeType === 'HOST' ? "info" : "success"}>
               {status.nodeType === 'HOST' ? 'Hébergeur' : 'Client'}
-            </span>
+            </DashboardBadge>
           )}
           {status.active && status.protocol && (
-            <span className={`text-xs px-2 py-0.5 rounded ${
-              status.protocol === 'WireGuard' ? 'bg-purple-100 text-purple-800' : 'bg-yellow-100 text-yellow-800'
-            }`}>
+            <DashboardBadge variant={status.protocol === 'WireGuard' ? "info" : "warning"}>
               {status.protocol}
-            </span>
+            </DashboardBadge>
           )}
         </div>
         <div className="flex items-center justify-between mt-2">
           <div className="flex items-center space-x-2">
             {status.protocol === 'WireGuard' ? (
-              <Server className={status.active ? "text-purple-400" : "text-gray-500"} size={20} />
+              <div className="p-2 rounded-full bg-purple-500/20 backdrop-blur-sm">
+                <Server className={status.active ? "text-purple-400" : "text-gray-500"} size={16} />
+              </div>
             ) : (
-              <Network className={status.active ? "text-green-400" : "text-gray-500"} size={20} />
+              <div className="p-2 rounded-full bg-green-500/20 backdrop-blur-sm">
+                <Network className={status.active ? "text-green-400" : "text-gray-500"} size={16} />
+              </div>
             )}
-            <h3 className="font-medium">
+            <h3 className="font-medium text-white">
               {status.active ? `Nœud ${status.protocol || 'DHT'} actif` : `Nœud ${status.protocol || 'DHT'} inactif`}
             </h3>
           </div>
           
-          <div className="flex items-center text-xs text-gray-400">
+          <div className="flex items-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-1 px-2 rounded-md">
             <Clock size={14} className="mr-1" />
             <span title={`Dernière mise à jour: ${formatLastUpdated(status.lastUpdated)}`}>
               {getTimeSinceUpdate(status.lastUpdated)}
@@ -75,7 +75,7 @@ export default function NodeStatusSummary() {
         </div>
         
         {status.active && (
-          <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+          <div className="mt-3 grid grid-cols-2 gap-3 text-sm bg-black/20 backdrop-blur-sm p-3 rounded-md border border-gray-700/30">
             <div className="flex items-center">
               <span className="text-gray-400 mr-1">ID:</span>
               <span className="text-green-300">{status.nodeId ? status.nodeId.substring(0, 8) + '...' : 'N/A'}</span>
