@@ -9,34 +9,8 @@ import axios from 'axios';
 import { Spinner } from '../ui/Spinner';
 import { authService } from '@/services/authService';
 
-// Configuration de base d'Axios
-const api = axios.create({
-  timeout: config.DEFAULT_TIMEOUT,
-  headers: {
-    'Content-Type': 'application/json'
-  }
-});
-
-// Intercepteur pour ajouter l'adresse du wallet à toutes les requêtes
-api.interceptors.request.use(
-  (config) => {
-    // Récupérer l'adresse du wallet depuis le localStorage
-    const walletAddress = localStorage.getItem('walletAddress');
-    
-    // Si l'adresse existe, l'ajouter aux en-têtes
-    if (walletAddress) {
-      // S'assurer que headers existe
-      config.headers = config.headers || {};
-      config.headers['X-Wallet-Address'] = walletAddress;
-      config.headers['Authorization'] = `Bearer ${walletAddress}`;
-    }
-    
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
-  }
-);
+// URL de base pour les requêtes dailyClaims
+const DAILY_CLAIMS_API_BASE = `${config.API_BASE_URL}/dailyClaims`;
 
 interface RewardsState {
   availableRewards: number;
@@ -72,7 +46,7 @@ export default function DailyClaims() {
 
     setIsLoading(true);
     try {
-      console.log('Fetching rewards from:', `${config.API_BASE_URL}/dailyClaims`);
+      console.log('Fetching rewards from:', DAILY_CLAIMS_API_BASE);
       
       // Vérifier que le token est valide et le rafraîchir si nécessaire
       await authService.refreshTokenIfNeeded();
@@ -92,19 +66,14 @@ export default function DailyClaims() {
       console.log('Le token correspond à l\'adresse du wallet:', tokenMatch);
       
       // Obtenir les en-têtes d'authentification
-      const headers = authService.getAuthHeaders();
+      const headers = await authService.getAuthHeaders();
       
       console.log('Entêtes d\'authentification:', headers);
       console.log('Adresse du wallet utilisée pour la requête:', walletAddressToUse);
       
-      const response = await api.get(`${config.API_BASE_URL}/dailyClaims`, {
-        params: {
-          walletAddress: walletAddressToUse
-        },
-        headers: {
-          ...headers,
-          'X-Wallet-Address': walletAddressToUse
-        }
+      const response = await axios.get(DAILY_CLAIMS_API_BASE, {
+        headers,
+        params: { walletAddress: walletAddressToUse }
       });
       
       console.log('API response:', response);
@@ -120,13 +89,12 @@ export default function DailyClaims() {
           nextClaimTime: responseData.nextClaimTime,
           claimHistory: responseData.claimHistory || []
         });
-        setError(null);
       } else {
         setError(responseData.message || 'Failed to fetch rewards');
       }
     } catch (error: any) {
       console.error('Error fetching rewards:', error);
-      setError(error.response?.data?.message || error.message || 'Error fetching rewards');
+      setError(error.message || 'Failed to fetch rewards');
     } finally {
       setIsLoading(false);
     }
@@ -141,8 +109,6 @@ export default function DailyClaims() {
 
     setIsClaiming(true);
     try {
-      console.log('Claiming daily rewards from:', `${config.API_BASE_URL}/dailyClaims/claim`);
-      
       // Vérifier que le token est valide et le rafraîchir si nécessaire
       await authService.refreshTokenIfNeeded();
       
@@ -156,55 +122,31 @@ export default function DailyClaims() {
         walletAddressToUse = tokenWalletAddress;
       }
       
-      // Vérifier si le token JWT correspond à l'adresse du wallet
-      const tokenMatch = await authService.verifyTokenWalletMatch();
-      console.log('Le token correspond à l\'adresse du wallet:', tokenMatch);
-      
       // Obtenir les en-têtes d'authentification
-      const headers = authService.getAuthHeaders();
+      const headers = await authService.getAuthHeaders();
       
-      console.log('Entêtes d\'authentification:', headers);
-      console.log('Adresse du wallet utilisée pour la requête:', walletAddressToUse);
+      console.log('Entêtes d\'authentification pour claim:', headers);
+      console.log('Adresse du wallet utilisée pour la requête de claim:', walletAddressToUse);
       
-      const response = await api.post(`${config.API_BASE_URL}/dailyClaims/claim`, null, {
-        params: {
-          walletAddress: walletAddressToUse
-        },
-        headers: {
-          ...headers,
-          'X-Wallet-Address': walletAddressToUse
-        }
+      const response = await axios.post(DAILY_CLAIMS_API_BASE, null, {
+        headers,
+        params: { walletAddress: walletAddressToUse }
       });
       
-      console.log('API response:', response);
+      console.log('Claim response:', response);
       
       // Type assertion pour response.data
       const responseData = response.data as any;
       
       if (responseData.success) {
-        // Mettre à jour l'état des récompenses après une réclamation réussie
-        setRewards({
-          ...rewards,
-          availableRewards: 0, // Réinitialiser à 0 après réclamation
-          lastClaimDate: new Date().toISOString(),
-          canClaim: false,
-          nextClaimTime: responseData.nextClaimTime,
-          claimHistory: [
-            {
-              amount: responseData.claimedAmount || rewards.availableRewards,
-              timestamp: new Date().toISOString(),
-              status: 'success'
-            },
-            ...rewards.claimHistory
-          ]
-        });
-        setError(null);
+        // Mettre à jour les récompenses après réclamation
+        await fetchRewards();
       } else {
         setError(responseData.message || 'Failed to claim rewards');
       }
     } catch (error: any) {
       console.error('Error claiming rewards:', error);
-      setError(error.response?.data?.message || error.message || 'Error claiming rewards');
+      setError(error.message || 'Failed to claim rewards');
     } finally {
       setIsClaiming(false);
     }
