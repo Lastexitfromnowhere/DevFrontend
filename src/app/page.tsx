@@ -1,6 +1,7 @@
 "use client";
 
 // src/app/page.tsx
+// Trigger deployment - 2025-03-22
 import React, { useState } from 'react';
 import { Terminal, Shield, Target, Network } from 'lucide-react';
 import { useWalletContext } from '@/contexts/WalletContext';
