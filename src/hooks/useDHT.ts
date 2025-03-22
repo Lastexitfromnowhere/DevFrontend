@@ -252,7 +252,7 @@ export function useDHT() {
   }, [isAuthenticated]);
 
   // Fonction pour récupérer la liste des nœuds WireGuard via DHT
-  const fetchWireGuardNodes = useCallback(async () => {
+  const fetchWireGuardNodes = useCallback(async (useDemoNodesAsFallback = true) => {
     if (!isAuthenticated) {
       console.log('Non authentifié, impossible de récupérer les nœuds WireGuard');
       return [];
@@ -280,12 +280,20 @@ export function useDHT() {
           }))
         : [];
       
-      // Si aucun nœud n'est disponible, utiliser des nœuds de démonstration
+      // Si aucun nœud n'est disponible, utiliser des nœuds de démonstration uniquement si l'option est activée
       if (sanitizedNodes.length === 0) {
-        console.log('Aucun nœud WireGuard disponible, utilisation des nœuds de démonstration');
-        const demoNodes = generateDemoWireGuardNodes(3);
-        setWireGuardNodes(demoNodes);
-        return demoNodes;
+        console.log('Aucun nœud WireGuard disponible');
+        
+        if (useDemoNodesAsFallback) {
+          console.log('Utilisation des nœuds WireGuard de démonstration comme solution de repli');
+          const demoNodes = generateDemoWireGuardNodes(3);
+          setWireGuardNodes(demoNodes);
+          return demoNodes;
+        } else {
+          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
+          setWireGuardNodes([]);
+          return [];
+        }
       }
       
       console.log(`${sanitizedNodes.length} nœuds WireGuard récupérés`);
@@ -294,11 +302,17 @@ export function useDHT() {
     } catch (err) {
       console.error('Erreur lors de la récupération des nœuds WireGuard:', err);
       
-      // En cas d'erreur, utiliser des nœuds de démonstration
-      console.log('Utilisation des nœuds WireGuard de démonstration suite à une erreur');
-      const demoNodes = generateDemoWireGuardNodes(3);
-      setWireGuardNodes(demoNodes);
-      return demoNodes;
+      // En cas d'erreur, utiliser des nœuds de démonstration uniquement si l'option est activée
+      if (useDemoNodesAsFallback) {
+        console.log('Utilisation des nœuds WireGuard de démonstration suite à une erreur');
+        const demoNodes = generateDemoWireGuardNodes(3);
+        setWireGuardNodes(demoNodes);
+        return demoNodes;
+      } else {
+        console.log('Aucun nœud de démonstration généré malgré l\'erreur car l\'option est désactivée');
+        setWireGuardNodes([]);
+        return [];
+      }
     } finally {
       setIsLoadingWireGuard(false);
     }

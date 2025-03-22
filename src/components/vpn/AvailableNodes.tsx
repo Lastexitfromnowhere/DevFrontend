@@ -115,7 +115,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     try {
       // Utiliser directement la fonction du hook useVPNNode pour récupérer les nœuds
       // Cette approche garantit la cohérence entre les différentes parties de l'application
-      const nodes = await fetchAvailableNodes(forceRefresh);
+      const nodes = await fetchAvailableNodes(forceRefresh, useDemoNodesAsFallback);
       console.log('Nœuds récupérés dans AvailableNodes:', nodes);
       
       if (!nodes || nodes.length === 0) {
@@ -173,7 +173,9 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   
   // Fonction pour charger les nœuds au chargement du composant
   useEffect(() => {
-    loadAvailableNodes(false, useDemoNodes);
+    // Au chargement initial, ne pas utiliser les nœuds de démonstration par défaut
+    setUseDemoNodes(false);
+    loadAvailableNodes(false, false);
   }, []);
   
   // Fonction pour rafraîchir les nœuds avec ou sans nœuds de démonstration

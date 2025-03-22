@@ -950,9 +950,9 @@ export function useVPNNode() {
     }
   }, [status.active, status.nodeType]);
 
-  const fetchAvailableNodes = async (forceRefresh: boolean = false): Promise<VPNNode[]> => {
+  const fetchAvailableNodes = async (forceRefresh: boolean = false, useDemoNodesAsFallback: boolean = true): Promise<VPNNode[]> => {
     const now = new Date();
-    console.log('Début fetchAvailableNodes, forceRefresh:', forceRefresh);
+    console.log('Début fetchAvailableNodes, forceRefresh:', forceRefresh, 'useDemoNodesAsFallback:', useDemoNodesAsFallback);
     
     // Vérifier le cache si forceRefresh est false
     if (!forceRefresh) {
@@ -999,72 +999,64 @@ export function useVPNNode() {
       if (Array.isArray(response.data)) {
         console.log('La réponse est un tableau');
         nodes = response.data;
-      } else if (response.data && typeof response.data === 'object') {
-        console.log('La réponse est un objet');
-        // Utiliser une assertion de type pour accéder aux propriétés
-        const responseObj = response.data as Record<string, any>;
-        if (Array.isArray(responseObj.nodes)) {
-          console.log('L\'objet contient un tableau nodes');
-          nodes = responseObj.nodes;
-        } else if (responseObj.success === true && Array.isArray(responseObj.data)) {
-          console.log('L\'objet contient un tableau data');
-          nodes = responseObj.data;
+      } else if (response.data && typeof response.data === 'object' && 'nodes' in response.data && Array.isArray((response.data as any).nodes)) {
+        console.log('La réponse est un objet avec une propriété nodes');
+        nodes = (response.data as any).nodes;
+      } else {
+        console.log('Format de réponse inattendu, aucun nœud trouvé');
+        
+        // Ne générer des nœuds de démonstration que si l'option est activée
+        if (useDemoNodesAsFallback) {
+          console.log('Génération de nœuds de démonstration comme solution de repli');
+          nodes = generateDemoNodes(5);
+        } else {
+          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
+          nodes = [];
         }
       }
       
-      console.log('Nœuds extraits de la réponse:', nodes);
-      console.log('Nombre de nœuds extraits:', nodes.length);
-      
-      // Générer des nœuds de démonstration si la réponse est vide ou mal formatée
-      if (!nodes || nodes.length === 0) {
-        console.log('Aucun nœud trouvé dans la réponse, génération de nœuds de démonstration');
-        const demoNodes = generateDemoNodes(5);
+      // Si aucun nœud n'est trouvé, générer des nœuds de démonstration uniquement si l'option est activée
+      if (nodes.length === 0) {
+        console.log('Aucun nœud trouvé dans la réponse API');
         
-        // Mettre en cache les nœuds de démonstration
-        localStorage.setItem('availableNodesCache', JSON.stringify(demoNodes));
-        localStorage.setItem('availableNodesCacheTimestamp', Date.now().toString());
-        
-        return demoNodes;
+        if (useDemoNodesAsFallback) {
+          console.log('Génération de nœuds de démonstration comme solution de repli');
+          nodes = generateDemoNodes(5);
+        } else {
+          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
+        }
+      } else {
+        console.log(`${nodes.length} nœuds trouvés dans la réponse API`);
       }
       
-      // Filtrer les nœuds valides (avec une adresse IP et un statut actif)
-      const validNodes = nodes.filter(node => {
-        // Vérifier si le nœud a une adresse IP
-        const hasIP = node.ip !== undefined && node.ip !== null && node.ip !== '';
-        // Vérifier si le nœud a un statut actif
-        const isActive = node.status === 'ACTIVE' || node.status === 'active';
-        
-        return hasIP && isActive;
-      });
+      // Mettre à jour le cache
+      localStorage.setItem('availableNodesCache', JSON.stringify(nodes));
+      localStorage.setItem('lastNodesUpdate', now.toISOString());
       
-      console.log('Nœuds valides après filtrage:', validNodes);
-      console.log('Nombre de nœuds valides:', validNodes.length);
-      
-      // Si aucun nœud valide n'est trouvé, générer des nœuds de démonstration
-      if (validNodes.length === 0) {
-        console.log('Aucun nœud valide trouvé après filtrage, génération de nœuds de démonstration');
-        const demoNodes = generateDemoNodes(5);
-        
-        // Mettre en cache les nœuds de démonstration
-        localStorage.setItem('availableNodesCache', JSON.stringify(demoNodes));
-        localStorage.setItem('availableNodesCacheTimestamp', Date.now().toString());
-        
-        return demoNodes;
-      }
-      
-      // Mettre en cache les nœuds valides
-      localStorage.setItem('availableNodesCache', JSON.stringify(validNodes));
-      localStorage.setItem('availableNodesCacheTimestamp', Date.now().toString());
-      
-      return validNodes;
+      return nodes;
     } catch (error) {
-      console.error('Erreur lors de la récupération des nœuds:', error);
+      console.error('Erreur lors de la récupération des nœuds disponibles:', error);
       
-      // En cas d'erreur, générer des nœuds de démonstration
-      console.log('Erreur API, génération de nœuds de démonstration');
-      const demoNodes = generateDemoNodes(5);
-      console.log('Nœuds de démonstration générés après erreur:', demoNodes);
-      return demoNodes;
+      // En cas d'erreur, utiliser le cache ou générer des nœuds de démonstration
+      const cachedNodes = localStorage.getItem('availableNodesCache');
+      if (cachedNodes) {
+        try {
+          console.log('Utilisation du cache suite à une erreur');
+          const parsedNodes = JSON.parse(cachedNodes);
+          return parsedNodes;
+        } catch (e) {
+          console.error('Erreur lors de l\'analyse du cache après erreur API:', e);
+        }
+      }
+      
+      // Si pas de cache ou erreur d'analyse, générer des nœuds de démonstration uniquement si l'option est activée
+      if (useDemoNodesAsFallback) {
+        console.log('Génération de nœuds de démonstration suite à une erreur');
+        return generateDemoNodes(5);
+      } else {
+        console.log('Aucun nœud de démonstration généré malgré l\'erreur car l\'option est désactivée');
+        return [];
+      }
     }
   };
   
