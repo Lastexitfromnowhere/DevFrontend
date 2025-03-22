@@ -182,24 +182,19 @@ export function useDHTNode() {
     setError(null);
 
     try {
+      // S'assurer que l'adresse du wallet est correctement synchronisée dans localStorage
+      authService.synchronizeWalletAddress(account);
+      
       // Rafraîchir le token si nécessaire
       await authService.refreshTokenIfNeeded();
       
-      // Récupérer l'adresse du wallet depuis le token JWT
-      const walletAddressFromToken = authService.getWalletAddressFromToken();
-      
-      // Vérifier que l'adresse du wallet dans le token correspond à celle connectée
-      if (walletAddressFromToken !== account) {
-        console.warn(`L'adresse du wallet connecté (${account}) ne correspond pas à celle du token (${walletAddressFromToken}). Régénération du token...`);
-        
-        // Régénérer un token avec l'adresse du wallet connecté
-        try {
-          const { token, expiresAt } = await authService.generateToken(account);
-          authService.saveToken(token, expiresAt, account);
-          console.log('Nouveau token généré pour le wallet:', account);
-        } catch (tokenError) {
-          console.error('Erreur lors de la génération du token:', tokenError);
-        }
+      // Régénérer un nouveau token avec l'adresse du wallet connecté
+      try {
+        const { token, expiresAt } = await authService.generateToken(account);
+        authService.saveToken(token, expiresAt, account);
+        console.log('Nouveau token généré pour le wallet:', account);
+      } catch (tokenError) {
+        console.error('Erreur lors de la génération du token:', tokenError);
       }
       
       console.log('Récupération du statut DHT pour le wallet:', account);
