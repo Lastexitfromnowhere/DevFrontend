@@ -31,15 +31,15 @@ export default function Dashboard() {
     <button
       onClick={() => setActiveSection(id)}
       className={`
-        flex items-center space-x-2 px-4 py-2 rounded
-        transition-colors duration-200
+        flex items-center space-x-2 px-4 py-2 rounded-md
+        transition-all duration-200 ease-in-out
         ${activeSection === id 
-          ? 'text-white bg-gray-700/80' 
-          : 'text-gray-400 hover:text-white'
+          ? 'text-white bg-gradient-to-r from-blue-600/70 to-purple-600/70 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10' 
+          : 'text-gray-300 hover:text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-gray-700/30 hover:border-blue-500/30'
         }
       `}
     >
-      {icon}
+      <span className={activeSection === id ? 'text-blue-300' : 'text-gray-400'}>{icon}</span>
       <span>{label}</span>
     </button>
   );
@@ -109,15 +109,15 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-purple p-4">
+    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white p-4">
       <div className="max-w-7xl mx-auto">
         {/* Navigation Header */}
-        <header className="bg-[#111] border border-gray-950 rounded-lg p-4 mb-6 shadow-lg">
+        <header className="bg-black/40 backdrop-blur-md border border-gray-700/30 rounded-lg p-4 mb-6 shadow-lg">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="flex flex-col items-start">
               <div className="flex items-center space-x-2 mb-2">
-                <Terminal size={24} className="text-white" />
-                <h1 className="text-xl font-bold text-white-50">Brand Exit Dashboard</h1>
+                <Terminal size={24} className="text-blue-400" />
+                <h1 className="text-xl font-bold text-white">Brand Exit Dashboard</h1>
               </div>
               <ReferralBanner 
                 referralCode="l3p0z3udr96rtohg" 
@@ -142,7 +142,7 @@ export default function Dashboard() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-8 text-center text-sm text-gray-50 py-4 border-t border-gray-700">
+        <footer className="mt-8 text-center text-sm text-gray-300 py-4 border-t border-gray-700/30 bg-black/20 backdrop-blur-sm rounded-lg">
           {`> brand-exit@2025 ~ Building the decentralized future`}
         </footer>
       </div>
