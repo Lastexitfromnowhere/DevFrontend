@@ -246,25 +246,30 @@ export const getDHTStatusByWallet = async (walletAddress) => {
   }
   
   try {
-    // Vérifier que le token est valide et correspond à l'adresse du wallet
+    // Vérifier que le token est valide
     await authService.refreshTokenIfNeeded();
     
-    // Utiliser l'adresse du wallet stockée dans le token JWT pour éviter les erreurs 403
+    // Obtenir l'adresse du wallet depuis le token JWT
     const tokenWalletAddress = authService.getWalletAddressFromToken();
     
-    // Si les adresses ne correspondent pas, utiliser celle du token pour éviter l'erreur 403
+    // Si les adresses ne correspondent pas, régénérer un token avec l'adresse fournie
     if (tokenWalletAddress && tokenWalletAddress !== walletAddress) {
-      console.warn(`L'adresse fournie (${walletAddress}) ne correspond pas à celle du token (${tokenWalletAddress}). Utilisation de l'adresse du token.`);
-      walletAddress = tokenWalletAddress;
+      console.warn(`L'adresse fournie (${walletAddress}) ne correspond pas à celle du token (${tokenWalletAddress}). Régénération du token...`);
+      
+      try {
+        // Générer un nouveau token avec l'adresse du wallet fournie
+        const { token, expiresAt } = await authService.generateToken(walletAddress);
+        authService.saveToken(token, expiresAt, walletAddress);
+        console.log('Nouveau token généré pour le wallet:', walletAddress);
+      } catch (tokenError) {
+        console.error('Erreur lors de la génération du token:', tokenError);
+        // En cas d'erreur de génération de token, continuer avec l'adresse fournie
+      }
     }
     
     const headers = await getAuthHeaders();
     console.log('Entêtes d\'authentification:', headers);
     console.log('Adresse du wallet utilisée pour la requête:', walletAddress);
-    
-    // Vérifier si le token JWT correspond à l'adresse du wallet
-    const tokenMatch = await authService.verifyTokenWalletMatch();
-    console.log('Le token correspond à l\'adresse du wallet:', tokenMatch);
     
     console.log('Starting Request:', {
       url: `${DHT_API_BASE}/status`,
