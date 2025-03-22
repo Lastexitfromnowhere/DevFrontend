@@ -137,6 +137,8 @@ export const stopDHTNode = async () => {
 
 // Fonction pour obtenir le statut du nœud DHT
 export const getDHTStatus = async () => {
+  // Modification pour forcer Git à détecter une modification
+  console.log('Modification pour forcer Git à détecter une modification');
   try {
     const now = Date.now();
     
