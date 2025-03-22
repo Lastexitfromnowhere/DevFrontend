@@ -20,7 +20,14 @@ const nextConfig = {
       // Redirection spécifique pour l'endpoint /status
       {
         source: '/status',
-        destination: 'https://lastexitvpn.duckdns.org/dht/status',
+        destination: 'https://lastexitvpn.duckdns.org/dht/status/:walletAddress',
+        has: [
+          {
+            type: 'header',
+            key: 'X-Wallet-Address',
+            value: '(?<walletAddress>.*)'
+          }
+        ]
       }
     ];
   },

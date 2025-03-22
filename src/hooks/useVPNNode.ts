@@ -239,7 +239,7 @@ export function useVPNNode() {
       localStorage.setItem('lastStatusCheck', now.toISOString());
       
       // Faire la requête API
-      const response = await api.get(`${config.API_BASE_URL}/dht/status`, {
+      const response = await api.get(`${config.API_BASE_URL}/dht/status/${account}`, {
         headers: {
           'X-Wallet-Address': account
         }
