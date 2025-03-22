@@ -240,18 +240,44 @@ export const getDHTStatusByWallet = async (walletAddress) => {
 // Fonction pour obtenir la liste des nœuds DHT
 export const getDHTNodes = async () => {
   try {
-    // Récupérer l'adresse du wallet pour l'authentification
-    const walletAddress = authService.getWalletAddress();
+    // Rafraîchir le token si nécessaire
+    await authService.refreshTokenIfNeeded();
+    
+    // Récupérer l'adresse du wallet depuis le token JWT
+    const walletAddress = authService.getWalletAddressFromToken();
     if (!walletAddress) {
-      throw new Error('Adresse de wallet non disponible');
+      throw new Error('Adresse de wallet non disponible dans le token JWT');
     }
     
+    console.log('Récupération des nœuds DHT pour le wallet:', walletAddress);
+    
+    const headers = await getAuthHeaders();
+    console.log('Entêtes d\'authentification pour getDHTNodes:', headers);
+    
+    // Utiliser les query params comme pour getDHTStatusByWallet
     const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
-      headers: await getAuthHeaders()
+      headers,
+      params: { walletAddress }
     });
+    
+    console.log('Réponse de l\'API pour les nœuds DHT:', response.status, response.data);
+    
+    // Vérifier si la réponse contient des nœuds
+    if (response.data && Array.isArray(response.data.nodes)) {
+      console.log(`${response.data.nodes.length} nœuds DHT récupérés depuis l'API`);
+    } else {
+      console.log('Aucun nœud DHT trouvé dans la réponse API');
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds DHT:', error);
+    console.error('Détails de l\'erreur:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
     return { success: false, nodes: [], error: error.message };
   }
 };
@@ -259,18 +285,31 @@ export const getDHTNodes = async () => {
 // Fonction pour obtenir la liste des nœuds WireGuard
 export const getWireGuardNodes = async () => {
   try {
-    // Récupérer l'adresse du wallet pour l'authentification
-    const walletAddress = authService.getWalletAddress();
+    // Rafraîchir le token si nécessaire
+    await authService.refreshTokenIfNeeded();
+    
+    // Récupérer l'adresse du wallet depuis le token JWT
+    const walletAddress = authService.getWalletAddressFromToken();
     if (!walletAddress) {
-      throw new Error('Adresse de wallet non disponible');
+      throw new Error('Adresse de wallet non disponible dans le token JWT');
     }
     
+    console.log('Récupération des nœuds WireGuard pour le wallet:', walletAddress);
+    
+    const headers = await getAuthHeaders();
+    console.log('Entêtes d\'authentification pour getWireGuardNodes:', headers);
+    
     const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`, {
-      headers: await getAuthHeaders()
+      headers,
+      params: { walletAddress }
     });
+    
+    console.log('Réponse de l\'API pour les nœuds WireGuard:', response.status, response.data);
     
     // S'assurer que tous les nœuds ont un ID valide
     if (response.data.success && Array.isArray(response.data.nodes)) {
+      console.log(`${response.data.nodes.length} nœuds WireGuard récupérés depuis l'API`);
+      
       response.data.nodes = response.data.nodes.map(node => {
         // Si l'ID n'est pas défini ou est vide, utiliser l'adresse wallet comme ID
         if (!node.id || node.id === '') {
@@ -278,11 +317,19 @@ export const getWireGuardNodes = async () => {
         }
         return node;
       });
+    } else {
+      console.log('Aucun nœud WireGuard trouvé dans la réponse API');
     }
     
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds WireGuard:', error);
+    console.error('Détails de l\'erreur:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
     return { success: false, nodes: [], error: error.message };
   }
 };
