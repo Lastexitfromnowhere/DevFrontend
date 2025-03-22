@@ -52,10 +52,10 @@ export default function Empowerment({ onClose }: { onClose: () => void }) {
       isOpen={true}
       onClose={onClose}
       title="Web3 Empowerment"
-      className="max-w-2xl"
+      className="max-w-2xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg"
     >
-      <div className="space-y-6">
-        <p className="text-green-300">
+      <div className="space-y-6 animate-fade-in-down">
+        <p className="text-gray-300 bg-black/30 backdrop-blur-sm p-3 rounded-md border border-gray-700/30">
           Web3 empowerment is about giving individuals control over their digital 
           assets and online identities. Here's how we contribute to this vision:
         </p>
@@ -64,14 +64,19 @@ export default function Empowerment({ onClose }: { onClose: () => void }) {
           {empowermentFeatures.map((feature, index) => {
             const FeatureIcon = feature.icon;
             return (
-              <Card key={index} variant="hover" className="p-4">
+              <Card 
+                key={index} 
+                className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-black/50"
+              >
                 <div className="flex space-x-3">
-                  <FeatureIcon className="w-5 h-5 text-green-400 flex-shrink-0" />
+                  <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+                    <FeatureIcon className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                  </div>
                   <div>
-                    <h3 className="font-bold text-green-300 mb-1">
+                    <h3 className="font-bold text-white mb-1">
                       {feature.title}
                     </h3>
-                    <p className="text-sm text-green-400">
+                    <p className="text-sm text-gray-300">
                       {feature.description}
                     </p>
                   </div>
@@ -81,7 +86,7 @@ export default function Empowerment({ onClose }: { onClose: () => void }) {
           })}
         </div>
 
-        <div className="text-center text-sm text-green-500">
+        <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
           {`// Empowering users in the decentralized web, one feature at a time.`}
         </div>
       </div>

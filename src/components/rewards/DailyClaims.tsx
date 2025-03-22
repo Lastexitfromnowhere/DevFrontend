@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
-import { TerminalButton } from '../ui/terminal/TerminalButton';
+import { DashboardButton } from '../ui/DashboardButton';
+import { DashboardBadge } from '../ui/DashboardBadge';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { Award, Clock, AlertTriangle, RefreshCw } from 'lucide-react';
+import { Award, Clock, AlertTriangle, RefreshCw, Calendar, TrendingUp } from 'lucide-react';
 import { config } from '@/config/env';
 import axios from 'axios';
 import { Spinner } from '../ui/Spinner';
@@ -185,88 +186,122 @@ export default function DailyClaims() {
 
   if (!isConnected) {
     return (
-      <Card className="text-center p-6">
-        <p className="text-gray-500">Please connect your wallet to view rewards</p>
+      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg text-center">
+        <p className="text-gray-400">Veuillez connecter votre portefeuille pour voir vos récompenses</p>
       </Card>
     );
   }
 
   return (
-    <Card className="p-6 space-y-6">
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6">
       {/* En-tête avec titre */}
       <div className="flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          <h3 className="text-gray-800-lg font-semibold">Daily Rewards</h3>
-          <Award className="w-5 h-5 text-yellow-500" />
+          <div className="p-2 rounded-full bg-yellow-500/20 backdrop-blur-sm">
+            <Award className="w-5 h-5 text-yellow-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Récompenses quotidiennes</h3>
         </div>
-        <TerminalButton
+        <DashboardButton
           variant="secondary"
           onClick={fetchRewards}
           loading={isLoading}
-          className="text-xs py-1 px-2"
+          icon={<RefreshCw className="w-3 h-3" />}
+          size="sm"
         >
-          <RefreshCw className="w-3 h-3 mr-1" />
-          Refresh
-        </TerminalButton>
+          Actualiser
+        </DashboardButton>
       </div>
 
       {/* Message d'erreur */}
       {error && (
-        <div className="flex items-center text-red-500 bg-red-100 p-3 rounded">
+        <div className="flex items-center bg-red-500/20 text-red-400 border border-red-500/30 p-3 rounded-md backdrop-blur-sm">
           <AlertTriangle className="w-4 h-4 mr-2" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Récompenses disponibles */}
-      <div className="bg-gray-900/30 border border-gray-700 rounded p-4">
+      <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4 transition-all duration-300">
         <div className="flex justify-between items-center">
           <div>
-            <h4 className="text-orange-800 font-semibold mb-1">Available Rewards</h4>
+            <h4 className="text-gray-300 font-semibold mb-1">Récompenses disponibles</h4>
             <div className="text-2xl font-bold text-white">
-              {isLoading ? <Spinner size="sm" /> : `${rewards.availableRewards.toFixed(3)} RWRD`}
+              {isLoading ? <Spinner size="sm" /> : <><span className="text-yellow-400">{rewards.availableRewards.toFixed(3)}</span> RWRD</>}
             </div>
           </div>
-          <TerminalButton
+          <DashboardButton
             variant="primary"
             onClick={claimDailyRewards}
             loading={isClaiming}
             disabled={!rewards.canClaim || isClaiming}
+            icon={<Award className="w-4 h-4" />}
           >
-            Claim Rewards
-          </TerminalButton>
+            Réclamer
+          </DashboardButton>
         </div>
         
         {/* Temps avant prochaine réclamation */}
-        <div className="mt-3 flex items-center text-sm text-gray-400">
-          <Clock className="w-4 h-4 mr-1" />
+        <div className="mt-3 flex items-center text-sm bg-black/20 backdrop-blur-sm p-2 rounded-md">
+          <Clock className="w-4 h-4 mr-1 text-blue-400" />
           {rewards.canClaim ? (
-            <span className="text-green-400">Ready to claim!</span>
+            <span className="text-green-400">Prêt à réclamer !</span>
           ) : (
-            <span>Next claim available in: {getTimeRemaining()}</span>
+            <span className="text-gray-300">Prochaine réclamation dans : <span className="text-blue-400 font-medium">{getTimeRemaining()}</span></span>
           )}
+        </div>
+      </div>
+
+      {/* Statistiques */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-3 transition-all duration-300 hover:bg-black/40">
+          <div className="flex items-center mb-1">
+            <div className="p-1.5 rounded-full bg-blue-500/20 backdrop-blur-sm mr-2">
+              <Calendar className="text-blue-400 h-4 w-4" />
+            </div>
+            <p className="text-gray-300 text-sm">Dernière réclamation</p>
+          </div>
+          <p className="text-white font-medium">
+            {rewards.lastClaimDate ? new Date(rewards.lastClaimDate).toLocaleDateString() : 'Jamais'}
+          </p>
+        </div>
+        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-3 transition-all duration-300 hover:bg-black/40">
+          <div className="flex items-center mb-1">
+            <div className="p-1.5 rounded-full bg-green-500/20 backdrop-blur-sm mr-2">
+              <TrendingUp className="text-green-400 h-4 w-4" />
+            </div>
+            <p className="text-gray-300 text-sm">Historique</p>
+          </div>
+          <p className="text-white font-medium">{rewards.claimHistory.length} <span className="text-gray-400">réclamations</span></p>
         </div>
       </div>
 
       {/* Historique des réclamations */}
       {rewards.claimHistory.length > 0 && (
-        <div>
-          <h4 className="text-sm font-semibold text-gray-400 mb-2">Recent Claims</h4>
-          <div className="space-y-2 max-h-[200px] overflow-y-auto">
+        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4">
+          <h4 className="text-white font-semibold mb-3">Historique des réclamations</h4>
+          <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
             {rewards.claimHistory.map((claim, index) => (
-              <div key={index} className="flex justify-between items-center bg-gray-800 p-2 rounded text-sm">
+              <div key={index} className="flex justify-between items-center p-2 bg-black/20 backdrop-blur-sm rounded-md border border-gray-700/20">
                 <div className="flex items-center">
-                  <Award className="w-3 h-3 mr-2 text-yellow-500" />
-                  <span>{claim.amount.toFixed(3)} RWRD</span>
+                  <Award className="w-3 h-3 text-yellow-400 mr-2" />
+                  <span className="text-sm text-gray-300">{new Date(claim.timestamp).toLocaleDateString()}</span>
                 </div>
-                <div className="text-gray-400">
-                  {new Date(claim.timestamp).toLocaleString()}
+                <div className="flex items-center">
+                  <span className="text-sm font-medium text-white mr-2">{claim.amount.toFixed(3)}</span>
+                  <DashboardBadge variant={claim.status === 'success' ? 'success' : 'danger'} size="sm">
+                    {claim.status === 'success' ? 'Réussi' : 'Échoué'}
+                  </DashboardBadge>
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
+      
+      <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
+        {`// Connectez-vous quotidiennement pour maximiser vos récompenses`}
+      </div>
     </Card>
   );
 }

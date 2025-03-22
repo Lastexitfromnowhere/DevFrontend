@@ -1,7 +1,7 @@
 import React from 'react';
-import { ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, ExternalLink } from 'lucide-react';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { DashboardBadge } from '@/components/ui/DashboardBadge';
 import type { Project } from '@/types/ecosystem.types';
 import Image from 'next/image';
 
@@ -42,20 +42,19 @@ export default function ProjectsGrid() {
         {projects.map(project => (
           <Card 
             key={project.id}
-            variant="hover"
-            className="relative overflow-hidden"
+            className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-black/50 relative overflow-hidden"
           >
             <div 
-              className="absolute inset-0 bg-cover bg-center opacity-20"
+              className="absolute inset-0 bg-cover bg-center opacity-10"
               style={{ 
                 backgroundImage: `url(${project.logo})`,
-                filter: 'grayscale(100%)'
+                filter: 'blur(8px)'
               }}
             />
             
             <div className="relative z-10">
               <div className="flex items-start justify-between mb-4">
-                <div className="w-16 h-16 flex items-center justify-center bg-black/50 rounded-lg">
+                <div className="w-16 h-16 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg border border-gray-700/30">
                   <Image 
                     src={project.logo} 
                     alt={`${project.name} logo`}
@@ -64,19 +63,19 @@ export default function ProjectsGrid() {
                     className="max-w-full max-h-full object-contain"
                   />
                 </div>
-                <Badge>{project.category}</Badge>
+                <DashboardBadge variant="info">{project.category}</DashboardBadge>
               </div>
   
               <div className="space-y-4">
-                <h3 className="text-xl font-medium text-orange-700">
+                <h3 className="text-xl font-medium text-white">
                   {project.name}
                 </h3>
-                <p className="text-sm text-orange-800">
+                <p className="text-sm text-gray-300">
                   {project.description}
                 </p>
-                <div className="pt-4 border-t border-gray-900">
-                  <p className="text-sm text-orange-600">Current Rewards</p>
-                  <p className="text-purple-400">{project.rewards}</p>
+                <div className="pt-4 border-t border-gray-700/30 backdrop-blur-sm">
+                  <p className="text-sm text-gray-400">Récompenses actuelles</p>
+                  <p className="text-blue-400 font-medium">{project.rewards}</p>
                 </div>
               </div>
   
@@ -84,9 +83,9 @@ export default function ProjectsGrid() {
                 href={project.link}
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="mt-4 inline-flex items-center text-orange-700 hover:text-orange-600 transition-colors"
+                className="mt-4 inline-flex items-center bg-blue-500/20 backdrop-blur-sm text-blue-400 hover:text-blue-300 transition-colors px-3 py-2 rounded-md border border-blue-500/30"
               >
-                Join Project <ArrowUpRight className="ml-1 w-4 h-4" />
+                Rejoindre <ExternalLink className="ml-1 w-4 h-4" />
               </a>
             </div>
           </Card>

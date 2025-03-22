@@ -2,10 +2,11 @@
 
 // src/components/ecosystem/LearningHub.tsx
 import React from 'react';
-import { Book, Video, FileText, Podcast } from 'lucide-react';
+import { Book, Video, FileText, Podcast, ExternalLink } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
+import { DashboardBadge } from '@/components/ui/DashboardBadge';
+import { DashboardButton } from '@/components/ui/DashboardButton';
 import type { LearningResource } from '@/types/ecosystem.types';
 
 const learningResources: LearningResource[] = [
@@ -35,56 +36,67 @@ export default function LearningHub({ onClose }: { onClose: () => void }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="Learning Hub"
-      className="max-w-4xl"
+      title="Centre d'apprentissage"
+      className="max-w-4xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg"
     >
-      <div className="space-y-6">
+      <div className="space-y-6 animate-fade-in-down">
         <div className="grid md:grid-cols-2 gap-4">
           {learningResources.map((resource, index) => {
             const ResourceIcon = resource.icon;
             return (
               <Card
                 key={index}
-                variant="hover"
-                className="space-y-4"
+                className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-black/50 space-y-4"
               >
                 <div className="flex items-center space-x-3">
-                  <ResourceIcon className="text-green-400" size={24} />
+                  <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+                    <ResourceIcon className="text-blue-400" size={20} />
+                  </div>
                   <div>
-                    <h3 className="font-bold text-green-300">{resource.title}</h3>
-                    <Badge className="mt-1">{resource.level}</Badge>
+                    <h3 className="font-semibold text-white">{resource.title}</h3>
+                    <DashboardBadge 
+                      variant={
+                        resource.level === 'Beginner' ? 'info' : 
+                        resource.level === 'Intermediate' ? 'warning' : 'danger'
+                      } 
+                      size="sm" 
+                      className="mt-1"
+                    >
+                      {resource.level}
+                    </DashboardBadge>
                   </div>
                 </div>
 
-                <p className="text-sm text-green-400">{resource.description}</p>
+                <p className="text-sm text-gray-300">{resource.description}</p>
 
-                <div className="pt-4 border-t border-green-800/30 text-xs space-y-2">
+                <div className="pt-4 border-t border-gray-700/30 backdrop-blur-sm text-xs space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-green-500">Type:</span>
-                    <span className="text-green-300">{resource.type}</span>
+                    <span className="text-gray-400">Type:</span>
+                    <span className="text-white">{resource.type}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-green-500">Duration:</span>
-                    <span className="text-green-300">{resource.duration}</span>
+                    <span className="text-gray-400">Durée:</span>
+                    <span className="text-white">{resource.duration}</span>
                   </div>
                 </div>
 
-                <a 
-                  href={resource.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-block text-xs text-blue-400 hover:text-blue-300"
+                <DashboardButton
+                  variant="ghost"
+                  size="sm"
+                  icon={<ExternalLink size={14} />}
+                  onClick={() => window.open(resource.link, '_blank')}
+                  className="mt-2"
                 >
-                  Access Resource →
-                </a>
+                  Accéder à la ressource
+                </DashboardButton>
               </Card>
             );
           })}
         </div>
 
-        <p className="text-center text-xs text-green-500">
-          {`// Continuous learning is key to Web3 mastery`}
-        </p>
+        <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
+          {`// L'apprentissage continu est la clé de la maîtrise du Web3`}
+        </div>
       </div>
     </Modal>
   );

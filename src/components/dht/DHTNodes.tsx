@@ -4,8 +4,8 @@ import { useDHT } from '@/hooks/useDHT';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/Card';
 import { CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card-components';
-import { TerminalButton } from '@/components/ui/terminal/TerminalButton';
-import { Badge } from '@/components/ui/Badge';
+import { DashboardButton } from '@/components/ui/DashboardButton';
+import { DashboardBadge } from '@/components/ui/DashboardBadge';
 import { 
   Table, 
   TableHeader, 
@@ -110,7 +110,7 @@ export default function DHTNodes() {
 
   if (!isAuthenticated) {
     return (
-      <Card>
+      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg">
         <CardHeader>
           <CardTitle>Nœuds DHT</CardTitle>
           <CardDescription>
@@ -122,80 +122,82 @@ export default function DHTNodes() {
   }
 
   return (
-    <Card>
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow">
       <CardHeader>
         <div className="flex justify-between items-center">
           <div>
-            <CardTitle>Nœuds DHT</CardTitle>
-            <CardDescription>
+            <CardTitle className="text-white">Nœuds DHT</CardTitle>
+            <CardDescription className="text-gray-300">
               Nœuds découverts sur le réseau décentralisé
             </CardDescription>
           </div>
           <div className="flex space-x-2">
-            <TerminalButton
+            <DashboardButton
               variant="secondary"
-              icon={<Clock className="mr-2 h-4 w-4" />}
+              icon={<Clock className="h-4 w-4" />}
               onClick={toggleAutoRefresh}
+              size="sm"
             >
               {autoRefresh ? 'Désactiver auto' : 'Activer auto'}
-            </TerminalButton>
-            <TerminalButton 
+            </DashboardButton>
+            <DashboardButton 
               variant="secondary"
               icon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
               onClick={handleRefresh}
               disabled={loading}
+              size="sm"
             >
               {loading ? '' : 'Rafraîchir'}
-            </TerminalButton>
+            </DashboardButton>
           </div>
         </div>
       </CardHeader>
       <CardContent>
         {error && (
-          <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
+          <div className="bg-red-500/20 text-red-400 border border-red-500/30 p-3 rounded-md mb-4 backdrop-blur-sm">
             {error}
           </div>
         )}
 
         <div className="mb-4 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
             Dernière mise à jour: {formatDistanceToNow(lastRefreshed, { addSuffix: true, locale: fr })}
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm">Nœuds trouvés:</span>
-            <Badge variant={nodes.length > 0 ? "success" : "error"} className="px-2 py-1 text-xs">
+            <span className="text-sm text-gray-300">Nœuds trouvés:</span>
+            <DashboardBadge variant={nodes.length > 0 ? "success" : "danger"} size="sm">
               {nodes.length}
-            </Badge>
+            </DashboardBadge>
           </div>
         </div>
 
         {nodes.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="text-center py-8 bg-black/20 backdrop-blur-sm rounded-lg border border-gray-700/30">
             <Network className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500">Aucun nœud DHT trouvé sur le réseau</p>
+            <p className="text-gray-300">Aucun nœud DHT trouvé sur le réseau</p>
             <p className="text-sm text-gray-400 mt-2">Essayez de rafraîchir ou attendez que d&apos;autres nœuds rejoignent le réseau</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto bg-black/20 backdrop-blur-sm rounded-lg border border-gray-700/30 p-2">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>ID du nœud</TableHead>
-                  <TableHead>Adresse</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Latence</TableHead>
+                <TableRow className="border-b border-gray-700/30">
+                  <TableHead className="text-gray-300">ID du nœud</TableHead>
+                  <TableHead className="text-gray-300">Adresse</TableHead>
+                  <TableHead className="text-gray-300">Statut</TableHead>
+                  <TableHead className="text-gray-300">Latence</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {nodes.map((node) => (
-                  <TableRow key={node.nodeId}>
-                    <TableCell className="font-mono text-xs truncate max-w-[150px]">
+                  <TableRow key={node.nodeId} className="border-b border-gray-700/20 hover:bg-black/30">
+                    <TableCell className="font-mono text-xs truncate max-w-[150px] text-blue-400 bg-blue-500/10 backdrop-blur-sm rounded p-1">
                       {node.nodeId}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-gray-300">
                       {node.multiaddr ? (
                         <div className="text-xs">
-                          <div className="truncate max-w-[200px]">{node.multiaddr}</div>
+                          <div className="truncate max-w-[200px] bg-black/30 backdrop-blur-sm p-1 rounded">{node.multiaddr}</div>
                         </div>
                       ) : (
                         <span className="text-gray-400 text-xs">Aucune adresse</span>
@@ -204,22 +206,25 @@ export default function DHTNodes() {
                     <TableCell>
                       <div className="flex flex-wrap gap-1">
                         {node.isHost && (
-                          <Badge variant="success" className="px-2 py-1 text-xs">
+                          <DashboardBadge variant="success" size="sm">
                             Hôte
-                          </Badge>
+                          </DashboardBadge>
                         )}
                         {node.isActive && (
-                          <Badge variant="default" className="px-2 py-1 text-xs">
+                          <DashboardBadge variant="info" size="sm">
                             Actif
-                          </Badge>
+                          </DashboardBadge>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       {node.latency !== undefined ? (
-                        <span className={`text-xs ${node.latency < 100 ? 'text-green-600' : node.latency < 300 ? 'text-yellow-600' : 'text-red-600'}`}>
+                        <DashboardBadge 
+                          variant={node.latency < 100 ? 'success' : node.latency < 300 ? 'warning' : 'danger'} 
+                          size="sm"
+                        >
                           {node.latency}ms
-                        </span>
+                        </DashboardBadge>
                       ) : (
                         <span className="text-gray-400 text-xs">N/A</span>
                       )}
@@ -231,15 +236,15 @@ export default function DHTNodes() {
           </div>
         )}
       </CardContent>
-      <CardFooter className="flex justify-end">
-        <TerminalButton
+      <CardFooter className="flex justify-end border-t border-gray-700/30 pt-4">
+        <DashboardButton
           variant="secondary"
-          icon={loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+          icon={loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           onClick={handleRefresh}
           disabled={loading}
         >
-          {loading ? '' : 'Rafraîchir'}
-        </TerminalButton>
+          {loading ? 'Chargement...' : 'Rafraîchir'}
+        </DashboardButton>
       </CardFooter>
     </Card>
   );

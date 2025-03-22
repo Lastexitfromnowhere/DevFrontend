@@ -5,6 +5,7 @@ import React from 'react';
 import { Card } from '@/components/ui/Card';
 import { Target, Users, Rocket, Shield, Award } from 'lucide-react';
 import { ProgressBar } from '@/components/ui/ProgressBar';
+import { DashboardBadge } from '@/components/ui/DashboardBadge';
 
 const milestones = [
   {
@@ -43,26 +44,34 @@ const communityStats = [
 export default function SiteGoals() {
   return (
     <div className="space-y-6">
-      <Card>
-        <div className="flex items-center space-x-2 mb-6">
-          <Target className="text-gray-400" size={24} />
-          <h2 className="text-xl font-bold text-gray-300">Project Roadmap</h2>
+      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+            <Target className="text-blue-400" size={20} />
+          </div>
+          <h2 className="text-xl font-semibold text-white">Feuille de route du projet</h2>
         </div>
 
         <div className="space-y-8">
           {milestones.map((milestone, index) => {
             const Icon = milestone.icon;
             return (
-              <div key={index} className="space-y-2">
+              <div key={index} className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4 transition-all duration-300 hover:bg-black/40">
                 <div className="flex items-start space-x-3">
-                  <Icon className="text-gray-400 mt-1" size={20} />
+                  <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+                    <Icon className="text-blue-400" size={18} />
+                  </div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-300">{milestone.title}</h3>
-                    <p className="text-sm text-gray-400 mb-2">{milestone.description}</p>
-                    <ProgressBar progress={milestone.progress} />
-                    <div className="flex justify-between text-sm mt-1">
-                      <span className="text-gray-500">Progress: {milestone.current}</span>
-                      <span className="text-gray-400">Goal: {milestone.total}</span>
+                    <h3 className="font-semibold text-white">{milestone.title}</h3>
+                    <p className="text-sm text-gray-300 mb-3">{milestone.description}</p>
+                    <ProgressBar 
+                      progress={milestone.progress} 
+                      className="h-2 bg-gray-700/50"
+                      progressClassName="bg-blue-500"
+                    />
+                    <div className="flex justify-between text-sm mt-2">
+                      <span className="text-gray-400">Progression: <span className="text-blue-400">{milestone.current}</span></span>
+                      <span className="text-gray-400">Objectif: <span className="text-white">{milestone.total}</span></span>
                     </div>
                   </div>
                 </div>
@@ -72,19 +81,25 @@ export default function SiteGoals() {
         </div>
       </Card>
 
-      <Card>
-        <div className="flex items-center space-x-2 mb-6">
-          <Award className="text-gray-400" size={24} />
-          <h2 className="text-xl font-bold text-gray-300">Community Milestones</h2>
+      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow">
+        <div className="flex items-center space-x-3 mb-6">
+          <div className="p-2 rounded-full bg-yellow-500/20 backdrop-blur-sm">
+            <Award className="text-yellow-400" size={20} />
+          </div>
+          <h2 className="text-xl font-semibold text-white">Jalons communautaires</h2>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {communityStats.map((stat, index) => (
-            <div key={index} className="text-center p-4 bg-black/20 rounded">
-              <p className="text-2xl font-bold text-gray-300">{stat.value}</p>
-              <p className="text-sm text-purple-500">{stat.label}</p>
+            <div key={index} className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg transition-all duration-300 hover:bg-black/40">
+              <p className="text-2xl font-bold text-white">{stat.value}</p>
+              <p className="text-sm text-blue-400">{stat.label}</p>
             </div>
           ))}
+        </div>
+        
+        <div className="mt-4 text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
+          {`// Les statistiques sont mises à jour quotidiennement`}
         </div>
       </Card>
     </div>
