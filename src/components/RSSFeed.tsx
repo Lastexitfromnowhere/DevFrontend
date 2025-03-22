@@ -39,20 +39,17 @@ const mockNews: RSSItem[] = [
 
 export default function RSSFeed() {
   return (
-    <Card className="space-y-4">
-      <div className="flex items-center justify-between">
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-4">
+      <div className="flex items-center justify-between bg-black/30 backdrop-blur-sm p-3 rounded-lg border border-gray-700/30">
         <div className="flex items-center space-x-2">
-          <img 
-  src="/vps.gif" 
-  alt="VPS Animation" 
-  className="block mx-auto max-w-full h-auto mb-4 opacity-60"
-/>
-          <NewspaperIcon className="text-gray-400" size={20} />
-          <h3 className="font-bold text-gray-300">Latest Updates</h3>
+          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+            <NewspaperIcon className="text-blue-400" size={20} />
+          </div>
+          <h3 className="font-bold text-white">Latest Updates</h3>
         </div>
         <a 
           href="#" 
-          className="text-sm text-gray-400 hover:text-gray-300 flex items-center"
+          className="text-sm text-blue-400 hover:text-blue-300 flex items-center bg-blue-500/10 backdrop-blur-sm p-1.5 rounded transition-all duration-200 border border-blue-500/20 hover:border-blue-500/40"
         >
           View All <ArrowRight size={16} className="ml-1" />
         </a>
@@ -63,18 +60,18 @@ export default function RSSFeed() {
           <a 
             key={item.id}
             href={item.link}
-            className="block p-3 rounded bg-black/20 hover:bg-black/30 
-                     transition-colors border border-transparent
-                     hover:border-gray-800"
+            className="block p-3 rounded backdrop-blur-sm bg-black/30 hover:bg-black/50 
+                     transition-all duration-300 border border-gray-700/30
+                     hover:border-gray-600"
           >
             <div className="flex justify-between items-start">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-gray-300 flex items-center">
+                <p className="text-sm font-medium text-white flex items-center">
                   {item.title}
-                  <ExternalLink size={12} className="ml-1 text-gray-500" />
+                  <ExternalLink size={12} className="ml-1 text-blue-400" />
                 </p>
-                <div className="flex items-center space-x-2 text-xs text-gray-500">
-                  <span>{item.source}</span>
+                <div className="flex items-center space-x-2 text-xs text-gray-400">
+                  <span className="bg-blue-500/10 backdrop-blur-sm p-1 rounded">{item.source}</span>
                   <span>•</span>
                   <span>{new Date(item.date).toLocaleDateString()}</span>
                 </div>
@@ -84,7 +81,7 @@ export default function RSSFeed() {
         ))}
       </div>
 
-      <div className="text-center text-xs text-gray-400 pt-2 border-t border-gray-800/30">
+      <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md border-t border-gray-700/30">
         {`// Real-time updates from the Brand Exit ecosystem`}
       </div>
     </Card>

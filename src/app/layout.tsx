@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import ClientProviders from "./providers";
+import ReferralBanner from "@/components/common/ReferralBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,6 +31,10 @@ export default function RootLayout({
       >
         <ClientProviders>
           {children}
+          <ReferralBanner 
+            referralCode="l3p0z3udr96rtohg" 
+            referralUrl="https://codeium.com/refer?referral_code=l3p0z3udr96rtohg" 
+          />
         </ClientProviders>
       </body>
     </html>
