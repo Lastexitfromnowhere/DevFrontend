@@ -73,7 +73,7 @@ export default function ProjectsGrid() {
                 <p className="text-sm text-gray-300">
                   {project.description}
                 </p>
-                <div className="pt-4 border-t border-gray-700/30 backdrop-blur-sm">
+                <div className="pt-4 border-t border-gray-700/30 backdrop-blur-md">
                   <p className="text-sm text-gray-400">Récompenses actuelles</p>
                   <p className="text-blue-400 font-medium">{project.rewards}</p>
                 </div>

@@ -119,10 +119,6 @@ export default function Dashboard() {
                 <Terminal size={24} className="text-blue-400" />
                 <h1 className="text-xl font-bold text-white">Brand Exit Dashboard</h1>
               </div>
-              <ReferralBanner 
-                referralCode="l3p0z3udr96rtohg" 
-                referralUrl="https://codeium.com/refer?referral_code=l3p0z3udr96rtohg" 
-              />
             </div>
             
             <nav className="flex space-x-4">
@@ -140,6 +136,14 @@ export default function Dashboard() {
           )}
           {renderContent()}
         </main>
+
+        {/* Referral Banner */}
+        <div className="mt-8 mb-4 p-4 bg-black/40 backdrop-blur-md border border-blue-500/30 rounded-lg shadow-lg shadow-blue-500/10">
+          <ReferralBanner 
+            referralCode="l3p0z3udr96rtohg" 
+            referralUrl="https://codeium.com/refer?referral_code=l3p0z3udr96rtohg" 
+          />
+        </div>
 
         {/* Footer */}
         <footer className="mt-8 text-center text-sm text-gray-300 py-4 border-t border-gray-700/30 bg-black/20 backdrop-blur-sm rounded-lg">
