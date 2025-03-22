@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { config } from '@/config/env';
 import * as dhtUtils from '@/utils/dhtUtils'; // Corriger l'importation
+import { authService } from '@/services/authService'; // Ajouter l'importation du service d'authentification
 
 // Définir les types pour les réponses API
 interface DHTNodeStatus {
@@ -428,17 +429,12 @@ export function useDHTNode() {
     setError(null);
     
     try {
-      // Récupérer le JWT depuis le localStorage
-      const token = localStorage.getItem('authToken');
+      // Utiliser le service d'authentification pour obtenir les en-têtes
+      const headers = await authService.getAuthHeaders();
       
       const response = await api.post('/dht/start', 
         { walletAddress: account },
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'X-Wallet-Address': account
-          } 
-        }
+        { headers }
       );
       
       if (response.data && (response.data as { success?: boolean }).success) {
@@ -469,17 +465,12 @@ export function useDHTNode() {
     setError(null);
     
     try {
-      // Récupérer le JWT depuis le localStorage
-      const token = localStorage.getItem('authToken');
+      // Utiliser le service d'authentification pour obtenir les en-têtes
+      const headers = await authService.getAuthHeaders();
       
       const response = await api.post('/dht/stop', 
         { walletAddress: account },
-        { 
-          headers: { 
-            'Authorization': `Bearer ${token}`,
-            'X-Wallet-Address': account
-          } 
-        }
+        { headers }
       );
       
       if (response.data && (response.data as { success?: boolean }).success) {
