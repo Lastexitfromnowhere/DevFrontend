@@ -182,10 +182,21 @@ export function useDHTNode() {
     setError(null);
 
     try {
-      // Utiliser la fonction getDHTStatus sans spécifier de wallet
-      // Cela récupérera le statut global du nœud DHT, peu importe quel wallet l'a démarré
-      console.log('Récupération du statut DHT global');
-      const data = await dhtUtils.getDHTStatus();
+      // Rafraîchir le token si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Récupérer l'adresse du wallet depuis le token JWT
+      const walletAddressFromToken = authService.getWalletAddressFromToken();
+      
+      // Vérifier que l'adresse du wallet dans le token correspond à celle connectée
+      if (walletAddressFromToken !== account) {
+        console.warn(`L'adresse du wallet connecté (${account}) ne correspond pas à celle du token (${walletAddressFromToken}). Cela peut causer des problèmes d'authentification.`);
+      }
+      
+      console.log('Récupération du statut DHT pour le wallet:', account);
+      
+      // Utiliser getDHTStatusByWallet avec l'adresse du wallet connecté
+      const data = await dhtUtils.getDHTStatusByWallet(account);
       
       console.log('Statut DHT reçu:', data);
       
