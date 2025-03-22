@@ -106,6 +106,26 @@ export default function DHTStatus() {
   
   const [useDemoNodes, setUseDemoNodes] = useState(true);
   
+  // Définir un type pour les résultats du diagnostic
+  type DiagnosticResult = {
+    success: boolean;
+    serverReachable: boolean;
+    authValid: boolean;
+    nodeRegistered: boolean;
+    nodeActive: boolean;
+    details: Record<string, any>;
+    errors: Array<{
+      step: string;
+      message: string;
+      status?: number;
+      data?: any;
+    }>;
+    error?: string;
+  };
+  
+  const [diagnosticResults, setDiagnosticResults] = useState<DiagnosticResult | null>(null);
+  const [isDiagnosticRunning, setIsDiagnosticRunning] = useState(false);
+  
   useEffect(() => {
     if (isAuthenticated) {
       // Par défaut, ne pas utiliser les nœuds de démonstration
@@ -114,6 +134,46 @@ export default function DHTStatus() {
       fetchNodes(false); // false = ne pas utiliser les nœuds de démonstration
     }
   }, [isAuthenticated, fetchStatus, fetchNodes]);
+
+  // Fonction pour rafraîchir les nœuds sans utiliser les nœuds de démonstration
+  const refreshRealNodes = async () => {
+    setUseDemoNodes(false);
+    await fetchNodes(false); // false = ne pas utiliser les nœuds de démonstration
+  };
+
+  // Fonction pour rafraîchir les nœuds avec les nœuds de démonstration si nécessaire
+  const refreshWithDemoNodes = async () => {
+    setUseDemoNodes(true);
+    await fetchNodes(true); // true = utiliser les nœuds de démonstration si nécessaire
+  };
+
+  // Fonction pour exécuter le diagnostic de connectivité
+  const runDiagnostic = async () => {
+    setIsDiagnosticRunning(true);
+    setDiagnosticResults(null);
+    
+    try {
+      // Importer dynamiquement dhtUtils pour éviter les problèmes de dépendances circulaires
+      const dhtUtils = (await import('@/utils/dhtUtils')).default;
+      const results = await dhtUtils.testDHTConnectivity();
+      console.log('Résultats du diagnostic de connectivité DHT:', results);
+      setDiagnosticResults(results as DiagnosticResult);
+    } catch (error: any) {
+      console.error('Erreur lors du diagnostic de connectivité DHT:', error);
+      setDiagnosticResults({
+        success: false,
+        error: error.message,
+        serverReachable: false,
+        authValid: false,
+        nodeRegistered: false,
+        nodeActive: false,
+        details: {},
+        errors: [{ step: 'global', message: error.message }]
+      });
+    } finally {
+      setIsDiagnosticRunning(false);
+    }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -127,18 +187,6 @@ export default function DHTStatus() {
       </Card>
     );
   }
-
-  // Fonction pour rafraîchir les nœuds sans utiliser les nœuds de démonstration
-  const refreshRealNodes = async () => {
-    setUseDemoNodes(false);
-    await fetchNodes(false); // false = ne pas utiliser les nœuds de démonstration
-  };
-
-  // Fonction pour rafraîchir les nœuds avec les nœuds de démonstration si nécessaire
-  const refreshWithDemoNodes = async () => {
-    setUseDemoNodes(true);
-    await fetchNodes(true); // true = utiliser les nœuds de démonstration si nécessaire
-  };
 
   return (
     <Card variant="default">
@@ -239,6 +287,38 @@ export default function DHTStatus() {
           >
             Inclure nœuds démo
           </Button>
+          <Button
+            variant="secondary"
+            icon={<RefreshCw className="h-4 w-4" />}
+            onClick={runDiagnostic}
+            disabled={isDiagnosticRunning}
+            loading={isDiagnosticRunning}
+          >
+            {isDiagnosticRunning ? 'Diagnostic en cours' : 'Exécuter le diagnostic'}
+          </Button>
+          {diagnosticResults && (
+            <div className="mt-4 p-4 border border-gray-200 rounded-md bg-gray-50">
+              <h4 className="text-lg font-semibold mb-2">Résultats du diagnostic</h4>
+              <ul className="space-y-1">
+                <li>Serveur accessible: <span className={diagnosticResults.serverReachable ? "text-green-600 font-medium" : "text-red-600 font-medium"}>{diagnosticResults.serverReachable ? 'Oui' : 'Non'}</span></li>
+                <li>Authentification valide: <span className={diagnosticResults.authValid ? "text-green-600 font-medium" : "text-red-600 font-medium"}>{diagnosticResults.authValid ? 'Oui' : 'Non'}</span></li>
+                <li>Nœud enregistré: <span className={diagnosticResults.nodeRegistered ? "text-green-600 font-medium" : "text-red-600 font-medium"}>{diagnosticResults.nodeRegistered ? 'Oui' : 'Non'}</span></li>
+                <li>Nœud actif: <span className={diagnosticResults.nodeActive ? "text-green-600 font-medium" : "text-red-600 font-medium"}>{diagnosticResults.nodeActive ? 'Oui' : 'Non'}</span></li>
+                {diagnosticResults.errors && diagnosticResults.errors.length > 0 && (
+                  <li className="mt-2">
+                    <span className="font-medium">Erreurs:</span>
+                    <ul className="ml-4 mt-1 space-y-1">
+                      {diagnosticResults.errors.map((err, idx) => (
+                        <li key={idx} className="text-red-600">
+                          <span className="font-medium">{err.step}:</span> {err.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </li>
+                )}
+              </ul>
+            </div>
+          )}
         </div>
       </CardFooter>
     </Card>

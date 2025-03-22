@@ -442,6 +442,141 @@ export const checkBackendConnection = async () => {
   }
 };
 
+// Fonction pour tester la connectivité du nœud DHT avec le serveur central
+export const testDHTConnectivity = async () => {
+  const results = {
+    serverReachable: false,
+    authValid: false,
+    nodeRegistered: false,
+    nodeActive: false,
+    details: {},
+    errors: []
+  };
+  
+  try {
+    // Étape 1: Vérifier si le serveur est accessible
+    console.log('Test de connectivité DHT: Vérification de l\'accessibilité du serveur...');
+    try {
+      const healthResponse = await axios.get(`${API_BASE}/health`, { timeout: 5000 });
+      results.serverReachable = healthResponse.status === 200;
+      results.details.serverHealth = healthResponse.data;
+      console.log('Serveur accessible:', results.serverReachable, healthResponse.data);
+    } catch (error) {
+      results.serverReachable = false;
+      results.errors.push({
+        step: 'serverCheck',
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      console.error('Serveur inaccessible:', error.message);
+    }
+    
+    // Étape 2: Vérifier l'authentification
+    console.log('Test de connectivité DHT: Vérification de l\'authentification...');
+    try {
+      // Rafraîchir le token si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Récupérer l'adresse du wallet depuis le token JWT
+      const walletAddress = authService.getWalletAddressFromToken();
+      if (!walletAddress) {
+        throw new Error('Adresse de wallet non disponible dans le token JWT');
+      }
+      
+      const headers = await getAuthHeaders();
+      results.details.authHeaders = { ...headers };
+      // Masquer le token pour des raisons de sécurité
+      if (results.details.authHeaders.Authorization) {
+        results.details.authHeaders.Authorization = 'Bearer [MASKED]';
+      }
+      
+      // Tester l'authentification avec une requête simple
+      const authTestResponse = await dhtAxios.get(`${API_BASE}/auth/verify`, { headers });
+      results.authValid = authTestResponse.status === 200 && authTestResponse.data.success;
+      results.details.authTest = authTestResponse.data;
+      console.log('Authentification valide:', results.authValid, authTestResponse.data);
+    } catch (error) {
+      results.authValid = false;
+      results.errors.push({
+        step: 'authCheck',
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      console.error('Authentification invalide:', error.message);
+    }
+    
+    // Étape 3: Vérifier si le nœud est enregistré
+    console.log('Test de connectivité DHT: Vérification de l\'enregistrement du nœud...');
+    try {
+      const statusResponse = await getDHTStatus();
+      results.nodeRegistered = statusResponse.success && statusResponse.nodeId;
+      results.details.nodeStatus = statusResponse;
+      console.log('Nœud enregistré:', results.nodeRegistered, statusResponse);
+    } catch (error) {
+      results.nodeRegistered = false;
+      results.errors.push({
+        step: 'registrationCheck',
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      console.error('Nœud non enregistré:', error.message);
+    }
+    
+    // Étape 4: Vérifier si le nœud est actif
+    console.log('Test de connectivité DHT: Vérification de l\'activité du nœud...');
+    try {
+      const nodesResponse = await getDHTNodes();
+      
+      // Récupérer l'adresse du wallet depuis le token JWT
+      const walletAddress = authService.getWalletAddressFromToken();
+      
+      // Vérifier si notre nœud est dans la liste des nœuds actifs
+      if (nodesResponse.success && Array.isArray(nodesResponse.nodes)) {
+        const ownNode = nodesResponse.nodes.find(node => node.walletAddress === walletAddress);
+        results.nodeActive = !!ownNode;
+        results.details.ownNode = ownNode || null;
+        console.log('Nœud actif:', results.nodeActive, ownNode);
+      } else {
+        results.nodeActive = false;
+        console.log('Nœud non trouvé dans la liste des nœuds actifs');
+      }
+    } catch (error) {
+      results.nodeActive = false;
+      results.errors.push({
+        step: 'activityCheck',
+        message: error.message,
+        status: error.response?.status,
+        data: error.response?.data
+      });
+      console.error('Impossible de vérifier l\'activité du nœud:', error.message);
+    }
+    
+    // Résumé des résultats
+    console.log('Résumé du test de connectivité DHT:', {
+      serverReachable: results.serverReachable,
+      authValid: results.authValid,
+      nodeRegistered: results.nodeRegistered,
+      nodeActive: results.nodeActive,
+      errors: results.errors.length
+    });
+    
+    return {
+      success: true,
+      ...results
+    };
+  } catch (error) {
+    console.error('Erreur lors du test de connectivité DHT:', error);
+    return {
+      success: false,
+      error: error.message,
+      ...results
+    };
+  }
+};
+
 export default {
   initDHTNode,
   startDHTNode,
@@ -453,5 +588,6 @@ export default {
   publishWireGuardNode,
   storeDHTValue,
   retrieveDHTValue,
-  checkBackendConnection
+  checkBackendConnection,
+  testDHTConnectivity
 };
