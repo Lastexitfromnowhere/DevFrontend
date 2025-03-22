@@ -227,9 +227,10 @@ export function useDHTNode() {
     
     try {
       // Type assertion pour response.data
-      const response = await api.post(`/api/vpn/connect-to-node`, null, {
-        params: { walletAddress: account }
-      });
+      const response = await api.post(`/api/vpn/connect-to-node`, 
+        { hostWalletAddress: account }, // Ajouter l'adresse du wallet comme hôte
+        { params: { walletAddress: account } }
+      );
       const responseData = response.data as any;
       
       if (response.data && (response.data as { success?: boolean }).success) {

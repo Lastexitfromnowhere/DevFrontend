@@ -984,10 +984,13 @@ export function useVPNNode() {
     try {
       console.log('Envoi de la requête API pour les nœuds disponibles');
       // Faire la requête API avec l'adresse du wallet actuel
-      const response = await axios.get(`${config.API_BASE_URL}/dht/nodes`, {
+      const response = await axios.get(`${config.API_BASE_URL}/nodes`, {
         headers: {
           'X-Wallet-Address': account || localStorage.getItem('walletAddress') || '',
           'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        params: {
+          walletAddress: account || localStorage.getItem('walletAddress') || ''
         }
       });
       

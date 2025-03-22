@@ -343,37 +343,37 @@ export const getDHTNodes = async () => {
         }
       }
     } catch (error) {
-      console.warn('Erreur avec l\'endpoint /nodes, tentative avec /dht/nodes:', error.message);
+      console.warn('Erreur avec l\'endpoint /nodes, tentative avec /nodes:', error.message);
     }
     
-    // Si l'endpoint /nodes a échoué ou n'a pas retourné de nœuds, essayer avec /dht/nodes
+    // Si l'endpoint /nodes a échoué ou n'a pas retourné de nœuds, essayer avec /nodes
     try {
-      const altResponse = await dhtAxios.get(`${DHT_API_BASE}/dht/nodes`, {
+      const altResponse = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
         headers,
         params: { walletAddress }
       });
       
-      console.log('Réponse de l\'API pour les nœuds DHT (endpoint /dht/nodes):', altResponse.status, altResponse.data);
+      console.log('Réponse de l\'API pour les nœuds DHT (endpoint /nodes):', altResponse.status, altResponse.data);
       
       // Vérifier si la réponse contient des nœuds
       if (altResponse.data && Array.isArray(altResponse.data.nodes)) {
-        console.log(`${altResponse.data.nodes.length} nœuds DHT récupérés depuis l'API (endpoint /dht/nodes)`);
+        console.log(`${altResponse.data.nodes.length} nœuds DHT récupérés depuis l'API (endpoint /nodes)`);
         
         // Si la réponse contient des nœuds mais que le tableau est vide, on le signale clairement
         if (altResponse.data.nodes.length === 0) {
-          console.log('La réponse API contient un tableau de nœuds vide (endpoint /dht/nodes)');
+          console.log('La réponse API contient un tableau de nœuds vide (endpoint /nodes)');
           return { success: true, nodes: [] };
         }
         
         return altResponse.data;
       } else {
-        console.log('Format de réponse inattendu: la propriété "nodes" est manquante ou n\'est pas un tableau (endpoint /dht/nodes)');
+        console.log('Format de réponse inattendu: la propriété "nodes" est manquante ou n\'est pas un tableau (endpoint /nodes)');
         
         // Normaliser la réponse pour éviter les erreurs dans les composants qui utilisent ces données
         return { success: false, nodes: [], error: 'Format de réponse inattendu' };
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération des nœuds DHT (endpoint /dht/nodes):', error);
+      console.error('Erreur lors de la récupération des nœuds DHT (endpoint /nodes):', error);
       console.error('Détails de l\'erreur:', {
         message: error.message,
         status: error.response?.status,
