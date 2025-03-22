@@ -166,9 +166,11 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     // Ajouter un log pour voir le statut actuel
     console.log('Status actuel au chargement:', status);
     
-    loadAvailableNodes()
+    // Forcer le rafraîchissement des nœuds au chargement
+    loadAvailableNodes(true)
       .then(nodes => {
         console.log('Nœuds chargés au montage du composant:', nodes);
+        console.log('Nombre de nœuds chargés:', nodes.length);
         setLocalNodes(nodes);
         setAvailableNodes(nodes);
         setIsLoadingNodes(false);
@@ -183,6 +185,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
       loadAvailableNodes()
         .then(nodes => {
           console.log('Nœuds rafraîchis par intervalle:', nodes);
+          console.log('Nombre de nœuds rafraîchis:', nodes.length);
           setLocalNodes(nodes);
           setAvailableNodes(nodes);
         });

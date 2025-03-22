@@ -81,7 +81,27 @@ api.interceptors.response.use(
   }
 );
 
-export type NodeStatusType = {
+// Interface pour les nœuds VPN
+interface VPNNode {
+  walletAddress: string;
+  ip: string;
+  location?: {
+    country: string;
+    region: string;
+  };
+  performance?: {
+    bandwidth: number;
+    latency: number;
+  };
+  connectedUsers?: number;
+  lastSeen?: string;
+  score?: number;
+  lastChecked?: string;
+  status?: string;
+}
+
+// Interface pour l'état du nœud DHT
+interface DHTStatus {
   active: boolean;
   bandwidth: number;
   earnings: number;
@@ -113,13 +133,13 @@ export type NodeStatusType = {
     connectedSince: string;
     lastActivity?: string;
   }>;
-};
+}
 
 export function useVPNNode() {
   const { isConnected, account } = useWalletContext();
   
   // Récupérer l'état initial depuis le localStorage
-  const getInitialState = (): NodeStatusType => {
+  const getInitialState = (): DHTStatus => {
     if (typeof window === 'undefined') {
       return {
         active: false,
@@ -157,10 +177,10 @@ export function useVPNNode() {
     };
   };
   
-  const [status, setStatus] = useState<NodeStatusType>(getInitialState());
+  const [status, setStatus] = useState<DHTStatus>(getInitialState());
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [availableNodes, setAvailableNodes] = useState<any[]>([]);
+  const [availableNodes, setAvailableNodes] = useState<VPNNode[]>([]);
   const [isLoadingNodes, setIsLoadingNodes] = useState(false);
   
   // Ajouter des refs pour les tentatives de reconnexion
@@ -927,7 +947,7 @@ export function useVPNNode() {
     }
   }, [status.active, status.nodeType]);
 
-  const fetchAvailableNodes = async (forceRefresh: boolean = false): Promise<any[]> => {
+  const fetchAvailableNodes = async (forceRefresh: boolean = false): Promise<VPNNode[]> => {
     const now = new Date();
     console.log('Début fetchAvailableNodes, forceRefresh:', forceRefresh);
     
@@ -970,100 +990,104 @@ export function useVPNNode() {
       
       console.log('Réponse complète du serveur:', response.data);
       
+      // Vérifier si la réponse est un tableau ou un objet avec une propriété nodes
+      let nodes: VPNNode[] = [];
+      
+      if (Array.isArray(response.data)) {
+        console.log('La réponse est un tableau');
+        nodes = response.data;
+      } else if (response.data && typeof response.data === 'object') {
+        console.log('La réponse est un objet');
+        // Utiliser une assertion de type pour accéder aux propriétés
+        const responseObj = response.data as Record<string, any>;
+        if (Array.isArray(responseObj.nodes)) {
+          console.log('L\'objet contient un tableau nodes');
+          nodes = responseObj.nodes;
+        } else if (responseObj.success === true && Array.isArray(responseObj.data)) {
+          console.log('L\'objet contient un tableau data');
+          nodes = responseObj.data;
+        }
+      }
+      
+      console.log('Nœuds extraits de la réponse:', nodes);
+      console.log('Nombre de nœuds extraits:', nodes.length);
+      
       // Générer des nœuds de démonstration si la réponse est vide ou mal formatée
-      if (!response.data || !Array.isArray((response.data as any).nodes) || (response.data as any).nodes?.length === 0) {
-        console.log('Aucun nœud reçu du serveur, génération de nœuds de démonstration');
-        const demoNodes = generateDemoNodes(3);
-        console.log('Nœuds de démonstration générés:', demoNodes);
+      if (!nodes || nodes.length === 0) {
+        console.log('Aucun nœud trouvé dans la réponse, génération de nœuds de démonstration');
+        const demoNodes = generateDemoNodes(5);
+        
+        // Mettre en cache les nœuds de démonstration
         localStorage.setItem('availableNodesCache', JSON.stringify(demoNodes));
-        localStorage.setItem('lastNodesUpdate', now.toISOString());
+        localStorage.setItem('availableNodesCacheTimestamp', Date.now().toString());
+        
         return demoNodes;
       }
       
-      const nodes = (response.data as any).nodes || [];
-      console.log('Nœuds reçus du serveur (non filtrés):', nodes);
-      
-      // Filtrage moins strict des nœuds
-      const validNodes = nodes.filter((node: any) => {
-        // Log détaillé pour chaque nœud
-        console.log('Nœud analysé:', node);
+      // Filtrer les nœuds valides (avec une adresse IP et un statut actif)
+      const validNodes = nodes.filter(node => {
+        // Vérifier si le nœud a une adresse IP
+        const hasIP = node.ip !== undefined && node.ip !== null && node.ip !== '';
+        // Vérifier si le nœud a un statut actif
+        const isActive = node.status === 'ACTIVE' || node.status === 'active';
         
-        // Si le nœud n'a pas d'adresse wallet, on lui en attribue une fictive
-        if (!node.walletAddress) {
-          console.log('Nœud sans adresse wallet, attribution d\'une adresse fictive');
-          node.walletAddress = `demo-${Math.random().toString(36).substring(2, 10)}`;
-        }
-        
-        // Ne pas filtrer son propre nœud pour le moment
-        return true;
+        return hasIP && isActive;
       });
       
-      console.log('Nœuds après filtrage moins strict:', validNodes);
+      console.log('Nœuds valides après filtrage:', validNodes);
+      console.log('Nombre de nœuds valides:', validNodes.length);
       
       // Si aucun nœud valide n'est trouvé, générer des nœuds de démonstration
       if (validNodes.length === 0) {
-        console.log('Aucun nœud valide après filtrage, génération de nœuds de démonstration');
-        const demoNodes = generateDemoNodes(3);
-        console.log('Nœuds de démonstration générés:', demoNodes);
+        console.log('Aucun nœud valide trouvé après filtrage, génération de nœuds de démonstration');
+        const demoNodes = generateDemoNodes(5);
+        
+        // Mettre en cache les nœuds de démonstration
         localStorage.setItem('availableNodesCache', JSON.stringify(demoNodes));
-        localStorage.setItem('lastNodesUpdate', now.toISOString());
+        localStorage.setItem('availableNodesCacheTimestamp', Date.now().toString());
+        
         return demoNodes;
       }
       
-      // Ajouter un timestamp de dernière vérification à chaque nœud
-      const nodesWithTimestamp = validNodes.map((node: any) => ({
-        ...node,
-        lastChecked: now.toISOString()
-      }));
+      // Mettre en cache les nœuds valides
+      localStorage.setItem('availableNodesCache', JSON.stringify(validNodes));
+      localStorage.setItem('availableNodesCacheTimestamp', Date.now().toString());
       
-      // Mettre à jour le cache
-      localStorage.setItem('availableNodesCache', JSON.stringify(nodesWithTimestamp));
-      localStorage.setItem('lastNodesUpdate', now.toISOString());
-      
-      console.log('Nœuds finaux retournés:', nodesWithTimestamp);
-      return nodesWithTimestamp;
+      return validNodes;
     } catch (error) {
       console.error('Erreur lors de la récupération des nœuds:', error);
       
       // En cas d'erreur, générer des nœuds de démonstration
       console.log('Erreur API, génération de nœuds de démonstration');
-      const demoNodes = generateDemoNodes(3);
+      const demoNodes = generateDemoNodes(5);
       console.log('Nœuds de démonstration générés après erreur:', demoNodes);
       return demoNodes;
     }
   };
   
   // Fonction pour générer des nœuds de démonstration
-  const generateDemoNodes = (count: number = 3): any[] => {
+  const generateDemoNodes = (count: number = 5): VPNNode[] => {
     console.log(`Génération de ${count} nœuds de démonstration`);
-    const demoNodes = [];
-    const countries = ['France', 'Germany', 'United States', 'Japan', 'Canada', 'United Kingdom'];
-    const regions = ['Paris', 'Berlin', 'New York', 'Tokyo', 'Toronto', 'London'];
+    const demoNodes: VPNNode[] = [];
     
     for (let i = 0; i < count; i++) {
-      const countryIndex = Math.floor(Math.random() * countries.length);
-      const bandwidth = Math.floor(Math.random() * 500) + 100; // 100-600 Mbps
-      const latency = Math.floor(Math.random() * 50) + 10; // 10-60 ms
-      const connectedUsers = Math.floor(Math.random() * 10); // 0-10 users
-      const score = Math.floor(Math.random() * 50) + 50; // 50-100 score
-      
+      const nodeId = `demo-node-${i}-${Math.random().toString(36).substring(2, 8)}`;
       demoNodes.push({
-        walletAddress: `demo-${Math.random().toString(36).substring(2, 10)}`,
-        ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        walletAddress: `demo-wallet-${i}-${Math.random().toString(36).substring(2, 8)}`,
+        ip: `192.168.1.${10 + i}`,
         location: {
-          country: countries[countryIndex],
-          region: regions[countryIndex]
+          country: 'France',
+          region: 'Île-de-France'
         },
         performance: {
-          bandwidth,
-          latency
+          bandwidth: Math.floor(Math.random() * 1000),
+          latency: Math.floor(Math.random() * 100)
         },
-        connectedUsers,
-        lastSeen: new Date(Date.now() - Math.floor(Math.random() * 1000000)).toISOString(),
-        score,
-        status: 'ACTIVE',
-        active: true,
-        lastChecked: new Date().toISOString()
+        connectedUsers: Math.floor(Math.random() * 10),
+        lastSeen: new Date().toISOString(),
+        score: Math.random() * 5,
+        lastChecked: new Date().toISOString(),
+        status: 'ACTIVE'
       });
     }
     
