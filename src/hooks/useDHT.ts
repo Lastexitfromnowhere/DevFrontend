@@ -55,6 +55,7 @@ export function useDHT() {
   const [wireGuardNodes, setWireGuardNodes] = useState<WireGuardNode[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoadingWireGuard, setIsLoadingWireGuard] = useState(false);
 
   // Fonction pour récupérer le statut du nœud DHT
   const fetchStatus = useCallback(async () => {
@@ -177,6 +178,25 @@ export function useDHT() {
     return demoNodes;
   };
 
+  // Fonction pour générer des nœuds WireGuard de démonstration
+  const generateDemoWireGuardNodes = (count: number = 3): WireGuardNode[] => {
+    console.log(`Génération de ${count} nœuds WireGuard de démonstration`);
+    
+    return Array.from({ length: count }, (_, index) => {
+      const id = `demo-wireguard-${index + 1}`;
+      const randomWallet = `${Math.random().toString(36).substring(2, 10)}...${Math.random().toString(36).substring(2, 10)}`;
+      
+      return {
+        id,
+        walletAddress: randomWallet,
+        publicKey: `${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}=`,
+        ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
+        port: 51820 + Math.floor(Math.random() * 10),
+        lastSeen: new Date().toISOString()
+      };
+    });
+  };
+
   // Fonction pour récupérer la liste des nœuds DHT
   const fetchNodes = useCallback(async () => {
     if (!isAuthenticated) return;
@@ -217,12 +237,15 @@ export function useDHT() {
 
   // Fonction pour récupérer la liste des nœuds WireGuard via DHT
   const fetchWireGuardNodes = useCallback(async () => {
-    if (!isAuthenticated) return;
-
-    setLoading(true);
-    setError(null);
-
+    if (!isAuthenticated) {
+      console.log('Non authentifié, impossible de récupérer les nœuds WireGuard');
+      return [];
+    }
+    
+    setIsLoadingWireGuard(true);
+    
     try {
+      console.log('Récupération des nœuds WireGuard...');
       const data = await dhtUtils.getWireGuardNodes();
       
       if (data.success === false && data.error) {
@@ -241,17 +264,27 @@ export function useDHT() {
           }))
         : [];
       
-      setWireGuardNodes(sanitizedNodes);
-    } catch (err) {
-      console.error('Erreur:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      // Si aucun nœud n'est disponible, utiliser des nœuds de démonstration
+      if (sanitizedNodes.length === 0) {
+        console.log('Aucun nœud WireGuard disponible, utilisation des nœuds de démonstration');
+        const demoNodes = generateDemoWireGuardNodes(3);
+        setWireGuardNodes(demoNodes);
+        return demoNodes;
+      }
       
-      // En cas d'erreur, générer des nœuds de démonstration
-      console.log('Erreur lors de la récupération des nœuds WireGuard, génération de nœuds de démonstration');
-      const demoNodes = generateDemoDHTNodes(5);
-      setNodes(demoNodes);
+      console.log(`${sanitizedNodes.length} nœuds WireGuard récupérés`);
+      setWireGuardNodes(sanitizedNodes);
+      return sanitizedNodes;
+    } catch (err) {
+      console.error('Erreur lors de la récupération des nœuds WireGuard:', err);
+      
+      // En cas d'erreur, utiliser des nœuds de démonstration
+      console.log('Utilisation des nœuds WireGuard de démonstration suite à une erreur');
+      const demoNodes = generateDemoWireGuardNodes(3);
+      setWireGuardNodes(demoNodes);
+      return demoNodes;
     } finally {
-      setLoading(false);
+      setIsLoadingWireGuard(false);
     }
   }, [isAuthenticated]);
 

@@ -183,6 +183,25 @@ export const getWalletAddress = () => {
   return localStorage.getItem(WALLET_ADDRESS_KEY);
 };
 
+// Fonction pour obtenir l'adresse du wallet directement depuis le token JWT
+export const getWalletAddressFromToken = () => {
+  const token = getToken();
+  if (!token) return null;
+  
+  try {
+    // Décoder le token JWT (partie payload)
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(window.atob(base64));
+    
+    // Retourner l'adresse du wallet depuis le payload
+    return payload.walletAddress || null;
+  } catch (error) {
+    console.error('Erreur lors de l\'extraction de l\'adresse du wallet depuis le token:', error);
+    return null;
+  }
+};
+
 // Fonction pour générer un token avec une adresse de wallet
 export const generateToken = async (walletAddress) => {
   try {
@@ -295,6 +314,7 @@ export const authService = {
   getAuthHeaders,
   isTokenExpired,
   getWalletAddress,
+  getWalletAddressFromToken,
   generateToken,
   saveToken,
   refreshTokenIfNeeded,

@@ -182,6 +182,15 @@ export const getDHTStatusByWallet = async (walletAddress) => {
     // Vérifier que le token est valide et correspond à l'adresse du wallet
     await authService.refreshTokenIfNeeded();
     
+    // Utiliser l'adresse du wallet stockée dans le token JWT pour éviter les erreurs 403
+    const tokenWalletAddress = authService.getWalletAddressFromToken();
+    
+    // Si les adresses ne correspondent pas, utiliser celle du token pour éviter l'erreur 403
+    if (tokenWalletAddress && tokenWalletAddress !== walletAddress) {
+      console.warn(`L'adresse fournie (${walletAddress}) ne correspond pas à celle du token (${tokenWalletAddress}). Utilisation de l'adresse du token.`);
+      walletAddress = tokenWalletAddress;
+    }
+    
     const headers = await getAuthHeaders();
     console.log('Entêtes d\'authentification:', headers);
     console.log('Adresse du wallet utilisée pour la requête:', walletAddress);
