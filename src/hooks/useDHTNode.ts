@@ -228,7 +228,7 @@ export function useDHTNode() {
     
     try {
       // Type assertion pour response.data
-      const response = await api.post('/dht/publish-node', {
+      const response = await api.post('/dht/wireguard-publish', {
         walletAddress: account
       });
       const responseData = response.data as any;
@@ -295,7 +295,7 @@ export function useDHTNode() {
       
       console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      const response = await api.post('/dht/publish-node', {
+      const response = await api.post('/dht/wireguard-publish', {
         ip: serverIp,
         publicKey: serverPublicKey,
         walletAddress: account
