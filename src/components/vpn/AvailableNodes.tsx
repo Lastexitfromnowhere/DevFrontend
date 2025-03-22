@@ -76,18 +76,25 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     console.log(`Génération de ${count} nœuds de démonstration locaux`);
     const demoNodes: VPNNode[] = [];
     
+    const countries = ['France', 'Germany', 'United States', 'Japan', 'Canada'];
+    const regions = ['Île-de-France', 'Bavaria', 'California', 'Tokyo', 'Ontario'];
+    
     for (let i = 0; i < count; i++) {
+      const countryIndex = Math.floor(Math.random() * countries.length);
       const nodeId = `demo-node-${i}-${Math.random().toString(36).substring(2, 8)}`;
+      const bandwidth = Math.floor(Math.random() * 500) + 100; // 100-600 Mbps
+      const latency = Math.floor(Math.random() * 50) + 5; // 5-55 ms
+      
       demoNodes.push({
         walletAddress: `demo-wallet-${i}-${Math.random().toString(36).substring(2, 8)}`,
-        ip: `192.168.1.${10 + i}`,
+        ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
         location: {
-          country: 'France',
-          region: 'Île-de-France'
+          country: countries[countryIndex],
+          region: regions[countryIndex]
         },
         performance: {
-          bandwidth: Math.floor(Math.random() * 1000),
-          latency: Math.floor(Math.random() * 100)
+          bandwidth: bandwidth,
+          latency: latency
         },
         connectedUsers: Math.floor(Math.random() * 10),
         lastSeen: new Date().toISOString(),
@@ -165,32 +172,46 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     
     // Ajouter un log pour voir le statut actuel
     console.log('Status actuel au chargement:', status);
+    console.log('Début du chargement des nœuds...');
     
-    // Forcer le rafraîchissement des nœuds au chargement
+    // Forcer l'utilisation des nœuds de démonstration locaux
+    const demoNodes = generateLocalDemoNodes(5);
+    console.log('Nœuds de démonstration générés localement:', demoNodes);
+    setLocalNodes(demoNodes);
+    setAvailableNodes(demoNodes);
+    setIsLoadingNodes(false);
+    
+    // Essayer également de charger les nœuds depuis l'API en arrière-plan
     loadAvailableNodes(true)
       .then(nodes => {
-        console.log('Nœuds chargés au montage du composant:', nodes);
+        console.log('Nœuds chargés depuis l\'API:', nodes);
         console.log('Nombre de nœuds chargés:', nodes.length);
-        setLocalNodes(nodes);
-        setAvailableNodes(nodes);
-        setIsLoadingNodes(false);
+        if (nodes && nodes.length > 0) {
+          setLocalNodes(nodes);
+          setAvailableNodes(nodes);
+        }
       })
       .catch(error => {
         console.error('Error in initial node fetch:', error);
-        setIsLoadingNodes(false);
       });
       
     // Mettre en place un intervalle pour rafraîchir les nœuds toutes les 30 secondes
     const intervalId = setInterval(() => {
+      console.log('Rafraîchissement périodique des nœuds...');
+      
+      // Essayer de charger les nœuds depuis l'API
       loadAvailableNodes()
         .then(nodes => {
           console.log('Nœuds rafraîchis par intervalle:', nodes);
           console.log('Nombre de nœuds rafraîchis:', nodes.length);
-          setLocalNodes(nodes);
-          setAvailableNodes(nodes);
+          if (nodes && nodes.length > 0) {
+            setLocalNodes(nodes);
+            setAvailableNodes(nodes);
+          }
+        })
+        .catch(error => {
+          console.error('Erreur lors du rafraîchissement des nœuds:', error);
         });
-      // Ajouter un log pour voir le statut à chaque rafraîchissement
-      console.log('Status à l\'intervalle de rafraîchissement:', status);
     }, 30000);
     
     // Nettoyer l'intervalle lors du démontage du composant
