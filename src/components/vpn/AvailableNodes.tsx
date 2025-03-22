@@ -70,6 +70,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   const [errorState, setErrorState] = useState<string | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isConnectedToThisNode, setIsConnectedToThisNode] = useState<boolean>(false);
+  const [useDemoNodes, setUseDemoNodes] = useState(true);
   
   // Fonction pour générer des nœuds de démonstration
   const generateLocalDemoNodes = (count: number = 3): VPNNode[] => {
@@ -109,7 +110,7 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   };
   
   // Fonction pour récupérer les nœuds disponibles
-  const loadAvailableNodes = async (forceRefresh: boolean = false): Promise<VPNNode[]> => {
+  const loadAvailableNodes = async (forceRefresh: boolean = false, useDemoNodesAsFallback: boolean = true): Promise<VPNNode[]> => {
     setIsRefreshing(true);
     try {
       // Utiliser directement la fonction du hook useVPNNode pour récupérer les nœuds
@@ -118,304 +119,213 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
       console.log('Nœuds récupérés dans AvailableNodes:', nodes);
       
       if (!nodes || nodes.length === 0) {
-        console.log('Aucun nœud récupéré, génération de nœuds de démonstration locaux');
-        const demoNodes = generateLocalDemoNodes(5);
-        setAvailableNodes(demoNodes);
-        return demoNodes;
+        console.log('Aucun nœud récupéré');
+        
+        if (useDemoNodesAsFallback) {
+          console.log('Génération de nœuds de démonstration locaux comme solution de repli');
+          const demoNodes = generateLocalDemoNodes(5);
+          setAvailableNodes(demoNodes);
+          return demoNodes;
+        } else {
+          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
+          setAvailableNodes([]);
+          return [];
+        }
       }
       
+      console.log('Nœuds réels récupérés:', nodes);
       setAvailableNodes(nodes);
       return nodes;
     } catch (error) {
       console.error('Error fetching available nodes:', error);
-      setErrorState('Impossible de récupérer les nœuds disponibles. Utilisation de nœuds de démonstration.');
+      setErrorState('Impossible de récupérer les nœuds disponibles.');
       
-      // En cas d'erreur, essayer d'utiliser le cache
-      const cachedNodes = localStorage.getItem('availableNodesCache');
-      if (cachedNodes) {
-        try {
-          const parsedNodes = JSON.parse(cachedNodes);
-          console.log('Utilisation du cache de nœuds:', parsedNodes);
-          if (parsedNodes && parsedNodes.length > 0) {
-            setAvailableNodes(parsedNodes);
-            return parsedNodes;
+      if (useDemoNodesAsFallback) {
+        // En cas d'erreur, essayer d'utiliser le cache
+        const cachedNodes = localStorage.getItem('availableNodesCache');
+        if (cachedNodes) {
+          try {
+            const parsedNodes = JSON.parse(cachedNodes);
+            console.log('Utilisation du cache de nœuds:', parsedNodes);
+            if (parsedNodes && parsedNodes.length > 0) {
+              setAvailableNodes(parsedNodes);
+              return parsedNodes;
+            }
+          } catch (e) {
+            console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
           }
-        } catch (e) {
-          console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
         }
+        
+        // Si le cache ne fonctionne pas, générer des nœuds de démonstration
+        console.log('Génération de nœuds de démonstration après échec de récupération');
+        const demoNodes = generateLocalDemoNodes(5);
+        setAvailableNodes(demoNodes);
+        return demoNodes;
+      } else {
+        console.log('Aucun nœud de démonstration généré malgré l\'erreur car l\'option est désactivée');
+        setAvailableNodes([]);
+        return [];
       }
-      
-      // Si le cache ne fonctionne pas, générer des nœuds de démonstration
-      console.log('Génération de nœuds de démonstration après échec de récupération');
-      const demoNodes = generateLocalDemoNodes(5);
-      setAvailableNodes(demoNodes);
-      return demoNodes;
     } finally {
       setIsRefreshing(false);
     }
   };
   
-  // Fonction pour formater le score
-  const formatScore = (score?: number): string => {
-    if (score === undefined) return 'N/A';
-    return score.toFixed(1);
-  };
-  
-  // Fonction pour rafraîchir les nœuds disponibles
-  const handleRefresh = () => {
-    loadAvailableNodes(true);
-  };
-  
-  // Effet pour charger les nœuds disponibles au chargement du composant
+  // Fonction pour charger les nœuds au chargement du composant
   useEffect(() => {
-    setIsLoadingNodes(true);
-    
-    // Ajouter un log pour voir le statut actuel
-    console.log('Status actuel au chargement:', status);
-    console.log('Début du chargement des nœuds...');
-    
-    // Forcer l'utilisation des nœuds de démonstration locaux
-    const demoNodes = generateLocalDemoNodes(5);
-    console.log('Nœuds de démonstration générés localement:', demoNodes);
-    setLocalNodes(demoNodes);
-    setAvailableNodes(demoNodes);
-    setIsLoadingNodes(false);
-    
-    // Essayer également de charger les nœuds depuis l'API en arrière-plan
-    loadAvailableNodes(true)
-      .then(nodes => {
-        console.log('Nœuds chargés depuis l\'API:', nodes);
-        console.log('Nombre de nœuds chargés:', nodes.length);
-        if (nodes && nodes.length > 0) {
-          setLocalNodes(nodes);
-          setAvailableNodes(nodes);
-        }
-      })
-      .catch(error => {
-        console.error('Error in initial node fetch:', error);
-      });
-      
-    // Mettre en place un intervalle pour rafraîchir les nœuds toutes les 30 secondes
-    const intervalId = setInterval(() => {
-      console.log('Rafraîchissement périodique des nœuds...');
-      
-      // Essayer de charger les nœuds depuis l'API
-      loadAvailableNodes()
-        .then(nodes => {
-          console.log('Nœuds rafraîchis par intervalle:', nodes);
-          console.log('Nombre de nœuds rafraîchis:', nodes.length);
-          if (nodes && nodes.length > 0) {
-            setLocalNodes(nodes);
-            setAvailableNodes(nodes);
-          }
-        })
-        .catch(error => {
-          console.error('Erreur lors du rafraîchissement des nœuds:', error);
-        });
-    }, 30000);
-    
-    // Nettoyer l'intervalle lors du démontage du composant
-    return () => clearInterval(intervalId);
+    loadAvailableNodes(false, useDemoNodes);
   }, []);
   
-  // Effet pour mettre à jour isConnectedToThisNode lorsque le statut change
-  useEffect(() => {
-    console.log('Status mis à jour dans AvailableNodes:', status);
-    // Vérifier si nous sommes connectés à un nœud
-    if (status.active && status.connectedToNode) {
-      console.log('Connecté au nœud:', status.connectedToNode);
-    } else {
-      console.log('Non connecté à un nœud');
-    }
-  }, [status]);
+  // Fonction pour rafraîchir les nœuds avec ou sans nœuds de démonstration
+  const refreshNodes = (useDemoNodesAsFallback: boolean = true) => {
+    setUseDemoNodes(useDemoNodesAsFallback);
+    loadAvailableNodes(true, useDemoNodesAsFallback);
+  };
   
-  // Fonction pour gérer la connexion à un nœud
-  const handleConnect = async (walletAddress?: string) => {
-    if (!walletAddress) {
-      setErrorState('Invalid node selected');
+  // Fonction pour se connecter à un nœud
+  const handleConnectToNode = async (node: VPNNode) => {
+    if (!node.walletAddress) {
+      console.error('Adresse de wallet manquante pour le nœud');
       return;
     }
     
-    setSelectedNode(walletAddress);
-    setErrorState(null);
-    
+    setSelectedNode(node.walletAddress);
     try {
-      const success = await connectToNode(walletAddress);
-      if (success) {
-        if (onSelectNode) {
-          onSelectNode(walletAddress);
-        }
-      } else {
-        setErrorState('Failed to connect to node. Please try again.');
+      const result = await connectToNode(node.walletAddress);
+      if (result) {
+        setIsConnectedToThisNode(true);
+        // Mettre à jour l'interface pour refléter la connexion
       }
     } catch (error) {
-      console.error('Error connecting to node:', error);
-      setErrorState('Error connecting to node. Please try again.');
-    } finally {
-      setSelectedNode(null);
+      console.error('Erreur lors de la connexion au nœud:', error);
     }
   };
-
-  // Fonction pour gérer la déconnexion d'un nœud
-  const handleDisconnect = async () => {
-    setErrorState(null);
-    
+  
+  // Fonction pour se déconnecter d'un nœud
+  const handleDisconnectFromNode = async () => {
     try {
-      const success = await disconnectFromNode();
-      if (success) {
-        // Rafraîchir la liste des nœuds après la déconnexion
-        loadAvailableNodes(true);
-      } else {
-        setErrorState('Failed to disconnect from node. Please try again.');
+      const result = await disconnectFromNode();
+      if (result) {
+        setIsConnectedToThisNode(false);
+        setSelectedNode(null);
+        // Mettre à jour l'interface pour refléter la déconnexion
       }
     } catch (error) {
-      console.error('Error disconnecting from node:', error);
-      setErrorState('Error disconnecting from node. Please try again.');
+      console.error('Erreur lors de la déconnexion du nœud:', error);
     }
   };
   
   return (
-    <Card className="mb-4">
+    <div className="space-y-4">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-medium">Available VPN Nodes</h3>
-        <Button
-          variant="secondary"
-          onClick={handleRefresh}
-          className="text-xs px-2 py-1 flex items-center"
-          loading={isRefreshing}
-        >
-          <RefreshCw className="w-3 h-3 mr-1" />
-          Refresh
-        </Button>
+        <h2 className="text-xl font-semibold">Nœuds VPN disponibles</h2>
+        <div className="flex space-x-2">
+          <Button 
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 flex items-center space-x-2"
+            onClick={() => refreshNodes(false)}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? <Spinner size="sm" /> : <AlertTriangle className="h-4 w-4" />}
+            <span>Nœuds réels uniquement</span>
+          </Button>
+          <Button 
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 flex items-center space-x-2"
+            onClick={() => refreshNodes(true)}
+            disabled={isRefreshing}
+          >
+            {isRefreshing ? <Spinner size="sm" /> : <RefreshCw className="h-4 w-4" />}
+            <span>Inclure nœuds démo</span>
+          </Button>
+        </div>
       </div>
       
       {errorState && (
-        <div className="bg-red-900/20 border border-red-900/50 text-red-500 p-2 mb-4 rounded text-sm flex items-center">
-          <AlertTriangle className="w-4 h-4 mr-2 flex-shrink-0" />
-          <span>{errorState}</span>
+        <div className="bg-red-50 text-red-700 p-3 rounded-md mb-4">
+          {errorState}
         </div>
       )}
       
-      <div className="mb-2 text-xs text-gray-400">
-        {localNodes.length > 0 ? `${localNodes.length} nodes available` : 'No nodes available'}
-      </div>
-      
-      {isLoadingNodes && !localNodes.length ? (
-        <div className="flex justify-center items-center py-8">
-          <Spinner className="w-8 h-8 border-4 rounded-full text-gray-600" />
-          <span className="ml-2">Loading available nodes...</span>
-        </div>
-      ) : localNodes.length === 0 ? (
-        <div className="text-center py-8 text-gray-400">
-          <Server className="w-8 h-8 mx-auto mb-2" />
-          <p>No VPN nodes available at the moment.</p>
-          <p className="text-xs mt-2">Try refreshing or check back later.</p>
+      {availableNodes.length === 0 ? (
+        <div className="text-center py-8">
+          <Server className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+          <p className="text-gray-500">Aucun nœud VPN disponible actuellement.</p>
         </div>
       ) : (
-        <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
-          {localNodes.map((node, index) => {
-            // Ajouter des logs pour déboguer
-            console.log(`Node ${index}:`, {
-              nodeWalletAddress: node.walletAddress,
-              statusActive: status.active,
-              connectedToNode: status.connectedToNode,
-              isConnectedToThisNode: isConnectedToThisNode,
-              fullStatus: status
-            });
-            
-            return (
-              <div
-                key={`${node.walletAddress || ''}-${index}`}
-                className="bg-gray-800 rounded-lg p-3 border border-gray-700 hover:border-gray-600 transition-colors"
-              >
-                <div className="flex justify-between items-start">
+        <div className="grid grid-cols-1 gap-4">
+          {availableNodes.map((node, index) => (
+            <Card key={index} className="p-4 hover:shadow-md transition-shadow">
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-3">
+                  <Wifi className="h-8 w-8 text-blue-500" />
                   <div>
-                    <div className="flex items-center mb-1">
-                      {node.status === 'ACTIVE' ? (
-                        <Wifi className="w-4 h-4 mr-1 text-green-400" />
-                      ) : (
-                        <Wifi className="w-4 h-4 mr-1 text-yellow-400" />
-                      )}
-                      <span className="font-medium truncate" title={node.walletAddress || ''}>
-                        {node.walletAddress && node.walletAddress.length > 14 
-                          ? `${node.walletAddress.substring(0, 8)}...${node.walletAddress.substring(node.walletAddress.length - 6)}`
-                          : node.walletAddress || 'Unknown'}
-                      </span>
-                      {node.status !== 'ACTIVE' && (
-                        <span className="ml-2 text-xs px-1.5 py-0.5 bg-yellow-600/20 text-yellow-400 rounded-sm">
-                          Récemment actif
-                        </span>
-                      )}
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-sm text-gray-300">
-                      <div className="flex items-center text-xs text-gray-400">
-                        <Globe className="w-3 h-3 mr-1 text-blue-400" />
-                        <span>{node.location?.country || 'Unknown'}</span>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-400">
-                        <Activity className="w-3 h-3 mr-1 text-blue-400" />
-                        <span>
-                          {node.performance?.latency !== undefined 
-                            ? `${node.performance.latency} ms` 
-                            : 'Unknown'}
-                        </span>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-400">
-                        <Users className="w-3 h-3 mr-1" />
-                        <span>Users: {node.connectedUsers || 0}</span>
-                      </div>
-                      <div className="flex items-center text-xs text-gray-400">
-                        <Award className="w-3 h-3 mr-1" />
-                        <span>Score: {formatScore(node.score)}</span>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    {isConnectedToThisNode ? (
-                      <Button
-                        variant="danger"
-                        onClick={handleDisconnect}
-                        loading={isLoading}
-                        disabled={isLoading}
-                        className="text-xs px-2 py-1"
-                      >
-                        Disconnect
-                      </Button>
-                    ) : (
-                      <Button
-                        variant={status.active && status.connectedToNode === node.walletAddress ? "secondary" : "primary"}
-                        onClick={() => handleConnect(node.walletAddress)}
-                        loading={isLoading && selectedNode === node.walletAddress}
-                        disabled={isLoading || (status.active && status.connectedToNode === node.walletAddress)}
-                        className={`text-xs px-2 py-1 ${status.active && status.connectedToNode === node.walletAddress ? "bg-purple-600 hover:bg-purple-700 text-white" : ""}`}
-                      >
-                        {status.active && status.connectedToNode === node.walletAddress ? 'Connected' : 'Connect'}
-                      </Button>
-                    )}
-                    <div className="text-xs text-gray-500 mt-1">
-                      Last seen: {formatRelativeTime(node.lastSeen)}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                      Status: <span className="text-green-400">
-                        En ligne
-                      </span>
-                    </div>
+                    <h3 className="font-medium">
+                      {node.location?.country || 'Location inconnue'} 
+                      {node.location?.region && ` (${node.location.region})`}
+                    </h3>
+                    <p className="text-sm text-gray-500 truncate max-w-[200px]">
+                      {node.walletAddress?.substring(0, 10)}...{node.walletAddress?.substring(node.walletAddress.length - 8)}
+                    </p>
                   </div>
                 </div>
+                
+                <div>
+                  {selectedNode === node.walletAddress && isConnectedToThisNode ? (
+                    <Button
+                      className="bg-red-600 hover:bg-red-700 text-white"
+                      onClick={handleDisconnectFromNode}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? <Spinner size="sm" /> : 'Déconnecter'}
+                    </Button>
+                  ) : (
+                    <Button
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                      onClick={() => handleConnectToNode(node)}
+                      disabled={isLoading || (selectedNode !== null && selectedNode !== node.walletAddress)}
+                    >
+                      {isLoading && selectedNode === node.walletAddress ? <Spinner size="sm" /> : 'Connecter'}
+                    </Button>
+                  )}
+                </div>
               </div>
-            );
-          })}
-          
-          {isLoadingNodes && localNodes.length > 0 && (
-            <div className="text-center py-2 text-gray-400">
-              <Spinner className="w-4 h-4 border-2 rounded-full text-gray-600 mx-auto" />
-              <p className="text-xs mt-1">Updating...</p>
-            </div>
-          )}
+              
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="flex items-center space-x-2">
+                  <Activity className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm">
+                    {node.performance?.bandwidth ? `${node.performance.bandwidth} Mbps` : 'Bande passante inconnue'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Globe className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm">
+                    {node.performance?.latency ? `${node.performance.latency} ms` : 'Latence inconnue'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Users className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm">
+                    {node.connectedUsers !== undefined ? `${node.connectedUsers} utilisateurs` : 'Utilisateurs inconnus'}
+                  </span>
+                </div>
+                
+                <div className="flex items-center space-x-2">
+                  <Award className="h-4 w-4 text-gray-500" />
+                  <span className="text-sm">
+                    {node.score !== undefined ? `Score: ${node.score.toFixed(1)}/5` : 'Score inconnu'}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="mt-2 text-xs text-gray-500 text-right">
+                Dernière activité: {formatRelativeTime(node.lastSeen)}
+              </div>
+            </Card>
+          ))}
         </div>
       )}
-    </Card>
+    </div>
   );
 }

@@ -1,11 +1,11 @@
 // src/components/dht/DHTStatus.tsx
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDHT } from '@/hooks/useDHT';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/Card';
 import { TerminalButton } from '@/components/ui/terminal/TerminalButton';
 import { Badge } from '@/components/ui/Badge';
-import { Loader2, Power, PowerOff, RefreshCw } from 'lucide-react';
+import { Loader2, Power, PowerOff, RefreshCw, AlertTriangle } from 'lucide-react';
 
 // Étendre l'interface TerminalButtonProps pour inclure onClick
 interface ExtendedTerminalButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
@@ -55,19 +55,42 @@ const CardDescription: React.FC<CardDescriptionProps> = ({ children }: CardDescr
 );
 
 const CardContent: React.FC<CardContentProps> = ({ children }: CardContentProps) => (
-  <div className="py-2">{children}</div>
+  <div className="p-4 pt-0">{children}</div>
 );
 
-const CardFooter: React.FC<CardFooterProps> = ({ className, children }: CardFooterProps) => (
-  <div className={`mt-4 pt-4 border-t border-gray-800 ${className || ''}`}>{children}</div>
+const CardFooter: React.FC<CardFooterProps> = ({ className = '', children }: CardFooterProps) => (
+  <div className={`p-4 pt-0 flex justify-between items-center ${className}`}>{children}</div>
 );
 
 const BadgeComponent: React.FC<BadgeProps> = ({ variant, children }: BadgeProps) => (
-  <span className={`px-2 py-1 rounded-md text-xs ${variant === 'success' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{children}</span>
+  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+    variant === 'success' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+  }`}>
+    {children}
+  </span>
 );
 
-// Alias pour TerminalButton avec l'interface étendue
-const Button = TerminalButton as React.FC<ExtendedTerminalButtonProps>;
+const Button: React.FC<ExtendedTerminalButtonProps> = ({ 
+  children, 
+  variant = 'primary', 
+  icon, 
+  loading = false, 
+  onClick,
+  ...props 
+}) => (
+  <TerminalButton 
+    className={`flex items-center justify-center space-x-2 ${
+      variant === 'primary' ? 'bg-blue-600 hover:bg-blue-700 text-white' :
+      variant === 'secondary' ? 'bg-gray-200 hover:bg-gray-300 text-gray-800' :
+      'bg-red-600 hover:bg-red-700 text-white'
+    }`}
+    onClick={onClick}
+    {...props}
+  >
+    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : icon}
+    <span>{children}</span>
+  </TerminalButton>
+);
 
 export default function DHTStatus() {
   const { isAuthenticated } = useAuth();
@@ -75,20 +98,18 @@ export default function DHTStatus() {
     status, 
     loading, 
     error, 
-    fetchStatus, 
     startNode, 
-    stopNode 
+    stopNode, 
+    fetchStatus,
+    fetchNodes
   } = useDHT();
-
-  // Rafraîchir le statut périodiquement
+  
+  const [useDemoNodes, setUseDemoNodes] = useState(true);
+  
   useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const interval = setInterval(() => {
+    if (isAuthenticated) {
       fetchStatus();
-    }, 30000); // Toutes les 30 secondes
-
-    return () => clearInterval(interval);
+    }
   }, [isAuthenticated, fetchStatus]);
 
   if (!isAuthenticated) {
@@ -97,12 +118,24 @@ export default function DHTStatus() {
         <CardHeader>
           <CardTitle>Statut du nœud DHT</CardTitle>
           <CardDescription>
-            Connectez-vous pour voir le statut du nœud DHT
+            Connectez-vous pour voir le statut de votre nœud DHT
           </CardDescription>
         </CardHeader>
       </Card>
     );
   }
+
+  // Fonction pour rafraîchir les nœuds sans utiliser les nœuds de démonstration
+  const refreshRealNodes = async () => {
+    setUseDemoNodes(false);
+    await fetchNodes(false); // false = ne pas utiliser les nœuds de démonstration
+  };
+
+  // Fonction pour rafraîchir les nœuds avec les nœuds de démonstration si nécessaire
+  const refreshWithDemoNodes = async () => {
+    setUseDemoNodes(true);
+    await fetchNodes(true); // true = utiliser les nœuds de démonstration si nécessaire
+  };
 
   return (
     <Card variant="default">
@@ -149,84 +182,61 @@ export default function DHTStatus() {
                 <>
                   <div className="flex items-center justify-between">
                     <span className="font-medium">Connexions:</span>
-                    <span>{status.stats.connections}</span>
+                    <span className="text-sm">{status.stats.connections}</span>
                   </div>
-
+                  
                   <div className="flex items-center justify-between">
-                    <span className="font-medium">Pairs connectés:</span>
-                    <span>{status.stats.peers.length}</span>
+                    <span className="font-medium">Pairs:</span>
+                    <span className="text-sm">{status.stats.peers?.length || 0}</span>
                   </div>
-
-                  {status.stats.addresses.length > 0 && (
-  <div className="mt-4">
-    <h4 className="text-sm font-medium mb-2">Adresses d&apos;écoute:</h4>
-    <div className="bg-gray-700 p-2 rounded-md text-xs overflow-auto max-h-[100px] text-gray-200">
-      {status.stats.addresses.map((addr: string, index: number) => (
-        <div key={index} className="mb-1 break-all">
-          {addr}
-        </div>
-      ))}
-    </div>
-  </div>
-)}
-
-                  {status.stats.peers.length > 0 && (
-                    <div className="mt-4">
-                      <h4 className="text-sm font-medium mb-2">Pairs connectés:</h4>
-                      <div className="bg-gray-50 p-2 rounded-md text-xs overflow-auto max-h-[150px]">
-                        {status.stats.peers.map((peer: any, index: number) => (
-                          <div key={index} className="mb-2 break-all">
-                            <div><strong>ID:</strong> {peer?.id ? `${peer.id.substring(0, 20)}...` : 'ID non disponible'}</div>
-                            <div><strong>Direction:</strong> {peer?.direction || 'N/A'}</div>
-                            <div><strong>Latence:</strong> {peer?.latency !== undefined ? `${peer.latency}ms` : 'N/A'}</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
                 </>
               )}
             </>
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        <Button
-          variant="secondary"
-          onClick={() => fetchStatus()}
-          disabled={loading}
-        >
-          <RefreshCw className="mr-2 h-4 w-4" />
-          Rafraîchir
-        </Button>
-
+      <CardFooter className="space-x-2">
         {status.isActive ? (
           <Button
             variant="danger"
-            onClick={() => stopNode()}
+            icon={<PowerOff className="h-4 w-4" />}
+            onClick={stopNode}
             disabled={loading}
+            loading={loading}
           >
-            {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <PowerOff className="mr-2 h-4 w-4" />
-            )}
             Arrêter
           </Button>
         ) : (
           <Button
             variant="primary"
-            onClick={() => startNode()}
+            icon={<Power className="h-4 w-4" />}
+            onClick={startNode}
             disabled={loading}
+            loading={loading}
           >
-            {loading ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Power className="mr-2 h-4 w-4" />
-            )}
             Démarrer
           </Button>
         )}
+        
+        {/* Boutons pour rafraîchir les nœuds avec ou sans nœuds de démonstration */}
+        <div className="flex ml-auto space-x-2">
+          <Button
+            variant="secondary"
+            icon={<AlertTriangle className="h-4 w-4" />}
+            onClick={refreshRealNodes}
+            disabled={loading}
+          >
+            Afficher nœuds réels uniquement
+          </Button>
+          <Button
+            variant="secondary"
+            icon={<RefreshCw className="h-4 w-4" />}
+            onClick={refreshWithDemoNodes}
+            disabled={loading}
+          >
+            Inclure nœuds démo
+          </Button>
+        </div>
       </CardFooter>
     </Card>
   );

@@ -279,11 +279,20 @@ export const getDHTNodes = async () => {
     // Vérifier si la réponse contient des nœuds
     if (response.data && Array.isArray(response.data.nodes)) {
       console.log(`${response.data.nodes.length} nœuds DHT récupérés depuis l'API`);
+      
+      // Si la réponse contient des nœuds mais que le tableau est vide, on le signale clairement
+      if (response.data.nodes.length === 0) {
+        console.log('La réponse API contient un tableau de nœuds vide');
+        return { success: true, nodes: [] };
+      }
+      
+      return response.data;
     } else {
-      console.log('Aucun nœud DHT trouvé dans la réponse API');
+      console.log('Format de réponse inattendu: la propriété "nodes" est manquante ou n\'est pas un tableau');
+      
+      // Normaliser la réponse pour éviter les erreurs dans les composants qui utilisent ces données
+      return { success: false, nodes: [], error: 'Format de réponse inattendu' };
     }
-    
-    return response.data;
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds DHT:', error);
     console.error('Détails de l\'erreur:', {

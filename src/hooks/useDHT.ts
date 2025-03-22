@@ -198,7 +198,7 @@ export function useDHT() {
   };
 
   // Fonction pour récupérer la liste des nœuds DHT
-  const fetchNodes = useCallback(async () => {
+  const fetchNodes = useCallback(async (useDemoNodesAsFallback = true) => {
     if (!isAuthenticated) return;
 
     setLoading(true);
@@ -213,23 +213,39 @@ export function useDHT() {
       
       // Vérifier si des nœuds sont disponibles
       if (!data.nodes || !Array.isArray(data.nodes) || data.nodes.length === 0) {
-        console.log('Aucun nœud DHT trouvé dans la réponse API, génération de nœuds de démonstration');
-        const demoNodes = generateDemoDHTNodes(5);
-        setNodes(demoNodes);
-        return demoNodes;
+        console.log('Aucun nœud DHT trouvé dans la réponse API');
+        
+        // Ne générer des nœuds de démonstration que si l'option est activée
+        if (useDemoNodesAsFallback) {
+          console.log('Génération de nœuds de démonstration comme solution de repli');
+          const demoNodes = generateDemoDHTNodes(5);
+          setNodes(demoNodes);
+          return demoNodes;
+        } else {
+          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
+          setNodes([]);
+          return [];
+        }
       }
       
+      console.log('Nœuds DHT réels récupérés depuis l\'API:', data.nodes);
       setNodes(data.nodes);
       return data.nodes;
     } catch (err) {
       console.error('Erreur lors de la récupération des nœuds DHT:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
       
-      // En cas d'erreur, générer des nœuds de démonstration
-      console.log('Erreur lors de la récupération des nœuds DHT, génération de nœuds de démonstration');
-      const demoNodes = generateDemoDHTNodes(5);
-      setNodes(demoNodes);
-      return demoNodes;
+      // En cas d'erreur, générer des nœuds de démonstration uniquement si l'option est activée
+      if (useDemoNodesAsFallback) {
+        console.log('Génération de nœuds de démonstration suite à une erreur');
+        const demoNodes = generateDemoDHTNodes(5);
+        setNodes(demoNodes);
+        return demoNodes;
+      } else {
+        console.log('Aucun nœud de démonstration généré malgré l\'erreur car l\'option est désactivée');
+        setNodes([]);
+        return [];
+      }
     } finally {
       setLoading(false);
     }
