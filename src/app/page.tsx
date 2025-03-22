@@ -53,7 +53,7 @@ export default function Dashboard() {
                 <DHTStatus />
               </div>
               <div>
-                <VPNRewards earnings={0} />
+                <VPNRewards />
               </div>
               
 
