@@ -7,6 +7,7 @@ import { Award, Clock, AlertTriangle, RefreshCw, Calendar, TrendingUp } from 'lu
 import { config } from '@/config/env';
 import axios from 'axios';
 import { Spinner } from '../ui/Spinner';
+import { authService } from '@/services/authService';
 
 // Configuration de base d'Axios
 const api = axios.create({
@@ -73,13 +74,36 @@ export default function DailyClaims() {
     try {
       console.log('Fetching rewards from:', `${config.API_BASE_URL}/dailyClaims`);
       
+      // Vérifier que le token est valide et le rafraîchir si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Utiliser l'adresse du wallet stockée dans le token JWT pour éviter les erreurs 403
+      const tokenWalletAddress = authService.getWalletAddressFromToken();
+      let walletAddressToUse = account;
+      
+      // Si les adresses ne correspondent pas, utiliser celle du token pour éviter l'erreur 403
+      if (tokenWalletAddress && tokenWalletAddress !== account) {
+        console.warn(`L'adresse fournie (${account}) ne correspond pas à celle du token (${tokenWalletAddress}). Utilisation de l'adresse du token.`);
+        walletAddressToUse = tokenWalletAddress;
+      }
+      
+      // Vérifier si le token JWT correspond à l'adresse du wallet
+      const tokenMatch = await authService.verifyTokenWalletMatch();
+      console.log('Le token correspond à l\'adresse du wallet:', tokenMatch);
+      
+      // Obtenir les en-têtes d'authentification
+      const headers = authService.getAuthHeaders();
+      
+      console.log('Entêtes d\'authentification:', headers);
+      console.log('Adresse du wallet utilisée pour la requête:', walletAddressToUse);
+      
       const response = await api.get(`${config.API_BASE_URL}/dailyClaims`, {
         params: {
-          walletAddress: account
+          walletAddress: walletAddressToUse
         },
         headers: {
-          'X-Wallet-Address': account,
-          'Authorization': `Bearer ${account}`
+          ...headers,
+          'X-Wallet-Address': walletAddressToUse
         }
       });
       
@@ -119,13 +143,36 @@ export default function DailyClaims() {
     try {
       console.log('Claiming daily rewards from:', `${config.API_BASE_URL}/dailyClaims/claim`);
       
+      // Vérifier que le token est valide et le rafraîchir si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Utiliser l'adresse du wallet stockée dans le token JWT pour éviter les erreurs 403
+      const tokenWalletAddress = authService.getWalletAddressFromToken();
+      let walletAddressToUse = account;
+      
+      // Si les adresses ne correspondent pas, utiliser celle du token pour éviter l'erreur 403
+      if (tokenWalletAddress && tokenWalletAddress !== account) {
+        console.warn(`L'adresse fournie (${account}) ne correspond pas à celle du token (${tokenWalletAddress}). Utilisation de l'adresse du token.`);
+        walletAddressToUse = tokenWalletAddress;
+      }
+      
+      // Vérifier si le token JWT correspond à l'adresse du wallet
+      const tokenMatch = await authService.verifyTokenWalletMatch();
+      console.log('Le token correspond à l\'adresse du wallet:', tokenMatch);
+      
+      // Obtenir les en-têtes d'authentification
+      const headers = authService.getAuthHeaders();
+      
+      console.log('Entêtes d\'authentification:', headers);
+      console.log('Adresse du wallet utilisée pour la requête:', walletAddressToUse);
+      
       const response = await api.post(`${config.API_BASE_URL}/dailyClaims/claim`, null, {
         params: {
-          walletAddress: account
+          walletAddress: walletAddressToUse
         },
         headers: {
-          'X-Wallet-Address': account,
-          'Authorization': `Bearer ${account}`
+          ...headers,
+          'X-Wallet-Address': walletAddressToUse
         }
       });
       
