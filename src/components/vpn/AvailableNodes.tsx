@@ -71,6 +71,36 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isConnectedToThisNode, setIsConnectedToThisNode] = useState<boolean>(false);
   
+  // Fonction pour générer des nœuds de démonstration
+  const generateLocalDemoNodes = (count: number = 3): VPNNode[] => {
+    console.log(`Génération de ${count} nœuds de démonstration locaux`);
+    const demoNodes: VPNNode[] = [];
+    
+    for (let i = 0; i < count; i++) {
+      const nodeId = `demo-node-${i}-${Math.random().toString(36).substring(2, 8)}`;
+      demoNodes.push({
+        walletAddress: `demo-wallet-${i}-${Math.random().toString(36).substring(2, 8)}`,
+        ip: `192.168.1.${10 + i}`,
+        location: {
+          country: 'France',
+          region: 'Île-de-France'
+        },
+        performance: {
+          bandwidth: Math.floor(Math.random() * 1000),
+          latency: Math.floor(Math.random() * 100)
+        },
+        connectedUsers: Math.floor(Math.random() * 10),
+        lastSeen: new Date().toISOString(),
+        score: Math.random() * 5,
+        lastChecked: new Date().toISOString(),
+        status: 'ACTIVE'
+      });
+    }
+    
+    console.log('Nœuds de démonstration locaux générés:', demoNodes);
+    return demoNodes;
+  };
+  
   // Fonction pour récupérer les nœuds disponibles
   const loadAvailableNodes = async (forceRefresh: boolean = false): Promise<VPNNode[]> => {
     setIsRefreshing(true);
@@ -79,24 +109,40 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
       // Cette approche garantit la cohérence entre les différentes parties de l'application
       const nodes = await fetchAvailableNodes(forceRefresh);
       console.log('Nœuds récupérés dans AvailableNodes:', nodes);
+      
+      if (!nodes || nodes.length === 0) {
+        console.log('Aucun nœud récupéré, génération de nœuds de démonstration locaux');
+        const demoNodes = generateLocalDemoNodes(5);
+        setAvailableNodes(demoNodes);
+        return demoNodes;
+      }
+      
       setAvailableNodes(nodes);
       return nodes;
     } catch (error) {
       console.error('Error fetching available nodes:', error);
-      setErrorState('Impossible de récupérer les nœuds disponibles. Veuillez réessayer.');
+      setErrorState('Impossible de récupérer les nœuds disponibles. Utilisation de nœuds de démonstration.');
       
       // En cas d'erreur, essayer d'utiliser le cache
       const cachedNodes = localStorage.getItem('availableNodesCache');
       if (cachedNodes) {
         try {
           const parsedNodes = JSON.parse(cachedNodes);
-          setAvailableNodes(parsedNodes);
-          return parsedNodes;
+          console.log('Utilisation du cache de nœuds:', parsedNodes);
+          if (parsedNodes && parsedNodes.length > 0) {
+            setAvailableNodes(parsedNodes);
+            return parsedNodes;
+          }
         } catch (e) {
           console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
         }
       }
-      return [];
+      
+      // Si le cache ne fonctionne pas, générer des nœuds de démonstration
+      console.log('Génération de nœuds de démonstration après échec de récupération');
+      const demoNodes = generateLocalDemoNodes(5);
+      setAvailableNodes(demoNodes);
+      return demoNodes;
     } finally {
       setIsRefreshing(false);
     }
@@ -122,7 +168,9 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
     
     loadAvailableNodes()
       .then(nodes => {
+        console.log('Nœuds chargés au montage du composant:', nodes);
         setLocalNodes(nodes);
+        setAvailableNodes(nodes);
         setIsLoadingNodes(false);
       })
       .catch(error => {
@@ -132,7 +180,12 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
       
     // Mettre en place un intervalle pour rafraîchir les nœuds toutes les 30 secondes
     const intervalId = setInterval(() => {
-      loadAvailableNodes();
+      loadAvailableNodes()
+        .then(nodes => {
+          console.log('Nœuds rafraîchis par intervalle:', nodes);
+          setLocalNodes(nodes);
+          setAvailableNodes(nodes);
+        });
       // Ajouter un log pour voir le statut à chaque rafraîchissement
       console.log('Status à l\'intervalle de rafraîchissement:', status);
     }, 30000);
@@ -218,6 +271,10 @@ export default function AvailableNodes({ onSelectNode }: AvailableNodesProps) {
           <span>{errorState}</span>
         </div>
       )}
+      
+      <div className="mb-2 text-xs text-gray-400">
+        {localNodes.length > 0 ? `${localNodes.length} nodes available` : 'No nodes available'}
+      </div>
       
       {isLoadingNodes && !localNodes.length ? (
         <div className="flex justify-center items-center py-8">

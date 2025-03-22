@@ -931,29 +931,25 @@ export function useVPNNode() {
     const now = new Date();
     console.log('Début fetchAvailableNodes, forceRefresh:', forceRefresh);
     
-    // Vérifier le cache si on ne force pas le rafraîchissement
+    // Vérifier le cache si forceRefresh est false
     if (!forceRefresh) {
-      const lastUpdate = localStorage.getItem('lastNodesUpdate');
       const cachedNodes = localStorage.getItem('availableNodesCache');
+      const lastUpdate = localStorage.getItem('lastNodesUpdate');
       
-      if (lastUpdate && cachedNodes) {
-        try {
-          const lastUpdateDate = new Date(lastUpdate);
-          const diffMs = now.getTime() - lastUpdateDate.getTime();
-          const diffSecs = Math.floor(diffMs / 1000);
-          
-          // Utiliser le cache si la dernière mise à jour est récente (moins de 30 secondes)
-          if (diffSecs < 30) {
-            try {
-              const parsedNodes = JSON.parse(cachedNodes);
-              console.log('Utilisation du cache de nœuds (moins de 30 secondes)', parsedNodes);
-              return parsedNodes;
-            } catch (e) {
-              console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
-            }
+      if (cachedNodes && lastUpdate) {
+        const lastUpdateTime = new Date(lastUpdate);
+        const diffInMinutes = (now.getTime() - lastUpdateTime.getTime()) / (1000 * 60);
+        
+        // Utiliser le cache si la dernière mise à jour est récente (moins de 5 minutes)
+        if (diffInMinutes < 5) {
+          console.log('Utilisation du cache de nœuds (moins de 5 minutes)');
+          try {
+            const parsedNodes = JSON.parse(cachedNodes);
+            console.log('Nœuds en cache:', parsedNodes);
+            return parsedNodes;
+          } catch (error) {
+            console.error('Erreur lors de l\'analyse du cache:', error);
           }
-        } catch (error) {
-          console.error('Erreur lors de la vérification du cache:', error);
         }
       }
     }
@@ -965,9 +961,10 @@ export function useVPNNode() {
     try {
       console.log('Envoi de la requête API pour les nœuds disponibles');
       // Faire la requête API avec l'adresse du wallet actuel
-      const response = await axios.get(`${config.API_BASE_URL}/dht/available-nodes`, {
+      const response = await axios.get(`${config.API_BASE_URL}/dht/nodes`, {
         headers: {
-          'X-Wallet-Address': account || localStorage.getItem('walletAddress') || ''
+          'X-Wallet-Address': account || localStorage.getItem('walletAddress') || '',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
       
@@ -977,6 +974,7 @@ export function useVPNNode() {
       if (!response.data || !Array.isArray((response.data as any).nodes) || (response.data as any).nodes?.length === 0) {
         console.log('Aucun nœud reçu du serveur, génération de nœuds de démonstration');
         const demoNodes = generateDemoNodes(3);
+        console.log('Nœuds de démonstration générés:', demoNodes);
         localStorage.setItem('availableNodesCache', JSON.stringify(demoNodes));
         localStorage.setItem('lastNodesUpdate', now.toISOString());
         return demoNodes;
@@ -1006,6 +1004,7 @@ export function useVPNNode() {
       if (validNodes.length === 0) {
         console.log('Aucun nœud valide après filtrage, génération de nœuds de démonstration');
         const demoNodes = generateDemoNodes(3);
+        console.log('Nœuds de démonstration générés:', demoNodes);
         localStorage.setItem('availableNodesCache', JSON.stringify(demoNodes));
         localStorage.setItem('lastNodesUpdate', now.toISOString());
         return demoNodes;
@@ -1021,6 +1020,7 @@ export function useVPNNode() {
       localStorage.setItem('availableNodesCache', JSON.stringify(nodesWithTimestamp));
       localStorage.setItem('lastNodesUpdate', now.toISOString());
       
+      console.log('Nœuds finaux retournés:', nodesWithTimestamp);
       return nodesWithTimestamp;
     } catch (error) {
       console.error('Erreur lors de la récupération des nœuds:', error);
@@ -1028,6 +1028,7 @@ export function useVPNNode() {
       // En cas d'erreur, générer des nœuds de démonstration
       console.log('Erreur API, génération de nœuds de démonstration');
       const demoNodes = generateDemoNodes(3);
+      console.log('Nœuds de démonstration générés après erreur:', demoNodes);
       return demoNodes;
     }
   };
