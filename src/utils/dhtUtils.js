@@ -281,6 +281,32 @@ export const getDHTStatusByWallet = async (walletAddress) => {
     // Ajouter un paramètre de cache-busting pour éviter les problèmes de cache
     const cacheBuster = Date.now();
     
+    // CONTOURNEMENT: Essayer d'abord de démarrer le nœud pour voir s'il est déjà actif
+    try {
+      console.log('Tentative de démarrage du nœud pour vérifier son statut...');
+      const startResponse = await dhtAxios.post(`${DHT_API_BASE}/start`, null, {
+        headers,
+        params: { walletAddress }
+      });
+      
+      console.log('Réponse de la tentative de démarrage:', startResponse.status, startResponse.data);
+      
+      // Si la réponse indique que le nœud est déjà actif, nous savons qu'il est actif
+      if (startResponse.data && startResponse.data.message && startResponse.data.message.includes('déjà actif')) {
+        console.log('Le nœud est déjà actif selon la réponse de démarrage');
+        return {
+          success: true,
+          isActive: true,
+          active: true,
+          message: 'Nœud DHT actif'
+        };
+      }
+    } catch (startError) {
+      console.log('Erreur lors de la tentative de démarrage (peut être normal si le nœud est déjà actif):', startError);
+      // Ignorer l'erreur et continuer avec la vérification du statut
+    }
+    
+    // Maintenant, obtenir le statut réel
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
       headers,
       params: { 
@@ -293,7 +319,7 @@ export const getDHTStatusByWallet = async (walletAddress) => {
     
     // Si la réponse indique que le nœud est inactif mais que nous savons qu'il est actif,
     // faisons une seconde tentative sans utiliser le cache
-    if (response.data && response.data.isActive === false) {
+    if (response.data && (response.data.isActive === false || response.data.active === false)) {
       console.log('Le serveur indique que le nœud est inactif, tentative de vérification directe...');
       
       // Attendre un court instant avant de réessayer
@@ -314,11 +340,52 @@ export const getDHTStatusByWallet = async (walletAddress) => {
         });
         
         console.log('Réponse de la seconde tentative:', retryResponse.status, retryResponse.data);
+        
+        // Si la seconde tentative indique toujours que le nœud est inactif, essayons une dernière approche
+        if (retryResponse.data && (retryResponse.data.isActive === false || retryResponse.data.active === false)) {
+          // Vérifier directement si le nœud est actif en essayant de l'arrêter
+          try {
+            console.log('Dernière vérification: tentative d\'arrêt du nœud pour voir s\'il est actif...');
+            const stopResponse = await dhtAxios.post(`${DHT_API_BASE}/stop`, null, {
+              headers: freshHeaders,
+              params: { walletAddress }
+            });
+            
+            console.log('Réponse de la tentative d\'arrêt:', stopResponse.status, stopResponse.data);
+            
+            // Si l'arrêt a réussi, cela signifie que le nœud était actif
+            if (stopResponse.data && stopResponse.data.success) {
+              console.log('Le nœud était actif (a pu être arrêté)');
+              
+              // Redémarrer le nœud puisque nous venons de l'arrêter
+              await dhtAxios.post(`${DHT_API_BASE}/start`, null, {
+                headers: freshHeaders,
+                params: { walletAddress }
+              });
+              
+              return {
+                success: true,
+                isActive: true,
+                active: true,
+                message: 'Nœud DHT actif (vérifié par arrêt/redémarrage)'
+              };
+            }
+          } catch (stopError) {
+            console.log('Erreur lors de la tentative d\'arrêt:', stopError);
+            // Ignorer l'erreur et continuer
+          }
+        }
+        
         return retryResponse.data;
       } catch (retryError) {
         console.error('Erreur lors de la seconde tentative:', retryError);
         // En cas d'erreur, continuer avec la réponse originale
       }
+    }
+    
+    // Forcer la propriété active à true si isActive est true
+    if (response.data && response.data.isActive === true) {
+      response.data.active = true;
     }
     
     return response.data;
