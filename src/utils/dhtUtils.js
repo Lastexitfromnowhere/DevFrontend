@@ -278,12 +278,49 @@ export const getDHTStatusByWallet = async (walletAddress) => {
       headers: headers
     });
     
+    // Ajouter un paramètre de cache-busting pour éviter les problèmes de cache
+    const cacheBuster = Date.now();
+    
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
       headers,
-      params: { walletAddress }
+      params: { 
+        walletAddress,
+        _cb: cacheBuster  // Paramètre de cache-busting
+      }
     });
     
     console.log('Réponse du serveur:', response.status, response.data);
+    
+    // Si la réponse indique que le nœud est inactif mais que nous savons qu'il est actif,
+    // faisons une seconde tentative sans utiliser le cache
+    if (response.data && response.data.isActive === false) {
+      console.log('Le serveur indique que le nœud est inactif, tentative de vérification directe...');
+      
+      // Attendre un court instant avant de réessayer
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Réessayer avec un nouveau token frais
+      try {
+        const { token, expiresAt } = await authService.generateToken(walletAddress);
+        authService.saveToken(token, expiresAt, walletAddress);
+        
+        const freshHeaders = await getAuthHeaders();
+        const retryResponse = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
+          headers: freshHeaders,
+          params: { 
+            walletAddress,
+            _cb: Date.now()  // Nouveau paramètre de cache-busting
+          }
+        });
+        
+        console.log('Réponse de la seconde tentative:', retryResponse.status, retryResponse.data);
+        return retryResponse.data;
+      } catch (retryError) {
+        console.error('Erreur lors de la seconde tentative:', retryError);
+        // En cas d'erreur, continuer avec la réponse originale
+      }
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Response Error:', error);
