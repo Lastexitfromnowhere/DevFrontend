@@ -180,7 +180,8 @@ export function useDHTNode() {
     setError(null);
 
     try {
-      // Utiliser la nouvelle fonction pour récupérer le statut spécifique au wallet
+      // Utiliser la fonction getDHTStatusByWallet qui utilise le bon format d'URL
+      console.log('Récupération du statut DHT pour le wallet:', account);
       const data = await dhtUtils.getDHTStatusByWallet(account);
       
       if (data.success === false) {
@@ -207,7 +208,7 @@ export function useDHTNode() {
         timestamp: now
       }));
     } catch (err) {
-      console.error('Erreur lors de la récupération du statut du nœud DHT:', err);
+      console.error('Failed to check node status:', err);
       setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
       setLoading(false);

@@ -150,7 +150,21 @@ export const getDHTStatus = async () => {
       throw new Error('Adresse de wallet non disponible');
     }
     
-    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status?walletAddress=${walletAddress}`);
+    // Vérifier que le token est valide et correspond à l'adresse du wallet
+    await authService.refreshTokenIfNeeded();
+    
+    // Utiliser l'adresse du wallet stockée dans le token JWT pour éviter les erreurs 403
+    const tokenWalletAddress = authService.getWalletAddressFromToken();
+    
+    // Si les adresses ne correspondent pas, utiliser celle du token pour éviter l'erreur 403
+    if (tokenWalletAddress && tokenWalletAddress !== walletAddress) {
+      console.warn(`L'adresse fournie (${walletAddress}) ne correspond pas à celle du token (${tokenWalletAddress}). Utilisation de l'adresse du token.`);
+      walletAddress = tokenWalletAddress;
+    }
+    
+    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status avec walletAddress=${walletAddress}`);
+    
+    // Utiliser les query parameters au lieu des path parameters
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
       headers: await getAuthHeaders(),
       params: { walletAddress }
