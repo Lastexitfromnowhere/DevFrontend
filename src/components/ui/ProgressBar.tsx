@@ -6,6 +6,7 @@ interface ProgressBarProps {
     showPercentage?: boolean;
     variant?: 'default' | 'success' | 'warning';
     className?: string;
+    progressClassName?: string;
   }
   
   export function ProgressBar({
@@ -13,11 +14,12 @@ interface ProgressBarProps {
     label,
     showPercentage = true,
     variant = 'default',
-    className
+    className,
+    progressClassName
   }: ProgressBarProps) {
     const variants = {
-      default: 'bg-gray-600',
-      success: 'bg-gray-500',
+      default: 'bg-blue-500',
+      success: 'bg-green-500',
       warning: 'bg-yellow-500'
     };
   
@@ -25,9 +27,9 @@ interface ProgressBarProps {
       <div className={cn('space-y-1', className)}>
         {(label || showPercentage) && (
           <div className="flex justify-between">
-            {label && <span className="text-sm text-green-400">{label}</span>}
+            {label && <span className="text-sm text-gray-300">{label}</span>}
             {showPercentage && (
-              <span className="text-sm text-orange-400">{Math.round(progress)}%</span>
+              <span className="text-sm text-blue-400">{Math.round(progress)}%</span>
             )}
           </div>
         )}
@@ -35,7 +37,7 @@ interface ProgressBarProps {
           <div 
             className={cn(
               'h-full rounded-full transition-all duration-500',
-              variants[variant]
+              progressClassName || variants[variant]
             )}
             style={{ width: `${Math.min(Math.max(progress, 0), 100)}%` }}
           />

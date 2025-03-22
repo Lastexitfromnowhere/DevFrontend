@@ -67,7 +67,7 @@ export default function SiteGoals() {
                     <ProgressBar 
                       progress={milestone.progress} 
                       className="h-2 bg-gray-700/50"
-                      progressClassName="bg-blue-500"
+                      progressClassName="bg-gradient-to-r from-blue-500 to-purple-500"
                     />
                     <div className="flex justify-between text-sm mt-2">
                       <span className="text-gray-400">Progression: <span className="text-blue-400">{milestone.current}</span></span>
