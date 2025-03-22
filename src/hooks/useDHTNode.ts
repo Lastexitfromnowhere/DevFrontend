@@ -415,6 +415,73 @@ export function useDHTNode() {
     }
   }, [isConnected, account, wireGuardConfig]);
   
+  // Fonction pour démarrer le nœud DHT
+  const startDHTNode = useCallback(async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return false;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.post('/dht/start', {
+        walletAddress: account
+      });
+      
+      if (response.data && (response.data as { success?: boolean }).success) {
+        // Mettre à jour le statut
+        await fetchStatus(true);
+        return true;
+      } else {
+        throw new Error((response.data as { message?: string })?.message || 'Failed to start DHT node');
+      }
+    } catch (error: unknown) {
+      console.error('Error starting DHT node:', error);
+      setError(error instanceof Error ? error.message : 'Failed to start DHT node');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [isConnected, account, fetchStatus]);
+  
+  // Fonction pour arrêter le nœud DHT
+  const stopDHTNode = useCallback(async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return false;
+    }
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await api.post('/dht/stop', {
+        walletAddress: account
+      });
+      
+      if (response.data && (response.data as { success?: boolean }).success) {
+        // Mettre à jour le statut
+        setStatus(prevStatus => ({
+          ...prevStatus,
+          active: false,
+          wireGuardEnabled: false,
+          wireGuardConfig: undefined
+        }));
+        return true;
+      } else {
+        throw new Error((response.data as { message?: string })?.message || 'Failed to stop DHT node');
+      }
+    } catch (error: unknown) {
+      console.error('Error stopping DHT node:', error);
+      setError(error instanceof Error ? error.message : 'Failed to stop DHT node');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [isConnected, account]);
+  
   // Effet pour démarrer le polling lorsque le wallet est connecté
   useEffect(() => {
     // Fonction pour démarrer le polling
@@ -478,6 +545,8 @@ export function useDHTNode() {
     error,
     loading,
     fetchStatus,
+    startDHTNode,
+    stopDHTNode,
     
     // Fonctionnalités WireGuard
     wireGuard: {

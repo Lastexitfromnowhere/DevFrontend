@@ -17,9 +17,7 @@ import NodeStatusSummary from '@/components/vpn/NodeStatusSummary';
 import SiteGoals from '@/components/goals/SiteGoals';
 import { DailyRewards } from '@/components/rewards/DailyRewards';
 import RSSFeed from '@/components/RSSFeed';
-import DHTStatus from '@/components/dht/DHTStatus';
-import DHTNodes from '@/components/dht/DHTNodes';
-import DHTWireGuardNodes from '@/components/dht/DHTWireGuardNodes';
+import UnifiedDHTView from '@/components/dht/UnifiedDHTView';
 import RewardsMechanism from '@/components/ecosystem/RewardsMechanism';
 
 export default function Dashboard() {
@@ -50,32 +48,16 @@ export default function Dashboard() {
           <div className="space-y-6">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <div className="lg:col-span-2">
-                <DHTStatus />
+                <NodeStatusSummary />
               </div>
               <div>
                 <VPNRewards />
               </div>
-              
-
-              
             </div>
             
-            {/* Section DHT */}
+            {/* Section DHT Unifiée */}
             <div className="mt-8">
-              <h2 className="text-xl font-semibold mb-4 flex items-center">
-                <Network size={20} className="mr-2" />
-                Réseau DHT
-              </h2>
-              
-              <div className="mb-6">
-                <h3 className="text-lg font-semibold mb-3">Nœuds DHT</h3>
-                <DHTNodes />
-              </div>
-              
-              <div>
-                <h3 className="text-lg font-semibold mb-3">Nœuds WireGuard</h3>
-                <DHTWireGuardNodes />
-              </div>
+              <UnifiedDHTView />
             </div>
           </div>
         );

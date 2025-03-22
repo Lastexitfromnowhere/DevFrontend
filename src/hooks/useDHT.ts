@@ -45,6 +45,7 @@ interface WireGuardNode {
   ip: string;
   port: number;
   lastSeen: string;
+  isActive: boolean;
 }
 
 export function useDHT() {
@@ -192,7 +193,8 @@ export function useDHT() {
         publicKey: `${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}=`,
         ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
         port: 51820 + Math.floor(Math.random() * 10),
-        lastSeen: new Date().toISOString()
+        lastSeen: new Date().toISOString(),
+        isActive: true
       };
     });
   };
@@ -276,7 +278,8 @@ export function useDHT() {
             publicKey: node?.publicKey || '',
             ip: node?.ip || '',
             port: typeof node?.port === 'number' ? node.port : 0,
-            lastSeen: node?.lastSeen || new Date().toISOString()
+            lastSeen: node?.lastSeen || new Date().toISOString(),
+            isActive: node?.isActive || false
           }))
         : [];
       
