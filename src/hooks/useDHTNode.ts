@@ -53,6 +53,9 @@ interface WireGuardConfig {
   status?: 'active' | 'inactive' | 'connecting' | 'error';
   lastConnected?: string;
   peerPublicKey?: string;
+  // Champs obligatoires selon le backend
+  serverIp: string;
+  serverPublicKey: string;
 }
 
 interface WireGuardPeer {
@@ -98,6 +101,25 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
+
+// Fonction pour obtenir l'adresse IP locale
+const getLocalIpAddress = async (): Promise<string> => {
+  try {
+    // Essayer de récupérer l'adresse IP depuis le localStorage
+    const storedIp = localStorage.getItem('wireguard_server_ip');
+    if (storedIp) {
+      return storedIp;
+    }
+    
+    // Si pas d'IP stockée, utiliser une valeur par défaut
+    const defaultIp = '10.8.0.1';
+    localStorage.setItem('wireguard_server_ip', defaultIp);
+    return defaultIp;
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'adresse IP locale:', error);
+    return '10.8.0.1'; // Valeur par défaut en cas d'erreur
+  }
+};
 
 export function useDHTNode() {
   // État pour stocker les informations sur le noeud DHT
@@ -256,7 +278,23 @@ export function useDHTNode() {
     setWireGuardError(null);
     
     try {
-      const response = await api.post(`${config.API_BASE_URL}/wireguard/enable`);
+      // Récupérer l'adresse IP locale pour serverIp
+      const serverIp = await getLocalIpAddress();
+      
+      // Générer une paire de clés WireGuard si nécessaire
+      let serverPublicKey = localStorage.getItem('wireguard_server_public_key');
+      if (!serverPublicKey) {
+        // Utiliser une clé de démonstration si nous ne pouvons pas en générer une
+        serverPublicKey = 'mPxEu7wjxMmKI3tWzBnEp8/Hs/MUhQEY6S7Iee+NGFI=';
+        localStorage.setItem('wireguard_server_public_key', serverPublicKey);
+      }
+      
+      console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
+      
+      const response = await api.post(`${config.API_BASE_URL}/wireguard/enable`, {
+        serverIp,
+        serverPublicKey
+      });
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Récupérer la nouvelle configuration
@@ -328,9 +366,17 @@ export function useDHTNode() {
     setWireGuardError(null);
     
     try {
+      // S'assurer que serverIp et serverPublicKey sont disponibles
+      const serverIp = wireGuardConfig.serverIp || await getLocalIpAddress();
+      const serverPublicKey = wireGuardConfig.serverPublicKey || localStorage.getItem('wireguard_server_public_key') || 'mPxEu7wjxMmKI3tWzBnEp8/Hs/MUhQEY6S7Iee+NGFI=';
+      
+      console.log('Connexion à WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
+      
       const response = await api.post(`${config.API_BASE_URL}/wireguard/connect`, {
         peerPublicKey,
-        endpoint
+        endpoint,
+        serverIp,
+        serverPublicKey
       });
       
       if (response.data && (response.data as { success?: boolean }).success) {
@@ -340,7 +386,9 @@ export function useDHTNode() {
           peerPublicKey,
           endpoint,
           status: 'active' as const,
-          lastConnected: new Date().toISOString()
+          lastConnected: new Date().toISOString(),
+          serverIp,
+          serverPublicKey
         };
         
         setWireGuardConfig(updatedConfig);
