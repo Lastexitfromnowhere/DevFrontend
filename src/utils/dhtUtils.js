@@ -215,10 +215,10 @@ export const getDHTStatus = async () => {
       walletAddress = tokenWalletAddress;
     }
     
-    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status-by-wallet avec walletAddress=${walletAddress}`);
+    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status avec walletAddress=${walletAddress}`);
     
     // Utiliser les query parameters au lieu des path parameters
-    const response = await dhtAxios.get(`${DHT_API_BASE}/status-by-wallet`, {
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
       headers: await getAuthHeaders(),
       params: { walletAddress }
     });
@@ -267,13 +267,13 @@ export const getDHTStatusByWallet = async (walletAddress) => {
     console.log('Le token correspond à l\'adresse du wallet:', tokenMatch);
     
     console.log('Starting Request:', {
-      url: `${DHT_API_BASE}/status-by-wallet`,
+      url: `${DHT_API_BASE}/status`,
       method: 'get',
       params: { walletAddress },
       headers: headers
     });
     
-    const response = await dhtAxios.get(`${DHT_API_BASE}/status-by-wallet`, { 
+    const response = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
       headers,
       params: { walletAddress }
     });
@@ -321,32 +321,32 @@ export const getDHTNodes = async () => {
     const headers = await getAuthHeaders();
     console.log('Entêtes d\'authentification pour getDHTNodes:', headers);
     
-    // Essayer d'abord avec l'endpoint /wireguard-nodes
+    // Essayer d'abord avec l'endpoint /nodes
     try {
       // Utiliser les query params comme pour getDHTStatusByWallet
-      const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`, {
+      const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
         headers,
         params: { walletAddress }
       });
       
-      console.log('Réponse de l\'API pour les nœuds DHT (endpoint /wireguard-nodes):', response.status, response.data);
+      console.log('Réponse de l\'API pour les nœuds DHT (endpoint /nodes):', response.status, response.data);
       
       // Vérifier si la réponse contient des nœuds
       if (response.data && Array.isArray(response.data.nodes)) {
-        console.log(`${response.data.nodes.length} nœuds DHT récupérés depuis l'API (endpoint /wireguard-nodes)`);
+        console.log(`${response.data.nodes.length} nœuds DHT récupérés depuis l'API (endpoint /nodes)`);
         
         // Si la réponse contient des nœuds mais que le tableau est vide, on le signale clairement
         if (response.data.nodes.length === 0) {
-          console.log('La réponse API contient un tableau de nœuds vide (endpoint /wireguard-nodes)');
+          console.log('La réponse API contient un tableau de nœuds vide (endpoint /nodes)');
         } else {
           return response.data;
         }
       }
     } catch (error) {
-      console.warn('Erreur avec l\'endpoint /wireguard-nodes, tentative avec /nodes:', error.message);
+      console.warn('Erreur avec l\'endpoint /nodes, tentative avec /nodes:', error.message);
     }
     
-    // Si l'endpoint /wireguard-nodes a échoué ou n'a pas retourné de nœuds, essayer avec /nodes
+    // Si l'endpoint /nodes a échoué ou n'a pas retourné de nœuds, essayer avec /nodes
     try {
       const altResponse = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
         headers,
