@@ -447,8 +447,44 @@ export function useDHTNode() {
     setWireGuardError(null);
     
     try {
-      // Récupérer l'adresse IP locale pour serverIp
-      const serverIp = await getLocalIpAddress();
+      // Vérifier d'abord si un nœud WireGuard existe déjà pour ce wallet
+      console.log('Vérification si un nœud WireGuard existe déjà pour le wallet:', account);
+      
+      try {
+        const existingNodesResponse = await api.get(`${config.DHT_API_URL}/dht/wireguard-nodes`, {
+          params: { walletAddress: account }
+        });
+        
+        console.log('Nœuds WireGuard existants:', existingNodesResponse.data);
+        
+        // Vérifier le format de la réponse et extraire les nœuds
+        const responseData = existingNodesResponse.data as any;
+        const existingNodes = Array.isArray(responseData) 
+          ? responseData 
+          : (responseData && responseData.nodes && Array.isArray(responseData.nodes)) 
+            ? responseData.nodes 
+            : [];
+        
+        // Vérifier si un nœud existe déjà pour ce wallet et ce deviceId
+        const deviceId = getDeviceId();
+        const existingNode = existingNodes.find((node: any) => 
+          node.walletAddress === account && node.deviceId === deviceId
+        );
+        
+        if (existingNode) {
+          console.log('Un nœud WireGuard existe déjà pour ce wallet et cet appareil:', existingNode);
+          
+          // Utiliser la configuration existante
+          await fetchWireGuardConfig();
+          return true;
+        }
+      } catch (error) {
+        console.log('Erreur lors de la vérification des nœuds existants, on continue avec la publication:', error);
+      }
+      
+      // Utiliser une adresse IP publique au lieu de l'adresse IP locale
+      // Pour les tests, on peut utiliser une adresse IP publique fictive ou celle du serveur DHT
+      const serverIp = "46.101.36.247"; // Adresse IP publique du serveur DHT (d'après les logs)
       
       // Générer une paire de clés WireGuard si nécessaire
       let serverPublicKey = localStorage.getItem('wireguard_server_public_key');
@@ -507,8 +543,6 @@ export function useDHTNode() {
       console.log('Publication du nœud WireGuard avec les données:', JSON.stringify(nodeInfo));
       console.log('Headers:', JSON.stringify(headers));
       
-      // Trigger pour Vercel - 23/03/2025
-      
       try {
         const response = await axios.post(
           `${config.DHT_API_URL}/dht/publish-wireguard`, 
@@ -537,6 +571,13 @@ export function useDHTNode() {
             data: axiosError.response.data
           });
           
+          // Afficher le corps complet de la réponse d'erreur
+          console.error('Corps de la réponse d\'erreur:', JSON.stringify(axiosError.response.data));
+          
+          if (axiosError.response.status === 400) {
+            console.error('Erreur 400 :', axiosError.response.data);
+          }
+          
           // Tenter de récupérer la configuration même en cas d'erreur
           // Parfois, le nœud est publié mais l'API renvoie une erreur
           await fetchWireGuardConfig();
@@ -555,6 +596,13 @@ export function useDHTNode() {
           status: axiosError.response.status,
           data: axiosError.response.data
         });
+        
+        // Afficher le corps complet de la réponse d'erreur
+        console.error('Corps de la réponse d\'erreur:', JSON.stringify(axiosError.response.data));
+        
+        if (axiosError.response.status === 400) {
+          console.error('Erreur 400 :', axiosError.response.data);
+        }
         
         // Tenter de récupérer la configuration même en cas d'erreur
         // Parfois, le nœud est publié mais l'API renvoie une erreur
