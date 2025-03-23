@@ -20,7 +20,8 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Dernière mise à jour
+## Dernières mises à jour
+- Correction de l'authentification pour l'activation de WireGuard (23/03/2025)
 Mise à jour du déploiement: 22/03/2025
 
 ## Learn More
