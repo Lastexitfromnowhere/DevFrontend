@@ -366,6 +366,31 @@ export const getDHTStatusByWallet = async (walletAddress, deviceIdParam) => {
       response.data.active = true;
     }
     
+    // Ajouter un log détaillé pour le débogage
+    console.log('Statut DHT final retourné au frontend:', {
+      walletAddress,
+      deviceId,
+      isActive: response.data?.isActive,
+      active: response.data?.active,
+      nodeId: response.data?.nodeId
+    });
+    
+    // S'assurer que la propriété isActive est correctement définie
+    if (response.data) {
+      // Si active est true, s'assurer que isActive l'est aussi
+      if (response.data.active === true && response.data.isActive !== true) {
+        console.log('Correction: active est true mais isActive ne l\'est pas, définition de isActive à true');
+        response.data.isActive = true;
+      }
+      
+      // Si nodeId existe, cela indique généralement un nœud actif
+      if (response.data.nodeId && !response.data.isActive && !response.data.active) {
+        console.log('Correction: nodeId existe mais le nœud est marqué comme inactif, définition de isActive à true');
+        response.data.isActive = true;
+        response.data.active = true;
+      }
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Response Error:', error);
