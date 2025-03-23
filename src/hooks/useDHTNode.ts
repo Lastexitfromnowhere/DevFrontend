@@ -90,11 +90,20 @@ api.interceptors.request.use(
   (config) => {
     // Récupérer l'adresse du wallet depuis le localStorage
     const walletAddress = localStorage.getItem('walletAddress');
+    // Récupérer le token JWT depuis le localStorage
+    const token = localStorage.getItem('token');
     
     // Si l'adresse existe, l'ajouter aux en-têtes
     if (walletAddress && config.headers) {
       config.headers['X-Wallet-Address'] = walletAddress;
-      config.headers['Authorization'] = `Bearer ${walletAddress}`;
+      
+      // Utiliser le token JWT s'il existe, sinon utiliser l'adresse du wallet comme fallback
+      if (token) {
+        config.headers['Authorization'] = `Bearer ${token}`;
+      } else {
+        config.headers['Authorization'] = `Bearer ${walletAddress}`;
+        console.warn('Token JWT non trouvé, utilisation de l\'adresse du wallet comme fallback');
+      }
     }
     
     return config;
