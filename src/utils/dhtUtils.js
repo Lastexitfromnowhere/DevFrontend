@@ -122,9 +122,8 @@ export const startDHTNode = async () => {
     console.log('Entêtes d\'authentification pour startDHTNode:', headers);
     
     // Démarrer le nœud DHT
-    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, {}, {
-      headers,
-      params: { walletAddress }
+    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, { walletAddress }, {
+      headers
     });
     
     console.log('Réponse du démarrage du nœud DHT:', response.status, response.data);
@@ -274,7 +273,7 @@ export const getDHTStatusByWallet = async (walletAddress) => {
     console.log('Starting Request:', {
       url: `${DHT_API_BASE}/status`,
       method: 'get',
-      params: { walletAddress },
+      params: { walletAddress, _cb: Date.now() },
       headers: headers
     });
     
@@ -284,9 +283,8 @@ export const getDHTStatusByWallet = async (walletAddress) => {
     // CONTOURNEMENT: Essayer d'abord de démarrer le nœud pour voir s'il est déjà actif
     try {
       console.log('Tentative de démarrage du nœud pour vérifier son statut...');
-      const startResponse = await dhtAxios.post(`${DHT_API_BASE}/start`, null, {
-        headers,
-        params: { walletAddress }
+      const startResponse = await dhtAxios.post(`${DHT_API_BASE}/start`, { walletAddress }, {
+        headers
       });
       
       console.log('Réponse de la tentative de démarrage:', startResponse.status, startResponse.data);
@@ -430,9 +428,8 @@ export const getDHTNodes = async () => {
     const headers = await getAuthHeaders();
     console.log('Entêtes d\'authentification pour getDHTNodes:', headers);
     
-    // Essayer d'abord avec l'endpoint /nodes
+    // Essayer d'abord de démarrer le nœud pour voir s'il est déjà actif
     try {
-      // Utiliser les query params comme pour getDHTStatusByWallet
       const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
         headers,
         params: { walletAddress }
