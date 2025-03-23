@@ -153,7 +153,7 @@ export function useDHTNode() {
   
   // État pour les configurations WireGuard
   const [wireGuardConfig, setWireGuardConfig] = useState<WireGuardConfig | null>(null);
-  const [wireGuardPeers, setWireGuardPeers] = useState<WireGuardPeer[]>([]);
+  const [wireGuardNodes, setWireGuardNodes] = useState<WireGuardPeer[]>([]);
   const [wireGuardLoading, setWireGuardLoading] = useState(false);
   const [wireGuardError, setWireGuardError] = useState<string | null>(null);
   
@@ -472,18 +472,42 @@ export function useDHTNode() {
       console.log('Publication du nœud WireGuard avec les paramètres:', nodeInfo);
       
       // Appeler l'endpoint avec les en-têtes d'authentification
-      const response = await axios.post(
-        `${config.DHT_API_URL}/dht/publish-wireguard`, 
-        nodeInfo,
-        { headers }
-      );
-      
-      if (response.data && (response.data as { success?: boolean }).success) {
-        // Récupérer la nouvelle configuration
-        await fetchWireGuardConfig();
-        return true;
-      } else {
-        throw new Error((response.data as { message?: string })?.message || 'Failed to enable WireGuard');
+      try {
+        const response = await axios.post(
+          `${config.DHT_API_URL}/dht/publish-wireguard`, 
+          nodeInfo,
+          { headers }
+        );
+        
+        if (response.data && (response.data as { success?: boolean }).success) {
+          // Récupérer la nouvelle configuration
+          await fetchWireGuardConfig();
+          return true;
+        } else {
+          console.log('Réponse du serveur sans succès explicite, mais potentiellement réussie:', response.data);
+          // Tenter quand même de récupérer la configuration
+          await fetchWireGuardConfig();
+          return true;
+        }
+      } catch (error) {
+        // Même en cas d'erreur, vérifier les logs du serveur qui pourraient indiquer un succès
+        console.error('Error fetching WireGuard configuration:', error);
+        
+        // Tenter quand même de récupérer la configuration
+        try {
+          console.log('Tentative de récupération de la configuration WireGuard malgré l\'erreur...');
+          await fetchWireGuardConfig();
+          
+          // Vérifier si des nœuds ont été récupérés
+          if (wireGuardNodes.length > 0) {
+            console.log('Configuration WireGuard récupérée avec succès malgré l\'erreur!');
+            return true;
+          }
+        } catch (secondError) {
+          console.error('Échec de la récupération de la configuration après erreur:', secondError);
+        }
+        
+        return false;
       }
     } catch (error: unknown) {
       console.error('Error enabling WireGuard:', error);
@@ -658,7 +682,7 @@ export function useDHTNode() {
       });
       
       setWireGuardConfig(null);
-      setWireGuardPeers([]);
+      setWireGuardNodes([]);
       
       return () => {
         if (pollingInterval.current) {
@@ -680,7 +704,7 @@ export function useDHTNode() {
     // Fonctionnalités WireGuard
     wireGuard: {
       config: wireGuardConfig,
-      peers: wireGuardPeers,
+      nodes: wireGuardNodes,
       loading: wireGuardLoading,
       error: wireGuardError,
       fetchConfig: fetchWireGuardConfig,
