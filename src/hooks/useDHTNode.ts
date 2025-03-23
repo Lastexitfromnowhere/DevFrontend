@@ -422,11 +422,26 @@ export function useDHTNode() {
       
       console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      const response = await api.post('/dht/publish-wireguard', {
-        publicKey: serverPublicKey,
-        ip: serverIp,
-        walletAddress: account
-      });
+      // Vérifier si nous avons un token JWT valide
+      const token = localStorage.getItem('auth_token') || authService.getToken() || account;
+      
+      // Configurer les en-têtes avec le token JWT
+      const headers = {
+        'Authorization': `Bearer ${token}`
+      };
+      
+      console.log('Utilisation du token pour l\'authentification:', token);
+      
+      // Appeler l'endpoint avec les en-têtes d'authentification explicites
+      const response = await axios.post(
+        `${config.DHT_API_URL}/dht/publish-wireguard`, 
+        {
+          publicKey: serverPublicKey,
+          ip: serverIp,
+          walletAddress: account
+        },
+        { headers }
+      );
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Récupérer la nouvelle configuration
