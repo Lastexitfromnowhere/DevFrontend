@@ -422,8 +422,8 @@ export function useDHTNode() {
       
       console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      // Récupérer le token JWT directement depuis le service d'authentification
-      const token = authService.getToken();
+      // Récupérer directement le token JWT depuis le localStorage
+      const token = localStorage.getItem('auth_token');
       
       // Créer les en-têtes d'authentification
       const headers: Record<string, string> = {};
@@ -431,12 +431,25 @@ export function useDHTNode() {
       // Ajouter le token d'authentification s'il existe
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
-        console.log('Utilisation du token JWT pour l\'authentification');
+        console.log('Utilisation du token JWT pour l\'authentification:', token);
       } else {
-        console.log('Token JWT non trouvé, tentative d\'authentification sans token');
+        console.log('Token JWT non trouvé dans localStorage');
+        // Essayer de générer un nouveau token si possible
+        try {
+          await authService.refreshTokenIfNeeded();
+          const newToken = localStorage.getItem('auth_token');
+          if (newToken) {
+            headers['Authorization'] = `Bearer ${newToken}`;
+            console.log('Nouveau token JWT généré:', newToken);
+          } else {
+            console.log('Impossible de générer un nouveau token JWT');
+          }
+        } catch (error) {
+          console.error('Erreur lors de la génération du token JWT:', error);
+        }
       }
       
-      // Ajouter l'adresse du wallet dans les en-têtes pour une sécurité supplémentaire
+      // Ajouter l'adresse du wallet dans les en-têtes et le corps de la requête
       headers['X-Wallet-Address'] = account;
       
       // Appeler l'endpoint avec les en-têtes d'authentification
