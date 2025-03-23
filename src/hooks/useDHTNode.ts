@@ -364,10 +364,11 @@ export function useDHTNode() {
       console.log('Réponse de la récupération des nœuds WireGuard:', response.data);
       
       // Vérifier le format de la réponse et extraire les nœuds
-      const nodes = Array.isArray(response.data) 
-        ? response.data 
-        : (response.data && response.data.nodes && Array.isArray(response.data.nodes)) 
-          ? response.data.nodes 
+      const responseData = response.data as any; // Utiliser any pour éviter les erreurs de typage
+      const nodes = Array.isArray(responseData) 
+        ? responseData 
+        : (responseData && responseData.nodes && Array.isArray(responseData.nodes)) 
+          ? responseData.nodes 
           : [];
       
       if (nodes.length > 0) {
