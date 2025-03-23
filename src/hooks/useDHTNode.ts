@@ -180,10 +180,12 @@ export function useDHTNode() {
     
     const cachedData = localStorage.getItem(cacheKey);
     
+    // Réduire la durée du cache à 5 secondes au lieu de 30 secondes
+    // et toujours forcer un rafraîchissement au premier chargement
     if (!forceRefresh && cachedData) {
       try {
         const { data, timestamp } = JSON.parse(cachedData);
-        if (now - timestamp < 30000) { // 30 secondes
+        if (now - timestamp < 5000) { // 5 secondes au lieu de 30
           setStatus(data);
           return;
         }
@@ -541,13 +543,14 @@ export function useDHTNode() {
         clearInterval(pollingInterval.current);
       }
       
-      // Récupérer immédiatement le statut
-      fetchStatus();
+      // Récupérer immédiatement le statut avec force refresh
+      fetchStatus(true);
       
-      // Configurer le polling toutes les 30 secondes
+      // Configurer le polling toutes les 10 secondes au lieu de 30
       pollingInterval.current = setInterval(() => {
-        fetchStatus();
-      }, 30000);
+        // Forcer le rafraîchissement à chaque intervalle pour éviter les problèmes de cache
+        fetchStatus(true);
+      }, 10000);
     };
     
     // Si le wallet est connecté, démarrer le polling
@@ -556,6 +559,24 @@ export function useDHTNode() {
       
       // Vérifier également la configuration WireGuard au démarrage
       fetchWireGuardConfig();
+      
+      // Ajouter un gestionnaire d'événement pour le focus de la fenêtre
+      const handleFocus = () => {
+        console.log("Fenêtre a reçu le focus, rafraîchissement forcé du statut DHT");
+        fetchStatus(true);
+      };
+      
+      // Rafraîchir le statut quand la fenêtre reçoit le focus (après un changement d'onglet par exemple)
+      window.addEventListener('focus', handleFocus);
+      
+      // Nettoyer l'écouteur d'événement
+      return () => {
+        window.removeEventListener('focus', handleFocus);
+        if (pollingInterval.current) {
+          clearInterval(pollingInterval.current);
+          pollingInterval.current = null;
+        }
+      };
     } else {
       // Si le wallet est déconnecté, arrêter le polling et réinitialiser l'état
       if (pollingInterval.current) {
@@ -579,15 +600,14 @@ export function useDHTNode() {
       
       setWireGuardConfig(null);
       setWireGuardPeers([]);
+      
+      return () => {
+        if (pollingInterval.current) {
+          clearInterval(pollingInterval.current);
+          pollingInterval.current = null;
+        }
+      };
     }
-    
-    // Nettoyage lors du démontage du composant
-    return () => {
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-        pollingInterval.current = null;
-      }
-    };
   }, [isConnected, account, fetchStatus, fetchWireGuardConfig]);
   
   return {
