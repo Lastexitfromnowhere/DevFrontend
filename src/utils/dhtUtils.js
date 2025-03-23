@@ -268,11 +268,15 @@ export const getDHTStatus = async () => {
 };
 
 // Nouvelle fonction pour obtenir le statut du nœud DHT par wallet
-export const getDHTStatusByWallet = async (walletAddress, deviceId) => {
+export const getDHTStatusByWallet = async (walletAddress, deviceIdParam) => {
   if (!walletAddress) {
     console.error('Erreur: adresse de wallet non fournie');
     return { success: false, error: 'Adresse de wallet non fournie' };
   }
+  
+  // S'assurer que nous avons toujours un deviceId
+  const deviceId = deviceIdParam || getDeviceId();
+  console.log('Utilisation de deviceId:', deviceId);
   
   try {
     // Vérifier que le token est valide
@@ -303,16 +307,12 @@ export const getDHTStatusByWallet = async (walletAddress, deviceId) => {
     // Ajouter un paramètre de cache-busting pour éviter les problèmes de cache
     const cacheBuster = Date.now();
     
-    // Créer les paramètres de requête
+    // Créer les paramètres de requête - TOUJOURS inclure deviceId
     const params = { 
       walletAddress,
+      deviceId,  // Toujours inclure l'ID de l'appareil
       _cb: cacheBuster  // Paramètre de cache-busting
     };
-    
-    // Ajouter l'ID de l'appareil si fourni
-    if (deviceId) {
-      params.deviceId = deviceId;
-    }
     
     console.log('Starting Request:', {
       url: `${DHT_API_BASE}/status`,
@@ -347,6 +347,7 @@ export const getDHTStatusByWallet = async (walletAddress, deviceId) => {
           headers: freshHeaders,
           params: { 
             walletAddress,
+            deviceId,  // S'assurer d'inclure deviceId dans la seconde tentative
             _cb: Date.now()  // Nouveau paramètre de cache-busting
           }
         });
@@ -555,6 +556,9 @@ export const getWireGuardNodes = async () => {
 // Fonction pour publier un nœud WireGuard
 export const publishWireGuardNode = async (walletAddress) => {
   try {
+    // Récupérer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
     // Récupérer la clé publique WireGuard si disponible
     // Note: Cette partie doit être adaptée selon la façon dont vous stockez la clé publique
     // Par exemple, vous pourriez la récupérer depuis localStorage ou une API
@@ -563,12 +567,15 @@ export const publishWireGuardNode = async (walletAddress) => {
     // Préparer les données complètes pour l'API
     const nodeInfo = {
       walletAddress,
+      deviceId,  // Ajouter l'ID de l'appareil
       publicKey,
       // Ajouter d'autres informations si nécessaires
       ip: localStorage.getItem('wireguard_ip') || '',
       port: 51820, // Port standard WireGuard
       lastSeen: new Date().toISOString()
     };
+    
+    console.log('Publication du nœud WireGuard pour le wallet:', walletAddress, 'et deviceId:', deviceId);
     
     // Appeler l'endpoint avec les données complètes
     const response = await dhtAxios.post(`${DHT_API_BASE}/wireguard-publish`, nodeInfo);
@@ -588,8 +595,13 @@ export const storeDHTValue = async (key, value) => {
       throw new Error('Adresse de wallet non disponible');
     }
     
+    // Récupérer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
+    console.log('Stockage de valeur dans le DHT pour le wallet:', walletAddress, 'et deviceId:', deviceId);
+    
     const response = await dhtAxios.post(`${DHT_API_BASE}/store`, 
-      { key, value, walletAddress },
+      { key, value, walletAddress, deviceId },
       { headers: await getAuthHeaders() }
     );
     return response.data;
@@ -608,8 +620,13 @@ export const retrieveDHTValue = async (key) => {
       throw new Error('Adresse de wallet non disponible');
     }
     
+    // Récupérer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
+    console.log('Récupération de valeur depuis le DHT pour le wallet:', walletAddress, 'et deviceId:', deviceId);
+    
     const response = await dhtAxios.get(`${DHT_API_BASE}/retrieve`, {
-      params: { key, walletAddress },
+      params: { key, walletAddress, deviceId },
       headers: await getAuthHeaders()
     });
     return response.data;
@@ -626,7 +643,10 @@ export const checkBackendConnection = async () => {
     const walletAddress = localStorage.getItem('walletAddress');
     const token = localStorage.getItem('token');
     
-    console.log(`Vérification de la connexion au backend: ${API_BASE}/status`);
+    // Récupérer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
+    console.log(`Vérification de la connexion au backend: ${API_BASE}/status avec deviceId: ${deviceId}`);
     const response = await dhtAxios.get(`${API_BASE}/status`, {
       timeout: 10000, // 10 secondes
       headers: {
@@ -634,7 +654,8 @@ export const checkBackendConnection = async () => {
         'Authorization': `Bearer ${token || ''}`
       },
       params: {
-        walletAddress: walletAddress || ''
+        walletAddress: walletAddress || '',
+        deviceId: deviceId
       }
     });
     return { success: true, status: response.status, data: response.data };
