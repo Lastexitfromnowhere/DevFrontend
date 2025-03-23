@@ -422,22 +422,24 @@ export function useDHTNode() {
       
       console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      // Récupérer le token JWT depuis le service d'authentification
-      const authToken = localStorage.getItem('auth_token');
+      // Récupérer le token JWT directement depuis le service d'authentification
+      const token = authService.getToken();
       
-      // Vérifier si nous avons un token JWT valide
-      if (!authToken) {
-        console.log('Token JWT non trouvé, utilisation de l\'adresse du wallet comme fallback');
+      // Créer les en-têtes d'authentification
+      const headers: Record<string, string> = {};
+      
+      // Ajouter le token d'authentification s'il existe
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+        console.log('Utilisation du token JWT pour l\'authentification');
       } else {
-        console.log('Utilisation du token JWT pour l\'authentification:', authToken);
+        console.log('Token JWT non trouvé, tentative d\'authentification sans token');
       }
       
-      // Configurer les en-têtes avec le token JWT ou l'adresse du wallet comme fallback
-      const headers = authToken 
-        ? { 'Authorization': `Bearer ${authToken}` }
-        : { 'Authorization': `Bearer ${account}` };
+      // Ajouter l'adresse du wallet dans les en-têtes pour une sécurité supplémentaire
+      headers['X-Wallet-Address'] = account;
       
-      // Appeler l'endpoint avec les en-têtes d'authentification explicites
+      // Appeler l'endpoint avec les en-têtes d'authentification
       const response = await axios.post(
         `${config.DHT_API_URL}/dht/publish-wireguard`, 
         {
