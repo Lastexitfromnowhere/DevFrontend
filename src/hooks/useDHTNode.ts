@@ -490,11 +490,8 @@ export function useDHTNode() {
       // Ajouter l'adresse du wallet dans les en-têtes
       headers['X-Wallet-Address'] = account;
       
-      // Récupérer l'ID de l'appareil (ou en générer un si nécessaire)
-      const deviceId = localStorage.getItem('device_id') || `device_${Math.random().toString(36).substring(2, 15)}`;
-      if (!localStorage.getItem('device_id')) {
-        localStorage.setItem('device_id', deviceId);
-      }
+      // Récupérer l'ID de l'appareil en utilisant la fonction getDeviceId()
+      const deviceId = getDeviceId();
       
       // Préparer les données complètes pour l'API, en s'inspirant de dhtUtils.js
       const nodeInfo = {
