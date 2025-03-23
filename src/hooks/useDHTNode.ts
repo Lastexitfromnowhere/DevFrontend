@@ -321,9 +321,9 @@ export function useDHTNode() {
       
       console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      const response = await api.post('/dht/wireguard-publish', {
-        ip: serverIp,
+      const response = await api.post('/dht/publish-wireguard', {
         publicKey: serverPublicKey,
+        ip: serverIp,
         walletAddress: account
       });
       
@@ -404,7 +404,7 @@ export function useDHTNode() {
       
       console.log('Connexion à WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
       
-      const response = await api.post('/api/connect-to-node', {
+      const response = await api.post('/connect-to-node', {
         hostWalletAddress: account,
         peerPublicKey,
         endpoint,
