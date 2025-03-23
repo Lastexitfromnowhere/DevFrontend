@@ -503,9 +503,10 @@ export function useDHTNode() {
         lastSeen: new Date().toISOString()
       };
       
-      console.log('Publication du nœud WireGuard avec les paramètres:', nodeInfo);
+      // Afficher les données exactes envoyées au serveur
+      console.log('Publication du nœud WireGuard avec les données:', JSON.stringify(nodeInfo));
+      console.log('Headers:', JSON.stringify(headers));
       
-      // Appeler l'endpoint avec les en-têtes d'authentification
       try {
         const response = await axios.post(
           `${config.DHT_API_URL}/dht/publish-wireguard`, 
@@ -524,27 +525,40 @@ export function useDHTNode() {
           return true;
         }
       } catch (error) {
-        // Même en cas d'erreur, vérifier les logs du serveur qui pourraient indiquer un succès
-        console.error('Error fetching WireGuard configuration:', error);
+        console.error('Erreur lors de la publication du nœud WireGuard:', error);
         
-        // Tenter quand même de récupérer la configuration
-        try {
-          console.log('Tentative de récupération de la configuration WireGuard malgré l\'erreur...');
-          await fetchWireGuardConfig();
+        // Afficher plus de détails sur l'erreur
+        const axiosError = error as AxiosErrorResponse;
+        if (axiosError.response) {
+          console.error('Détails de l\'erreur:', {
+            status: axiosError.response.status,
+            data: axiosError.response.data
+          });
           
-          // Vérifier si des nœuds ont été récupérés
-          if (wireGuardNodes.length > 0) {
-            console.log('Configuration WireGuard récupérée avec succès malgré l\'erreur!');
-            return true;
-          }
-        } catch (secondError) {
-          console.error('Échec de la récupération de la configuration après erreur:', secondError);
+          // Tenter de récupérer la configuration même en cas d'erreur
+          // Parfois, le nœud est publié mais l'API renvoie une erreur
+          await fetchWireGuardConfig();
         }
         
+        setWireGuardError(error instanceof Error ? error.message : 'Failed to enable WireGuard');
         return false;
       }
     } catch (error: unknown) {
-      console.error('Error enabling WireGuard:', error);
+      console.error('Erreur lors de la publication du nœud WireGuard:', error);
+      
+      // Afficher plus de détails sur l'erreur
+      const axiosError = error as AxiosErrorResponse;
+      if (axiosError.response) {
+        console.error('Détails de l\'erreur:', {
+          status: axiosError.response.status,
+          data: axiosError.response.data
+        });
+        
+        // Tenter de récupérer la configuration même en cas d'erreur
+        // Parfois, le nœud est publié mais l'API renvoie une erreur
+        await fetchWireGuardConfig();
+      }
+      
       setWireGuardError(error instanceof Error ? error.message : 'Failed to enable WireGuard');
       return false;
     } finally {
