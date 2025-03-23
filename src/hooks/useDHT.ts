@@ -57,6 +57,9 @@ export function useDHT() {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [isLoadingWireGuard, setIsLoadingWireGuard] = useState(false);
+  // Intervalle de rafraîchissement automatique (en millisecondes)
+  const [pollingInterval, setPollingInterval] = useState<number>(30000); // 30 secondes par défaut
+  const [isPollingEnabled, setIsPollingEnabled] = useState<boolean>(true);
 
   // Fonction pour récupérer le statut du nœud DHT
   const fetchStatus = useCallback(async () => {
@@ -403,6 +406,26 @@ export function useDHT() {
     }
   }, [isAuthenticated, fetchStatus]);
 
+  // Effet pour mettre en place le polling automatique du statut DHT
+  useEffect(() => {
+    // Ne démarrer le polling que si l'utilisateur est authentifié et que le polling est activé
+    if (!isAuthenticated || !isPollingEnabled) return;
+
+    console.log(`Configuration du polling automatique du statut DHT toutes les ${pollingInterval / 1000} secondes`);
+    
+    // Créer un intervalle pour rafraîchir régulièrement le statut
+    const intervalId = setInterval(() => {
+      console.log('Polling automatique: récupération du statut DHT');
+      fetchStatus();
+    }, pollingInterval);
+    
+    // Nettoyer l'intervalle lorsque le composant est démonté ou que les dépendances changent
+    return () => {
+      console.log('Nettoyage du polling automatique du statut DHT');
+      clearInterval(intervalId);
+    };
+  }, [isAuthenticated, fetchStatus, pollingInterval, isPollingEnabled]);
+
   return {
     status,
     nodes,
@@ -416,6 +439,11 @@ export function useDHT() {
     fetchWireGuardNodes,
     publishWireGuardNode,
     storeValue,
-    retrieveValue
+    retrieveValue,
+    // Exposer les contrôles de polling
+    pollingInterval,
+    setPollingInterval,
+    isPollingEnabled,
+    setIsPollingEnabled
   };
 }
