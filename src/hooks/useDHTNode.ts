@@ -354,7 +354,7 @@ export function useDHTNode() {
     setWireGuardError(null);
     
     try {
-      const response = await api.post('/dht/stop');
+      const response = await api.post('/dht/stop', {});
       
       if (response.data && (response.data as { success?: boolean }).success) {
         // Réinitialiser la configuration
