@@ -280,31 +280,7 @@ export const getDHTStatusByWallet = async (walletAddress) => {
     // Ajouter un paramètre de cache-busting pour éviter les problèmes de cache
     const cacheBuster = Date.now();
     
-    // CONTOURNEMENT: Essayer d'abord de démarrer le nœud pour voir s'il est déjà actif
-    try {
-      console.log('Tentative de démarrage du nœud pour vérifier son statut...');
-      const startResponse = await dhtAxios.post(`${DHT_API_BASE}/start`, { walletAddress }, {
-        headers
-      });
-      
-      console.log('Réponse de la tentative de démarrage:', startResponse.status, startResponse.data);
-      
-      // Si la réponse indique que le nœud est déjà actif, nous savons qu'il est actif
-      if (startResponse.data && startResponse.data.message && startResponse.data.message.includes('déjà actif')) {
-        console.log('Le nœud est déjà actif selon la réponse de démarrage');
-        return {
-          success: true,
-          isActive: true,
-          active: true,
-          message: 'Nœud DHT actif'
-        };
-      }
-    } catch (startError) {
-      console.log('Erreur lors de la tentative de démarrage (peut être normal si le nœud est déjà actif):', startError);
-      // Ignorer l'erreur et continuer avec la vérification du statut
-    }
-    
-    // Maintenant, obtenir le statut réel
+    // Vérifier directement le statut sans essayer de démarrer le nœud
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
       headers,
       params: { 
