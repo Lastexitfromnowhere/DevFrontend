@@ -354,7 +354,7 @@ export function useDHTNode() {
     
     try {
       // Type assertion pour response.data
-      const response = await api.post('/dht/wireguard-publish', {
+      const response = await api.post('/dht/publish-wireguard', {
         walletAddress: account
       });
       const responseData = response.data as any;
