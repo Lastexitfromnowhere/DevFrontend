@@ -507,6 +507,8 @@ export function useDHTNode() {
       console.log('Publication du nœud WireGuard avec les données:', JSON.stringify(nodeInfo));
       console.log('Headers:', JSON.stringify(headers));
       
+      // Trigger pour Vercel - 23/03/2025
+      
       try {
         const response = await axios.post(
           `${config.DHT_API_URL}/dht/publish-wireguard`, 
