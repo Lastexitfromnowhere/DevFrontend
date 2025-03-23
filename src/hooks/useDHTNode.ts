@@ -546,11 +546,11 @@ export function useDHTNode() {
       // Récupérer immédiatement le statut avec force refresh
       fetchStatus(true);
       
-      // Configurer le polling toutes les 10 secondes au lieu de 30
+      // Configurer le polling toutes les 30 secondes pour aligner avec useDHT
       pollingInterval.current = setInterval(() => {
         // Forcer le rafraîchissement à chaque intervalle pour éviter les problèmes de cache
         fetchStatus(true);
-      }, 10000);
+      }, 30000);
     };
     
     // Si le wallet est connecté, démarrer le polling
