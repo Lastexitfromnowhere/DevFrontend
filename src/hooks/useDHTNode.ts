@@ -204,6 +204,15 @@ export function useDHTNode() {
       
       console.log('Statut DHT reçu:', data);
       
+      // Vérifier que la réponse concerne bien le wallet actuel
+      // Cela évite les interférences entre différentes instances de l'application
+      const currentWallet = authService.getWalletAddress();
+      if (currentWallet !== account) {
+        console.log(`La réponse concerne le wallet ${account} mais le wallet actuel est ${currentWallet}. Ignorer cette réponse.`);
+        setLoading(false);
+        return;
+      }
+      
       if (data.success === false) {
         if (data.error) {
           throw new Error(data.error);
