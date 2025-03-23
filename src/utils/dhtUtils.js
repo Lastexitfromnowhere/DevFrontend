@@ -108,24 +108,23 @@ export const initDHTNode = async () => {
 };
 
 // Fonction pour démarrer le nœud DHT
-export const startDHTNode = async () => {
+export const startDHTNode = async (walletAddressParam, deviceIdParam) => {
   try {
-    // Récupérer l'adresse du wallet depuis le token JWT
-    const walletAddress = authService.getWalletAddressFromToken();
-    if (!walletAddress) {
-      throw new Error('Adresse de wallet non disponible dans le token JWT');
-    }
+    // Utiliser les paramètres s'ils sont fournis, sinon utiliser les valeurs par défaut
+    const walletAddress = walletAddressParam || authService.getWalletAddressFromToken();
+    const deviceId = deviceIdParam || getDeviceId();
     
-    // Récupérer ou générer l'ID de l'appareil
-    const deviceId = getDeviceId();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible');
+    }
     
     console.log('Démarrage du nœud DHT pour le wallet:', walletAddress, 'sur l\'appareil:', deviceId);
     
     // Vérifier d'abord si le nœud est déjà actif
-    const status = await getDHTStatus();
-    if (status.isActive) {
+    const status = await getDHTStatusByWallet(walletAddress, deviceId);
+    if (status.isActive || status.active) {
       console.log('Le nœud DHT est déjà actif.');
-      return status;
+      return { success: true, ...status };
     }
     
     // Démarrer le nœud DHT
@@ -147,7 +146,7 @@ export const startDHTNode = async () => {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Vérifier le statut du nœud
-      const statusCheck = await getDHTStatus();
+      const statusCheck = await getDHTStatusByWallet(walletAddress, deviceId);
       isActive = statusCheck.isActive || statusCheck.active;
       
       retries++;
@@ -164,7 +163,8 @@ export const startDHTNode = async () => {
     
     return {
       ...response.data,
-      isActive
+      isActive,
+      success: true
     };
   } catch (error) {
     console.error('Erreur lors du démarrage du nœud DHT:', error);
@@ -179,27 +179,34 @@ export const startDHTNode = async () => {
 };
 
 // Fonction pour arrêter le nœud DHT
-export const stopDHTNode = async () => {
+export const stopDHTNode = async (walletAddressParam, deviceIdParam) => {
   try {
-    // Récupérer l'adresse du wallet depuis le token JWT
-    const walletAddress = authService.getWalletAddressFromToken();
-    if (!walletAddress) {
-      throw new Error('Adresse de wallet non disponible dans le token JWT');
-    }
+    // Utiliser les paramètres s'ils sont fournis, sinon utiliser les valeurs par défaut
+    const walletAddress = walletAddressParam || authService.getWalletAddressFromToken();
+    const deviceId = deviceIdParam || getDeviceId();
     
-    // Récupérer ou générer l'ID de l'appareil
-    const deviceId = getDeviceId();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible');
+    }
     
     console.log('Arrêt du nœud DHT pour le wallet:', walletAddress, 'sur l\'appareil:', deviceId);
     const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, { 
       walletAddress,
       deviceId 
     });
+    
     // Invalider le cache du statut
     cachedStatus = null;
-    return response.data;
+    
+    return { ...response.data, success: true };
   } catch (error) {
     console.error('Erreur lors de l\'arrêt du nœud DHT:', error);
+    console.error('Détails de l\'erreur:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
     return { success: false, error: error.message };
   }
 };

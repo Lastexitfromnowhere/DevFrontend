@@ -131,8 +131,8 @@ export default function UnifiedDHTView() {
   
   const { 
     status: myNodeStatus, 
-    startDHTNode, 
-    stopDHTNode, 
+    startNode, 
+    stopNode, 
     loading: myNodeLoading, 
     error: myNodeError,
     wireGuard: { enable, disable }
@@ -188,7 +188,7 @@ export default function UnifiedDHTView() {
 
   const handleStartNode = async () => {
     try {
-      await startDHTNode();
+      await startNode();
       // Rafraîchir les données après le démarrage
       setTimeout(() => refreshAllData(), 1000);
     } catch (error) {
@@ -198,7 +198,7 @@ export default function UnifiedDHTView() {
 
   const handleStopNode = async () => {
     try {
-      await stopDHTNode();
+      await stopNode();
       // Rafraîchir les données après l'arrêt
       setTimeout(() => refreshAllData(), 1000);
     } catch (error) {

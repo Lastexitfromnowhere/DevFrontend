@@ -265,6 +265,72 @@ export function useDHTNode() {
     }
   }, [isConnected, account, getDeviceId]);
   
+  // Fonction pour démarrer un nœud DHT
+  const startNode = useCallback(async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Obtenir l'ID de l'appareil
+      const deviceId = getDeviceId();
+      console.log('Démarrage du nœud DHT pour le wallet:', account, 'et l\'appareil:', deviceId);
+      
+      // Utiliser la fonction startDHTNode avec l'adresse du wallet et l'ID de l'appareil
+      const result = await dhtUtils.startDHTNode(account, deviceId);
+      
+      if (result.success) {
+        console.log('Nœud DHT démarré avec succès');
+        // Forcer le rafraîchissement du statut
+        await fetchStatus(true);
+      } else {
+        throw new Error(result.message || 'Failed to start DHT node');
+      }
+    } catch (err: any) {
+      console.error('Failed to start node:', err);
+      setError(err.message || 'Une erreur est survenue');
+    } finally {
+      setLoading(false);
+    }
+  }, [isConnected, account, fetchStatus, getDeviceId]);
+
+  // Fonction pour arrêter un nœud DHT
+  const stopNode = useCallback(async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Obtenir l'ID de l'appareil
+      const deviceId = getDeviceId();
+      console.log('Arrêt du nœud DHT pour le wallet:', account, 'et l\'appareil:', deviceId);
+      
+      // Utiliser la fonction stopDHTNode avec l'adresse du wallet et l'ID de l'appareil
+      const result = await dhtUtils.stopDHTNode(account, deviceId);
+      
+      if (result.success) {
+        console.log('Nœud DHT arrêté avec succès');
+        // Forcer le rafraîchissement du statut
+        await fetchStatus(true);
+      } else {
+        throw new Error(result.message || 'Failed to stop DHT node');
+      }
+    } catch (err: any) {
+      console.error('Failed to stop node:', err);
+      setError(err.message || 'Une erreur est survenue');
+    } finally {
+      setLoading(false);
+    }
+  }, [isConnected, account, fetchStatus, getDeviceId]);
+  
   // Fonction pour récupérer la configuration WireGuard
   const fetchWireGuardConfig = useCallback(async () => {
     if (!isConnected || !account) {
@@ -466,82 +532,6 @@ export function useDHTNode() {
     }
   }, [isConnected, account, wireGuardConfig]);
   
-  // Fonction pour démarrer le nœud DHT
-  const startDHTNode = useCallback(async () => {
-    if (!account) {
-      setError('No wallet address available');
-      return false;
-    }
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Rafraîchir le token si nécessaire
-      await authService.refreshTokenIfNeeded();
-      
-      console.log('Démarrage du nœud DHT');
-      
-      // Utiliser la fonction startDHTNode de dhtUtils
-      const result = await dhtUtils.startDHTNode();
-      
-      console.log('Réponse du démarrage du nœud DHT:', result);
-      
-      if (result.success) {
-        // Mettre à jour le statut
-        await fetchStatus(true);
-        return true;
-      } else {
-        setError(result.error || 'Failed to start DHT node');
-        return false;
-      }
-    } catch (err: any) {
-      console.error('Error starting DHT node:', err);
-      setError(err.message || 'Unknown error starting DHT node');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [account, fetchStatus]);
-
-  // Fonction pour arrêter le nœud DHT
-  const stopDHTNode = useCallback(async () => {
-    if (!account) {
-      setError('No wallet address available');
-      return false;
-    }
-    
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Rafraîchir le token si nécessaire
-      await authService.refreshTokenIfNeeded();
-      
-      console.log('Arrêt du nœud DHT');
-      
-      // Utiliser la fonction stopDHTNode de dhtUtils
-      const result = await dhtUtils.stopDHTNode();
-      
-      console.log('Réponse de l\'arrêt du nœud DHT:', result);
-      
-      if (result.success) {
-        // Mettre à jour le statut
-        await fetchStatus(true);
-        return true;
-      } else {
-        setError(result.error || 'Failed to stop DHT node');
-        return false;
-      }
-    } catch (err: any) {
-      console.error('Error stopping DHT node:', err);
-      setError(err.message || 'Unknown error stopping DHT node');
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  }, [account, fetchStatus]);
-  
   // Effet pour démarrer le polling lorsque le wallet est connecté
   useEffect(() => {
     // Fonction pour démarrer le polling
@@ -605,8 +595,8 @@ export function useDHTNode() {
     error,
     loading,
     fetchStatus,
-    startDHTNode,
-    stopDHTNode,
+    startNode,
+    stopNode,
     
     // Fonctionnalités WireGuard
     wireGuard: {
