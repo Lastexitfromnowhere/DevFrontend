@@ -176,8 +176,14 @@ export const startDHTNode = async () => {
 // Fonction pour arrêter le nœud DHT
 export const stopDHTNode = async () => {
   try {
-    console.log('Arrêt du nœud DHT');
-    const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, {});
+    // Récupérer l'adresse du wallet depuis le token JWT
+    const walletAddress = authService.getWalletAddressFromToken();
+    if (!walletAddress) {
+      throw new Error('Adresse de wallet non disponible dans le token JWT');
+    }
+    
+    console.log('Arrêt du nœud DHT pour le wallet:', walletAddress);
+    const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, { walletAddress });
     // Invalider le cache du statut
     cachedStatus = null;
     return response.data;
@@ -314,41 +320,6 @@ export const getDHTStatusByWallet = async (walletAddress) => {
         });
         
         console.log('Réponse de la seconde tentative:', retryResponse.status, retryResponse.data);
-        
-        // Si la seconde tentative indique toujours que le nœud est inactif, essayons une dernière approche
-        if (retryResponse.data && (retryResponse.data.isActive === false || retryResponse.data.active === false)) {
-          // Vérifier directement si le nœud est actif en essayant de l'arrêter
-          try {
-            console.log('Dernière vérification: tentative d\'arrêt du nœud pour voir s\'il est actif...');
-            const stopResponse = await dhtAxios.post(`${DHT_API_BASE}/stop`, null, {
-              headers: freshHeaders,
-              params: { walletAddress }
-            });
-            
-            console.log('Réponse de la tentative d\'arrêt:', stopResponse.status, stopResponse.data);
-            
-            // Si l'arrêt a réussi, cela signifie que le nœud était actif
-            if (stopResponse.data && stopResponse.data.success) {
-              console.log('Le nœud était actif (a pu être arrêté)');
-              
-              // Redémarrer le nœud puisque nous venons de l'arrêter
-              await dhtAxios.post(`${DHT_API_BASE}/start`, null, {
-                headers: freshHeaders,
-                params: { walletAddress }
-              });
-              
-              return {
-                success: true,
-                isActive: true,
-                active: true,
-                message: 'Nœud DHT actif (vérifié par arrêt/redémarrage)'
-              };
-            }
-          } catch (stopError) {
-            console.log('Erreur lors de la tentative d\'arrêt:', stopError);
-            // Ignorer l'erreur et continuer
-          }
-        }
         
         return retryResponse.data;
       } catch (retryError) {
