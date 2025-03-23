@@ -363,51 +363,54 @@ export function useDHTNode() {
       
       console.log('Réponse de la récupération des nœuds WireGuard:', response.data);
       
-      if (response.data && Array.isArray(response.data)) {
+      // Vérifier le format de la réponse et extraire les nœuds
+      const nodes = Array.isArray(response.data) 
+        ? response.data 
+        : (response.data && response.data.nodes && Array.isArray(response.data.nodes)) 
+          ? response.data.nodes 
+          : [];
+      
+      if (nodes.length > 0) {
         // Si nous avons des nœuds WireGuard, prendre le premier
-        if (response.data.length > 0) {
-          const wireGuardNode = response.data[0];
-          console.log('Nœud WireGuard trouvé:', wireGuardNode);
-          
-          // Construire la configuration WireGuard à partir du nœud
-          const wireGuardConfig: WireGuardConfig = {
-            publicKey: wireGuardNode.publicKey,
-            address: wireGuardNode.ip,
-            port: wireGuardNode.port || 51820,
-            serverIp: wireGuardNode.ip,
-            serverPublicKey: wireGuardNode.publicKey,
-            status: 'active'
-          };
-          
-          setWireGuardConfig(wireGuardConfig);
-          setWireGuardNodes(response.data);
-          
-          // Mettre à jour le statut pour refléter que WireGuard est activé
-          setStatus(prevStatus => ({
-            ...prevStatus,
-            wireGuardEnabled: true,
-            wireGuardConfig: wireGuardConfig,
-            protocol: 'WireGuard'
-          }));
-          
-          return wireGuardConfig;
-        } else {
-          console.log('Aucun nœud WireGuard trouvé pour ce wallet');
-          setWireGuardConfig(null);
-          setWireGuardNodes([]);
-          
-          // Mettre à jour le statut pour refléter que WireGuard n'est pas activé
-          setStatus(prevStatus => ({
-            ...prevStatus,
-            wireGuardEnabled: false,
-            wireGuardConfig: undefined,
-            protocol: 'DHT'
-          }));
-          
-          return null;
-        }
+        const wireGuardNode = nodes[0];
+        console.log('Nœud WireGuard trouvé:', wireGuardNode);
+        
+        // Construire la configuration WireGuard à partir du nœud
+        const wireGuardConfig: WireGuardConfig = {
+          publicKey: wireGuardNode.publicKey,
+          address: wireGuardNode.ip,
+          port: wireGuardNode.port || 51820,
+          serverIp: wireGuardNode.ip,
+          serverPublicKey: wireGuardNode.publicKey,
+          status: 'active'
+        };
+        
+        setWireGuardConfig(wireGuardConfig);
+        setWireGuardNodes(nodes);
+        
+        // Mettre à jour le statut pour refléter que WireGuard est activé
+        setStatus(prevStatus => ({
+          ...prevStatus,
+          wireGuardEnabled: true,
+          wireGuardConfig: wireGuardConfig,
+          protocol: 'WireGuard'
+        }));
+        
+        return wireGuardConfig;
       } else {
-        throw new Error('Format de réponse inattendu pour les nœuds WireGuard');
+        console.log('Aucun nœud WireGuard trouvé pour ce wallet');
+        setWireGuardConfig(null);
+        setWireGuardNodes([]);
+        
+        // Mettre à jour le statut pour refléter que WireGuard n'est pas activé
+        setStatus(prevStatus => ({
+          ...prevStatus,
+          wireGuardEnabled: false,
+          wireGuardConfig: undefined,
+          protocol: 'DHT'
+        }));
+        
+        return null;
       }
     } catch (error: unknown) {
       console.error('Error fetching WireGuard configuration:', error);
