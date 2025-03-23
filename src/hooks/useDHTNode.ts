@@ -155,13 +155,28 @@ export function useDHTNode() {
   // Contexte du wallet
   const { isConnected, account } = useWalletContext();
   
+  // Générer ou récupérer un ID d'appareil unique
+  const getDeviceId = useCallback(() => {
+    const storageKey = 'wind-device-id';
+    let deviceId = localStorage.getItem(storageKey);
+    
+    if (!deviceId) {
+      // Générer un ID unique pour cet appareil
+      deviceId = `device-${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;
+      localStorage.setItem(storageKey, deviceId);
+    }
+    
+    return deviceId;
+  }, []);
+  
   // Fonction pour récupérer le statut du nœud DHT
   const fetchStatus = useCallback(async (forceRefresh = false) => {
     if (!isConnected || !account) return;
 
     // Si nous ne forçons pas le rafraîchissement et que nous avons un cache récent
     const now = Date.now();
-    const cacheKey = `dht-status-${account}`;
+    const deviceId = getDeviceId();
+    const cacheKey = `dht-status-${account}-${deviceId}`;
     
     const cachedData = localStorage.getItem(cacheKey);
     
@@ -197,10 +212,10 @@ export function useDHTNode() {
         console.error('Erreur lors de la génération du token:', tokenError);
       }
       
-      console.log('Récupération du statut DHT pour le wallet:', account);
+      console.log('Récupération du statut DHT pour le wallet:', account, 'et l\'appareil:', deviceId);
       
-      // Utiliser getDHTStatusByWallet avec l'adresse du wallet connecté
-      const data = await dhtUtils.getDHTStatusByWallet(account);
+      // Utiliser getDHTStatusByWallet avec l'adresse du wallet connecté et l'ID de l'appareil
+      const data = await dhtUtils.getDHTStatusByWallet(account, deviceId);
       
       console.log('Statut DHT reçu:', data);
       
@@ -248,7 +263,7 @@ export function useDHTNode() {
     } finally {
       setLoading(false);
     }
-  }, [isConnected, account]);
+  }, [isConnected, account, getDeviceId]);
   
   // Fonction pour récupérer la configuration WireGuard
   const fetchWireGuardConfig = useCallback(async () => {

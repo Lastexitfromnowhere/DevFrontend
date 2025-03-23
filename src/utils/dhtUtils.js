@@ -110,44 +110,49 @@ export const initDHTNode = async () => {
 // Fonction pour démarrer le nœud DHT
 export const startDHTNode = async () => {
   try {
-    console.log('Démarrage du nœud DHT...');
-    
     // Récupérer l'adresse du wallet depuis le token JWT
     const walletAddress = authService.getWalletAddressFromToken();
     if (!walletAddress) {
       throw new Error('Adresse de wallet non disponible dans le token JWT');
     }
     
-    const headers = await getAuthHeaders();
-    console.log('Entêtes d\'authentification pour startDHTNode:', headers);
+    // Récupérer ou générer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
+    console.log('Démarrage du nœud DHT pour le wallet:', walletAddress, 'sur l\'appareil:', deviceId);
+    
+    // Vérifier d'abord si le nœud est déjà actif
+    const status = await getDHTStatus();
+    if (status.isActive) {
+      console.log('Le nœud DHT est déjà actif.');
+      return status;
+    }
     
     // Démarrer le nœud DHT
-    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, { walletAddress }, {
-      headers
+    const response = await dhtAxios.post(`${DHT_API_BASE}/start`, { 
+      walletAddress,
+      deviceId 
     });
-    
-    console.log('Réponse du démarrage du nœud DHT:', response.status, response.data);
     
     // Invalider le cache du statut
     cachedStatus = null;
     
-    // Attendre que le nœud soit actif (avec un timeout de 10 secondes)
+    // Attendre que le nœud soit actif
     let isActive = false;
-    let attempts = 0;
-    const maxAttempts = 10;
+    let retries = 0;
+    const maxRetries = 10;
     
-    while (!isActive && attempts < maxAttempts) {
-      attempts++;
-      console.log(`Vérification de l'activation du nœud DHT (tentative ${attempts}/${maxAttempts})...`);
-      
-      // Attendre 1 seconde entre chaque vérification
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    while (!isActive && retries < maxRetries) {
+      // Attendre 2 secondes entre chaque vérification
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
       // Vérifier le statut du nœud
-      const status = await getDHTStatus();
-      console.log('Statut du nœud DHT:', status);
+      const statusCheck = await getDHTStatus();
+      isActive = statusCheck.isActive || statusCheck.active;
       
-      if (status.success && status.isActive) {
+      retries++;
+      
+      if (isActive) {
         isActive = true;
         console.log('Le nœud DHT est maintenant actif !');
       }
@@ -182,8 +187,14 @@ export const stopDHTNode = async () => {
       throw new Error('Adresse de wallet non disponible dans le token JWT');
     }
     
-    console.log('Arrêt du nœud DHT pour le wallet:', walletAddress);
-    const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, { walletAddress });
+    // Récupérer ou générer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
+    console.log('Arrêt du nœud DHT pour le wallet:', walletAddress, 'sur l\'appareil:', deviceId);
+    const response = await dhtAxios.post(`${DHT_API_BASE}/stop`, { 
+      walletAddress,
+      deviceId 
+    });
     // Invalider le cache du statut
     cachedStatus = null;
     return response.data;
@@ -208,6 +219,9 @@ export const getDHTStatus = async () => {
       throw new Error('Adresse de wallet non disponible');
     }
     
+    // Récupérer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
     // Vérifier que le token est valide et correspond à l'adresse du wallet
     await authService.refreshTokenIfNeeded();
     
@@ -220,12 +234,15 @@ export const getDHTStatus = async () => {
       walletAddress = tokenWalletAddress;
     }
     
-    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status avec walletAddress=${walletAddress}`);
+    console.log(`Récupération du statut DHT depuis ${DHT_API_BASE}/status avec walletAddress=${walletAddress} et deviceId=${deviceId}`);
     
     // Utiliser les query parameters au lieu des path parameters
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, {
       headers: await getAuthHeaders(),
-      params: { walletAddress }
+      params: { 
+        walletAddress,
+        deviceId
+      }
     });
     
     cachedStatus = response.data;
@@ -244,7 +261,7 @@ export const getDHTStatus = async () => {
 };
 
 // Nouvelle fonction pour obtenir le statut du nœud DHT par wallet
-export const getDHTStatusByWallet = async (walletAddress) => {
+export const getDHTStatusByWallet = async (walletAddress, deviceId) => {
   if (!walletAddress) {
     console.error('Erreur: adresse de wallet non fournie');
     return { success: false, error: 'Adresse de wallet non fournie' };
@@ -276,23 +293,31 @@ export const getDHTStatusByWallet = async (walletAddress) => {
     console.log('Entêtes d\'authentification:', headers);
     console.log('Adresse du wallet utilisée pour la requête:', walletAddress);
     
+    // Ajouter un paramètre de cache-busting pour éviter les problèmes de cache
+    const cacheBuster = Date.now();
+    
+    // Créer les paramètres de requête
+    const params = { 
+      walletAddress,
+      _cb: cacheBuster  // Paramètre de cache-busting
+    };
+    
+    // Ajouter l'ID de l'appareil si fourni
+    if (deviceId) {
+      params.deviceId = deviceId;
+    }
+    
     console.log('Starting Request:', {
       url: `${DHT_API_BASE}/status`,
       method: 'get',
-      params: { walletAddress, _cb: Date.now() },
+      params: params,
       headers: headers
     });
-    
-    // Ajouter un paramètre de cache-busting pour éviter les problèmes de cache
-    const cacheBuster = Date.now();
     
     // Vérifier directement le statut sans essayer de démarrer le nœud
     const response = await dhtAxios.get(`${DHT_API_BASE}/status`, { 
       headers,
-      params: { 
-        walletAddress,
-        _cb: cacheBuster  // Paramètre de cache-busting
-      }
+      params: params
     });
     
     console.log('Réponse du serveur:', response.status, response.data);
@@ -798,6 +823,20 @@ export const testDHTConnectivity = async () => {
       ...results
     };
   }
+};
+
+// Fonction utilitaire pour obtenir ou générer un ID d'appareil unique
+const getDeviceId = () => {
+  const storageKey = 'wind-device-id';
+  let deviceId = localStorage.getItem(storageKey);
+  
+  if (!deviceId) {
+    // Générer un ID unique pour cet appareil
+    deviceId = `device-${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;
+    localStorage.setItem(storageKey, deviceId);
+  }
+  
+  return deviceId;
 };
 
 export default {
