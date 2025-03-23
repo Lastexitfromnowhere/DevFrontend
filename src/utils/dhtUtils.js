@@ -386,16 +386,25 @@ export const getDHTStatusByWallet = async (walletAddress, deviceId) => {
 // Fonction pour obtenir la liste des nœuds DHT
 export const getDHTNodes = async () => {
   try {
-    // Rafraîchir le token si nécessaire
-    await authService.refreshTokenIfNeeded();
-    
-    // Récupérer l'adresse du wallet depuis le token JWT
-    const walletAddress = authService.getWalletAddressFromToken();
+    const walletAddress = authService.getWalletAddress();
     if (!walletAddress) {
-      throw new Error('Adresse de wallet non disponible dans le token JWT');
+      throw new Error('Adresse de wallet non disponible');
     }
     
-    console.log('Récupération des nœuds DHT pour le wallet:', walletAddress);
+    // Récupérer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
+    // Vérifier que le token est valide et correspond à l'adresse du wallet
+    await authService.refreshTokenIfNeeded();
+    
+    // Utiliser l'adresse du wallet stockée dans le token JWT pour éviter les erreurs 403
+    const tokenWalletAddress = authService.getWalletAddressFromToken();
+    
+    // Si les adresses ne correspondent pas, utiliser celle du token pour éviter l'erreur 403
+    if (tokenWalletAddress && tokenWalletAddress !== walletAddress) {
+      console.warn(`L'adresse fournie (${walletAddress}) ne correspond pas à celle du token (${tokenWalletAddress}). Utilisation de l'adresse du token.`);
+      walletAddress = tokenWalletAddress;
+    }
     
     const headers = await getAuthHeaders();
     console.log('Entêtes d\'authentification pour getDHTNodes:', headers);
@@ -404,7 +413,10 @@ export const getDHTNodes = async () => {
     try {
       const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
         headers,
-        params: { walletAddress }
+        params: { 
+          walletAddress,
+          deviceId
+        }
       });
       
       console.log('Réponse de l\'API pour les nœuds DHT (endpoint /nodes):', response.status, response.data);
@@ -428,7 +440,10 @@ export const getDHTNodes = async () => {
     try {
       const altResponse = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
         headers,
-        params: { walletAddress }
+        params: { 
+          walletAddress,
+          deviceId
+        }
       });
       
       console.log('Réponse de l\'API pour les nœuds DHT (endpoint /nodes):', altResponse.status, altResponse.data);
@@ -451,28 +466,28 @@ export const getDHTNodes = async () => {
         return { success: false, nodes: [], error: 'Format de réponse inattendu' };
       }
     } catch (error) {
-      console.error('Erreur lors de la récupération des nœuds DHT (endpoint /nodes):', error);
-      console.error('Détails de l\'erreur:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        data: error.response?.data
-      });
-      return { success: false, nodes: [], error: error.message };
+      console.error('Erreur lors de la récupération des nœuds DHT:', error);
+      
+      // En cas d'erreur, retourner un tableau vide
+      return {
+        success: false,
+        nodes: [],
+        error: error.message
+      };
     }
   } catch (error) {
     console.error('Erreur lors de la récupération des nœuds DHT:', error);
-    console.error('Détails de l\'erreur:', {
-      message: error.message,
-      status: error.response?.status,
-      statusText: error.response?.statusText,
-      data: error.response?.data
-    });
-    return { success: false, nodes: [], error: error.message };
+    
+    // En cas d'erreur, retourner un tableau vide
+    return {
+      success: false,
+      nodes: [],
+      error: error.message
+    };
   }
 };
 
-// Fonction pour obtenir la liste des nœuds WireGuard
+// Fonction pour récupérer la liste des nœuds WireGuard
 export const getWireGuardNodes = async () => {
   try {
     // Rafraîchir le token si nécessaire
@@ -484,14 +499,20 @@ export const getWireGuardNodes = async () => {
       throw new Error('Adresse de wallet non disponible dans le token JWT');
     }
     
-    console.log('Récupération des nœuds WireGuard pour le wallet:', walletAddress);
+    // Récupérer l'ID de l'appareil
+    const deviceId = getDeviceId();
+    
+    console.log('Récupération des nœuds WireGuard pour le wallet:', walletAddress, 'et deviceId:', deviceId);
     
     const headers = await getAuthHeaders();
     console.log('Entêtes d\'authentification pour getWireGuardNodes:', headers);
     
     const response = await dhtAxios.get(`${DHT_API_BASE}/wireguard-nodes`, {
       headers,
-      params: { walletAddress }
+      params: { 
+        walletAddress,
+        deviceId
+      }
     });
     
     console.log('Réponse de l\'API pour les nœuds WireGuard:', response.status, response.data);
