@@ -235,6 +235,19 @@ export default function UnifiedDHTView() {
       if (success) {
         // Rafraîchir la liste après publication
         await fetchWireGuardNodes();
+        
+        // Activer WireGuard si ce n'est pas déjà fait
+        if (!myNodeStatus.wireGuardEnabled) {
+          try {
+            await enable();
+            console.log('WireGuard activé après publication réussie');
+          } catch (error) {
+            console.error('Erreur lors de l\'activation de WireGuard après publication:', error);
+          }
+        }
+        
+        // Forcer un rafraîchissement complet des données
+        refreshAllData();
       }
     } catch (error) {
       console.error('Erreur lors de la publication du nœud:', error);
