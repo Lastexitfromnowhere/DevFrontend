@@ -263,14 +263,22 @@ export function useDHTNode() {
         wireGuardEnabled: data.wireGuardEnabled !== undefined ? data.wireGuardEnabled : status.wireGuardEnabled
       };
       
-      // Mettre à jour l'état
-      setStatus(formattedData);
+      console.log('Données formatées avant mise à jour du statut:', formattedData);
       
-      // Mettre à jour le cache
-      localStorage.setItem(cacheKey, JSON.stringify({
-        data: formattedData,
-        timestamp: now
-      }));
+      try {
+        // Mettre à jour l'état
+        setStatus(formattedData);
+        
+        // Mettre à jour le cache
+        localStorage.setItem(cacheKey, JSON.stringify({
+          data: formattedData,
+          timestamp: now
+        }));
+        
+        console.log('Statut DHT et cache mis à jour avec succès');
+      } catch (updateError) {
+        console.error('Erreur lors de la mise à jour du statut ou du cache:', updateError);
+      }
     } catch (err: any) {
       console.error('Failed to check node status:', err);
       setError(err.message || 'Une erreur est survenue');
@@ -557,6 +565,8 @@ export function useDHTNode() {
           },
           { headers }
         );
+        
+        console.log('Réponse de l\'activation WireGuard:', response.data);
         
         if (response.data && (response.data as { success?: boolean }).success) {
           // Récupérer la nouvelle configuration
