@@ -545,8 +545,14 @@ export function useDHTNode() {
       
       try {
         const response = await axios.post(
-          `${config.DHT_API_URL}/dht/wireguard-publish`, 
-          nodeInfo,
+          `${config.DHT_API_URL}/dht/publish-wireguard`, 
+          {
+            ...nodeInfo,
+            publicKey: nodeInfo.publicKey || '',
+            deviceId: await getDeviceId(), // Assurez-vous d'inclure l'ID de l'appareil
+            port: nodeInfo.port || 51820, // Port standard WireGuard
+            lastSeen: new Date().toISOString()
+          },
           { headers }
         );
         
