@@ -257,7 +257,7 @@ export function useDHT() {
   }, [isAuthenticated]);
 
   // Fonction pour récupérer la liste des nœuds WireGuard via DHT
-  const fetchWireGuardNodes = useCallback(async (useDemoNodesAsFallback = true) => {
+  const fetchWireGuardNodes = useCallback(async (useDemoNodesAsFallback = false) => {
     if (!isAuthenticated) {
       console.log('Non authentifié, impossible de récupérer les nœuds WireGuard');
       return [];

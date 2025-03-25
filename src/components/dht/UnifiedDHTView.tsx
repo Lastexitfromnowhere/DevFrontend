@@ -170,7 +170,7 @@ export default function UnifiedDHTView() {
     try {
       await Promise.all([
         fetchNodes(),
-        fetchWireGuardNodes()
+        fetchWireGuardNodes(false)
       ]);
       setLastRefreshed(new Date());
     } catch (error) {
@@ -233,8 +233,8 @@ export default function UnifiedDHTView() {
     try {
       const success = await publishWireGuardNode();
       if (success) {
-        // Rafraîchir la liste après publication
-        await fetchWireGuardNodes();
+        // Rafraîchir la liste après publication sans utiliser les nœuds de démonstration
+        await fetchWireGuardNodes(false);
         
         // Activer WireGuard si ce n'est pas déjà fait
         if (!myNodeStatus.wireGuardEnabled) {
