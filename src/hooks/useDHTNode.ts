@@ -258,7 +258,9 @@ export function useDHTNode() {
       // Convertir isActive en active pour la cohérence
       const formattedData = {
         ...data,
-        active: data.isActive || data.active || false
+        active: data.isActive || data.active || false,
+        // Préserver l'état de WireGuard s'il n'est pas explicitement défini dans la réponse
+        wireGuardEnabled: data.wireGuardEnabled !== undefined ? data.wireGuardEnabled : status.wireGuardEnabled
       };
       
       // Mettre à jour l'état
