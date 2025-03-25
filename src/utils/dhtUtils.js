@@ -584,32 +584,25 @@ export const publishWireGuardNode = async (walletAddress) => {
     // Récupérer l'ID de l'appareil
     const deviceId = getDeviceId();
     
-    // Récupérer la clé publique WireGuard si disponible
-    // Note: Cette partie doit être adaptée selon la façon dont vous stockez la clé publique
-    // Par exemple, vous pourriez la récupérer depuis localStorage ou une API
-    const publicKey = localStorage.getItem('wireguard_public_key') || '';
+    // Récupérer la configuration WireGuard existante
+    const serverPublicKey = localStorage.getItem('wireguard_server_public_key') || '';
+    const serverIp = localStorage.getItem('wireguard_server_ip') || '46.101.36.247'; // IP par défaut du serveur
     
     // Préparer les données complètes pour l'API
     const nodeInfo = {
       walletAddress,
-      deviceId,  // Ajouter l'ID de l'appareil
-      publicKey,
-      // Ajouter d'autres informations si nécessaires
-      ip: localStorage.getItem('wireguard_ip') || '',
+      deviceId,
+      publicKey: serverPublicKey,
+      ip: serverIp,
       port: 51820, // Port standard WireGuard
       lastSeen: new Date().toISOString()
     };
     
     console.log('Publication du nœud WireGuard pour le wallet:', walletAddress, 'et deviceId:', deviceId);
+    console.log('Données envoyées:', JSON.stringify(nodeInfo));
     
     // Appeler l'endpoint avec les données complètes
-    const response = await dhtAxios.post(`${DHT_API_BASE}/publish-wireguard`, {
-      ...nodeInfo,
-      publicKey: nodeInfo.publicKey || '',
-      deviceId,
-      port: nodeInfo.port || 51820,
-      lastSeen: new Date().toISOString()
-    });
+    const response = await dhtAxios.post(`${DHT_API_BASE}/publish-wireguard`, nodeInfo);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la publication du nœud WireGuard:', error);
