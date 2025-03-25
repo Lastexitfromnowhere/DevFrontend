@@ -148,116 +148,63 @@ export function useDHT() {
     }
   }, [isAuthenticated]);
 
-  // Fonction pour générer des nœuds DHT de démonstration
-  const generateDemoDHTNodes = (count: number = 5): DHTNode[] => {
-    console.log(`Génération de ${count} nœuds DHT de démonstration`);
-    const demoNodes: DHTNode[] = [];
-    
-    for (let i = 0; i < count; i++) {
-      const nodeId = `demo-node-${i}-${Math.random().toString(36).substring(2, 8)}`;
-      const walletAddress = `0x${Math.random().toString(36).substring(2, 10)}${Math.random().toString(36).substring(2, 10)}`;
-      const publicKey = `pk-${Math.random().toString(36).substring(2, 15)}`;
-      const ip = `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
-      const port = 4000 + Math.floor(Math.random() * 1000);
-      const multiaddr = `/ip4/${ip}/tcp/${port}/p2p/${nodeId}`;
-      
-      demoNodes.push({
-        nodeId,
-        walletAddress,
-        publicKey,
-        ip,
-        port,
-        multiaddr,
-        isActive: true,
-        isHost: i === 0, // Le premier nœud est l'hôte
-        bandwidth: Math.floor(Math.random() * 500) + 100, // 100-600 Mbps
-        latency: Math.floor(Math.random() * 50) + 5, // 5-55 ms
-        uptime: Math.floor(Math.random() * 86400), // Temps en secondes (jusqu'à 24h)
-        lastSeen: new Date().toISOString(),
-        createdAt: new Date(Date.now() - Math.floor(Math.random() * 30) * 86400000).toISOString() // 0-30 jours
-      });
+  // Fonction pour récupérer la liste des nœuds DHT
+  const fetchNodes = useCallback(async () => {
+    if (!isAuthenticated) {
+      console.log('Non authentifié, impossible de récupérer les nœuds DHT');
+      setNodes([]);
+      return [];
     }
     
-    console.log('Nœuds DHT de démonstration générés:', demoNodes);
-    return demoNodes;
-  };
-
-  // Fonction pour générer des nœuds WireGuard de démonstration
-  const generateDemoWireGuardNodes = (count: number = 3): WireGuardNode[] => {
-    console.log(`Génération de ${count} nœuds WireGuard de démonstration`);
-    
-    return Array.from({ length: count }, (_, index) => {
-      const id = `demo-wireguard-${index + 1}`;
-      const randomWallet = `${Math.random().toString(36).substring(2, 10)}...${Math.random().toString(36).substring(2, 10)}`;
-      
-      return {
-        id,
-        walletAddress: randomWallet,
-        publicKey: `${Math.random().toString(36).substring(2, 15)}${Math.random().toString(36).substring(2, 15)}=`,
-        ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-        port: 51820 + Math.floor(Math.random() * 10),
-        lastSeen: new Date().toISOString(),
-        isActive: true
-      };
-    });
-  };
-
-  // Fonction pour récupérer la liste des nœuds DHT
-  const fetchNodes = useCallback(async (useDemoNodesAsFallback = true) => {
-    if (!isAuthenticated) return;
-
     setLoading(true);
-    setError(null);
-
+    
     try {
+      console.log('Récupération des nœuds DHT...');
       const data = await dhtUtils.getDHTNodes();
       
       if (data.success === false && data.error) {
         throw new Error(data.error);
       }
       
-      // Vérifier si des nœuds sont disponibles
-      if (!data.nodes || !Array.isArray(data.nodes) || data.nodes.length === 0) {
-        console.log('Aucun nœud DHT trouvé dans la réponse API');
-        
-        // Ne générer des nœuds de démonstration que si l'option est activée
-        if (useDemoNodesAsFallback) {
-          console.log('Génération de nœuds de démonstration comme solution de repli');
-          const demoNodes = generateDemoDHTNodes(5);
-          setNodes(demoNodes);
-          return demoNodes;
-        } else {
-          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
-          setNodes([]);
-          return [];
-        }
-      }
+      // Validation des données reçues
+      const sanitizedNodes = Array.isArray(data.nodes) 
+        ? data.nodes.map((node: any) => ({
+            nodeId: node?.nodeId || '',
+            walletAddress: node?.walletAddress || '',
+            publicKey: node?.publicKey || '',
+            ip: node?.ip || '',
+            port: typeof node?.port === 'number' ? node.port : 0,
+            multiaddr: node?.multiaddr || '',
+            isActive: node?.isActive || false,
+            isHost: node?.isHost || false,
+            bandwidth: typeof node?.bandwidth === 'number' ? node.bandwidth : 0,
+            latency: typeof node?.latency === 'number' ? node.latency : 0,
+            uptime: typeof node?.uptime === 'number' ? node.uptime : 0,
+            lastSeen: node?.lastSeen || new Date().toISOString(),
+            createdAt: node?.createdAt || new Date().toISOString()
+          }))
+        : [];
       
-      console.log('Nœuds DHT réels récupérés depuis l\'API:', data.nodes);
-      setNodes(data.nodes);
-      return data.nodes;
-    } catch (err) {
-      console.error('Erreur lors de la récupération des nœuds DHT:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
-      
-      // En cas d'erreur, générer des nœuds de démonstration uniquement si l'option est activée
-      if (useDemoNodesAsFallback) {
-        console.log('Génération de nœuds de démonstration suite à une erreur');
-        const demoNodes = generateDemoDHTNodes(5);
-        setNodes(demoNodes);
-        return demoNodes;
-      } else {
-        console.log('Aucun nœud de démonstration généré malgré l\'erreur car l\'option est désactivée');
+      if (sanitizedNodes.length === 0) {
+        console.log('Aucun nœud DHT disponible');
         setNodes([]);
         return [];
       }
+      
+      console.log(`${sanitizedNodes.length} nœuds DHT récupérés`);
+      setNodes(sanitizedNodes);
+      return sanitizedNodes;
+    } catch (err) {
+      console.error('Erreur lors de la récupération des nœuds DHT:', err);
+      setNodes([]);
+      return [];
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated]);
 
   // Fonction pour récupérer la liste des nœuds WireGuard via DHT
-  const fetchWireGuardNodes = useCallback(async (useDemoNodesAsFallback = false) => {
+  const fetchWireGuardNodes = useCallback(async () => {
     if (!isAuthenticated) {
       console.log('Non authentifié, impossible de récupérer les nœuds WireGuard');
       return [];
@@ -286,20 +233,10 @@ export function useDHT() {
           }))
         : [];
       
-      // Si aucun nœud n'est disponible, utiliser des nœuds de démonstration uniquement si l'option est activée
       if (sanitizedNodes.length === 0) {
         console.log('Aucun nœud WireGuard disponible');
-        
-        if (useDemoNodesAsFallback) {
-          console.log('Utilisation des nœuds WireGuard de démonstration comme solution de repli');
-          const demoNodes = generateDemoWireGuardNodes(3);
-          setWireGuardNodes(demoNodes);
-          return demoNodes;
-        } else {
-          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
-          setWireGuardNodes([]);
-          return [];
-        }
+        setWireGuardNodes([]);
+        return [];
       }
       
       console.log(`${sanitizedNodes.length} nœuds WireGuard récupérés`);
@@ -307,18 +244,8 @@ export function useDHT() {
       return sanitizedNodes;
     } catch (err) {
       console.error('Erreur lors de la récupération des nœuds WireGuard:', err);
-      
-      // En cas d'erreur, utiliser des nœuds de démonstration uniquement si l'option est activée
-      if (useDemoNodesAsFallback) {
-        console.log('Utilisation des nœuds WireGuard de démonstration suite à une erreur');
-        const demoNodes = generateDemoWireGuardNodes(3);
-        setWireGuardNodes(demoNodes);
-        return demoNodes;
-      } else {
-        console.log('Aucun nœud de démonstration généré malgré l\'erreur car l\'option est désactivée');
-        setWireGuardNodes([]);
-        return [];
-      }
+      setWireGuardNodes([]);
+      return [];
     } finally {
       setIsLoadingWireGuard(false);
     }

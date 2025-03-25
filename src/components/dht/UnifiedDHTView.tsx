@@ -146,7 +146,6 @@ export default function UnifiedDHTView() {
   const [activeTab, setActiveTab] = useState<string>("my-node");
   const [publishingNode, setPublishingNode] = useState<boolean>(false);
   const [connectingToNode, setConnectingToNode] = useState<string | null>(null);
-  const [showDemoNodes, setShowDemoNodes] = useState<boolean>(false);
   
   // Rafraîchir les nœuds périodiquement
   useEffect(() => {
@@ -170,7 +169,7 @@ export default function UnifiedDHTView() {
     try {
       await Promise.all([
         fetchNodes(),
-        fetchWireGuardNodes(false)
+        fetchWireGuardNodes()
       ]);
       setLastRefreshed(new Date());
     } catch (error) {
@@ -234,7 +233,7 @@ export default function UnifiedDHTView() {
       const success = await publishWireGuardNode();
       if (success) {
         // Rafraîchir la liste après publication sans utiliser les nœuds de démonstration
-        await fetchWireGuardNodes(false);
+        await fetchWireGuardNodes();
         
         // Activer WireGuard si ce n'est pas déjà fait
         if (!myNodeStatus.wireGuardEnabled) {
@@ -256,59 +255,9 @@ export default function UnifiedDHTView() {
     }
   };
 
-  // Générer des nœuds de démonstration si nécessaire
-  const getDemoNodes = (count: number = 5): DHTNode[] => {
-    const demoNodes: DHTNode[] = [];
-    
-    for (let i = 0; i < count; i++) {
-      const nodeId = `demo-node-${i}-${Math.random().toString(36).substring(2, 8)}`;
-      
-      demoNodes.push({
-        nodeId: nodeId,
-        walletAddress: `0x${Math.random().toString(36).substring(2, 10)}`,
-        publicKey: `key-${Math.random().toString(36).substring(2, 10)}`,
-        ip: `192.168.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-        port: 4001 + i,
-        multiaddr: `/ip4/192.168.1.${i}/tcp/${4001 + i}/p2p/${nodeId}`,
-        isActive: Math.random() > 0.3,
-        isHost: Math.random() > 0.5,
-        bandwidth: Math.floor(Math.random() * 100) + 10,
-        latency: Math.floor(Math.random() * 200) + 5,
-        uptime: Math.floor(Math.random() * 86400),
-        lastSeen: new Date(Date.now() - Math.floor(Math.random() * 3600000)).toISOString(),
-        createdAt: new Date(Date.now() - Math.floor(Math.random() * 86400000)).toISOString()
-      });
-    }
-    
-    return demoNodes;
-  };
-
-  // Générer des nœuds WireGuard de démonstration
-  const getDemoWireGuardNodes = (count: number = 3): WireGuardNode[] => {
-    const demoNodes: WireGuardNode[] = [];
-    
-    for (let i = 0; i < count; i++) {
-      demoNodes.push({
-        walletAddress: `0x${Math.random().toString(36).substring(2, 10)}`,
-        publicKey: `wg-${Math.random().toString(36).substring(2, 10)}`,
-        ip: `10.8.0.${i + 2}`,
-        port: 51820,
-        lastSeen: new Date(Date.now() - Math.floor(Math.random() * 3600000)).toISOString(),
-        isActive: Math.random() > 0.3
-      });
-    }
-    
-    return demoNodes;
-  };
-
-  // Combiner les nœuds réels avec les nœuds de démonstration si nécessaire
-  const displayedNodes = showDemoNodes && nodes.length === 0 
-    ? getDemoNodes() 
-    : nodes;
-    
-  const displayedWireGuardNodes = showDemoNodes && wireGuardNodes.length === 0 
-    ? getDemoWireGuardNodes() 
-    : wireGuardNodes;
+  // Utiliser uniquement les nœuds réels
+  const displayedNodes = nodes;
+  const displayedWireGuardNodes = wireGuardNodes;
 
   if (!isAuthenticated) {
     return (
@@ -505,14 +454,6 @@ export default function UnifiedDHTView() {
                 <div className="text-center py-8">
                   <Network className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-gray-300">Aucun nœud DHT trouvé sur le réseau</p>
-                  <div className="mt-4">
-                    <DashboardButton
-                      variant="secondary"
-                      onClick={() => setShowDemoNodes(!showDemoNodes)}
-                    >
-                      {showDemoNodes ? 'Masquer les nœuds de démo' : 'Afficher des nœuds de démo'}
-                    </DashboardButton>
-                  </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -560,13 +501,6 @@ export default function UnifiedDHTView() {
                   </Table>
                 </div>
               )}
-              
-              {showDemoNodes && displayedNodes.length > 0 && (
-                <div className="mt-2 text-xs text-amber-400 flex items-center">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Certains nœuds affichés sont des exemples de démonstration
-                </div>
-              )}
             </div>
           </SimpleTabsContent>
           
@@ -600,14 +534,6 @@ export default function UnifiedDHTView() {
                 <div className="text-center py-8">
                   <Shield className="h-12 w-12 mx-auto text-gray-400 mb-4" />
                   <p className="text-gray-300">Aucun nœud WireGuard trouvé sur le réseau</p>
-                  <div className="mt-4">
-                    <DashboardButton
-                      variant="secondary"
-                      onClick={() => setShowDemoNodes(!showDemoNodes)}
-                    >
-                      {showDemoNodes ? 'Masquer les nœuds de démo' : 'Afficher des nœuds de démo'}
-                    </DashboardButton>
-                  </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -661,13 +587,6 @@ export default function UnifiedDHTView() {
                       })}
                     </TableBody>
                   </Table>
-                </div>
-              )}
-              
-              {showDemoNodes && displayedWireGuardNodes.length > 0 && (
-                <div className="mt-2 text-xs text-amber-400 flex items-center">
-                  <AlertTriangle className="h-3 w-3 mr-1" />
-                  Certains nœuds affichés sont des exemples de démonstration
                 </div>
               )}
             </div>
