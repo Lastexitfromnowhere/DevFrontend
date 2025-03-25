@@ -545,7 +545,7 @@ export function useDHTNode() {
       
       try {
         const response = await axios.post(
-          `${config.DHT_API_URL}/dht/publish-wireguard`, 
+          `${config.DHT_API_URL}/dht/wireguard-publish`, 
           nodeInfo,
           { headers }
         );

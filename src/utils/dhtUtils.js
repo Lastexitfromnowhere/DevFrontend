@@ -603,7 +603,7 @@ export const publishWireGuardNode = async (walletAddress) => {
     console.log('Publication du nœud WireGuard pour le wallet:', walletAddress, 'et deviceId:', deviceId);
     
     // Appeler l'endpoint avec les données complètes
-    const response = await dhtAxios.post(`${DHT_API_BASE}/publish-wireguard`, nodeInfo);
+    const response = await dhtAxios.post(`${DHT_API_BASE}/wireguard-publish`, nodeInfo);
     return response.data;
   } catch (error) {
     console.error('Erreur lors de la publication du nœud WireGuard:', error);
