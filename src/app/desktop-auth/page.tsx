@@ -6,6 +6,13 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import axios from 'axios';
 
+// Interface pour la réponse de l'API
+interface AuthResponse {
+  success: boolean;
+  message?: string;
+  token?: string;
+}
+
 /**
  * Page d'authentification pour les sessions desktop
  * Cette page est affichée lorsqu'un utilisateur scanne un QR code depuis l'application desktop
@@ -41,7 +48,7 @@ export default function DesktopAuthPage() {
           setMessage('Authentification en cours...');
           
           // Envoyer l'adresse du portefeuille au backend pour authentifier la session desktop
-          const response = await axios.post(
+          const response = await axios.post<AuthResponse>(
             `${process.env.NEXT_PUBLIC_API_URL}/auth/authenticate-desktop-session`,
             {
               deviceId,
