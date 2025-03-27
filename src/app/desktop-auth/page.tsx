@@ -21,12 +21,14 @@ export default function DesktopAuthPage() {
   
   // Récupérer le deviceId depuis l'URL
   useEffect(() => {
-    const id = searchParams.get('deviceId');
-    if (id) {
-      setDeviceId(id);
-      setMessage(`Session desktop détectée (ID: ${id}). Connectez votre portefeuille pour vous authentifier.`);
-    } else {
-      setMessage('Aucun ID de session trouvé dans l\'URL. Veuillez scanner à nouveau le QR code.');
+    if (searchParams) {
+      const id = searchParams.get('deviceId');
+      if (id) {
+        setDeviceId(id);
+        setMessage(`Session desktop détectée (ID: ${id}). Connectez votre portefeuille pour vous authentifier.`);
+      } else {
+        setMessage('Aucun ID de session trouvé dans l\'URL. Veuillez scanner à nouveau le QR code.');
+      }
     }
   }, [searchParams]);
   
