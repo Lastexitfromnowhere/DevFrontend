@@ -149,7 +149,7 @@ export function useDHT() {
   }, [isAuthenticated]);
 
   // Fonction pour récupérer la liste des nœuds DHT
-  const fetchNodes = useCallback(async () => {
+  const fetchNodes = useCallback(async (useDemoNodes: boolean = true) => {
     if (!isAuthenticated) {
       console.log('Non authentifié, impossible de récupérer les nœuds DHT');
       setNodes([]);
@@ -159,8 +159,8 @@ export function useDHT() {
     setLoading(true);
     
     try {
-      console.log('Récupération des nœuds DHT...');
-      const data = await dhtUtils.getDHTNodes();
+      console.log('Récupération des nœuds DHT...', useDemoNodes ? 'avec nœuds de démo si nécessaire' : 'sans nœuds de démo');
+      const data = await dhtUtils.getDHTNodes(useDemoNodes);
       
       if (data.success === false && data.error) {
         throw new Error(data.error);

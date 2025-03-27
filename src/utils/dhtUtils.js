@@ -417,7 +417,7 @@ export const getDHTStatusByWallet = async (walletAddress, deviceIdParam) => {
 };
 
 // Fonction pour obtenir la liste des nœuds DHT
-export const getDHTNodes = async () => {
+export const getDHTNodes = async (useDemoNodes = true) => {
   try {
     const walletAddress = authService.getWalletAddress();
     if (!walletAddress) {
@@ -448,7 +448,8 @@ export const getDHTNodes = async () => {
         headers,
         params: { 
           walletAddress,
-          deviceId
+          deviceId,
+          useDemoNodes // Ajouter le paramètre useDemoNodes
         }
       });
       
@@ -475,7 +476,8 @@ export const getDHTNodes = async () => {
         headers,
         params: { 
           walletAddress,
-          deviceId
+          deviceId,
+          useDemoNodes // Ajouter le paramètre useDemoNodes
         }
       });
       
