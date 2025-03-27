@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -13,11 +13,8 @@ interface AuthResponse {
   token?: string;
 }
 
-/**
- * Page d'authentification pour les sessions desktop
- * Cette page est affichée lorsqu'un utilisateur scanne un QR code depuis l'application desktop
- */
-export default function DesktopAuthPage() {
+// Composant qui utilise useSearchParams
+function AuthContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { connected, publicKey } = useWallet();
@@ -111,5 +108,26 @@ export default function DesktopAuthPage() {
         )}
       </div>
     </div>
+  );
+}
+
+/**
+ * Page d'authentification pour les sessions desktop
+ * Cette page est affichée lorsqu'un utilisateur scanne un QR code depuis l'application desktop
+ */
+export default function DesktopAuthPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-b from-gray-900 to-black text-white">
+        <div className="max-w-md w-full bg-gray-800 p-8 rounded-lg shadow-lg">
+          <h1 className="text-2xl font-bold mb-6 text-center">Authentification Desktop</h1>
+          <div className="mb-6 text-center">
+            <p className="mb-4">Chargement...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <AuthContent />
+    </Suspense>
   );
 }
