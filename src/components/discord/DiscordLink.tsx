@@ -36,6 +36,19 @@ export default function DiscordLink() {
     registrationOrder: null
   });
 
+  // Fonction pour vérifier si le serveur Discord est accessible
+  const checkDiscordServer = async () => {
+    try {
+      // Essayer d'accéder à la route de diagnostic sans authentification
+      const response = await axios.get(`${config.API_BASE_URL}/api/discord-debug`);
+      console.log('Discord server check response:', response);
+      return response.data.success;
+    } catch (error) {
+      console.error('Error checking Discord server:', error);
+      return false;
+    }
+  };
+
   // Fonction pour récupérer le statut de liaison Discord
   const fetchDiscordStatus = async () => {
     if (!isConnected || !account) {
@@ -45,11 +58,25 @@ export default function DiscordLink() {
 
     setIsLoading(true);
     try {
+      // Vérifier d'abord si le serveur Discord est accessible
+      const isServerAccessible = await checkDiscordServer();
+      if (!isServerAccessible) {
+        throw new Error('Le serveur Discord n\'est pas accessible');
+      }
+      
       // Vérifier que le token est valide et le rafraîchir si nécessaire
       await authService.refreshTokenIfNeeded();
       
       // Obtenir les en-têtes d'authentification
       const headers = await authService.getAuthHeaders();
+      
+      try {
+        // Essayer d'abord la route de diagnostic sans authentification
+        const debugResponse = await axios.get(`${DISCORD_API_BASE}/link-debug`);
+        console.log('Discord debug response:', debugResponse);
+      } catch (debugError) {
+        console.warn('Debug route not accessible:', debugError);
+      }
       
       const response = await axios.get(`${DISCORD_API_BASE}/link`, {
         headers
