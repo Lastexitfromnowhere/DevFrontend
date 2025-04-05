@@ -10,7 +10,7 @@ import { DashboardBadge } from '../ui/DashboardBadge';
 import { MessageCircle, Award, Bell, BellOff, ExternalLink } from 'lucide-react';
 
 // URL de base pour les requêtes Discord
-const DISCORD_API_BASE = `${config.API_BASE_URL}/api/discord`;
+const DISCORD_API_BASE = `${config.API_BASE_URL}/discord`;
 
 interface DiscordLinkState {
   linked: boolean;
