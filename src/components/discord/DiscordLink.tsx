@@ -1,0 +1,250 @@
+import React, { useState, useEffect } from 'react';
+import { useWalletContext } from '@/contexts/WalletContext';
+import { config } from '@/config/env';
+import axios from 'axios';
+import { authService } from '@/services/authService';
+import { Spinner } from '../ui/Spinner';
+import { Card } from '../ui/Card';
+import { DashboardButton } from '../ui/DashboardButton';
+import { DashboardBadge } from '../ui/DashboardBadge';
+import { MessageCircle, Award, Bell, BellOff, ExternalLink } from 'lucide-react';
+
+// URL de base pour les requêtes Discord
+const DISCORD_API_BASE = `${config.API_BASE_URL}/api/discord`;
+
+interface DiscordLinkState {
+  linked: boolean;
+  discordUsername: string | null;
+  discordAvatar: string | null;
+  discordId: string | null;
+  notifyDailyClaims: boolean;
+  isEarlyContributor: boolean;
+  registrationOrder: number | null;
+}
+
+export default function DiscordLink() {
+  const { isConnected, account } = useWalletContext();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [discordState, setDiscordState] = useState<DiscordLinkState>({
+    linked: false,
+    discordUsername: null,
+    discordAvatar: null,
+    discordId: null,
+    notifyDailyClaims: true,
+    isEarlyContributor: false,
+    registrationOrder: null
+  });
+
+  // Fonction pour récupérer le statut de liaison Discord
+  const fetchDiscordStatus = async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Vérifier que le token est valide et le rafraîchir si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Obtenir les en-têtes d'authentification
+      const headers = await authService.getAuthHeaders();
+      
+      const response = await axios.get(`${DISCORD_API_BASE}/status`, {
+        headers
+      });
+      
+      console.log('Discord status response:', response);
+      
+      const responseData = response.data as any;
+      
+      if (responseData.success) {
+        setDiscordState({
+          linked: responseData.linked || false,
+          discordUsername: responseData.discordUser?.discordUsername || null,
+          discordAvatar: responseData.discordUser?.discordAvatar || null,
+          discordId: responseData.discordUser?.discordId || null,
+          notifyDailyClaims: responseData.discordUser?.notifyDailyClaims || true,
+          isEarlyContributor: responseData.discordUser?.isEarlyContributor || false,
+          registrationOrder: responseData.discordUser?.registrationOrder || null
+        });
+      } else {
+        setError(responseData.message || 'Failed to fetch Discord status');
+      }
+    } catch (error: any) {
+      console.error('Error fetching Discord status:', error);
+      setError(error.message || 'Failed to fetch Discord status');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction pour activer/désactiver les notifications de daily claims
+  const toggleNotifications = async () => {
+    if (!isConnected || !account || !discordState.linked) {
+      setError('Wallet not connected or Discord not linked');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Vérifier que le token est valide et le rafraîchir si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Obtenir les en-têtes d'authentification
+      const headers = await authService.getAuthHeaders();
+      
+      const response = await axios.post(`${DISCORD_API_BASE}/notifications/daily-claims`, {
+        enabled: !discordState.notifyDailyClaims
+      }, {
+        headers
+      });
+      
+      console.log('Toggle notifications response:', response);
+      
+      const responseData = response.data as any;
+      
+      if (responseData.success) {
+        setDiscordState({
+          ...discordState,
+          notifyDailyClaims: !discordState.notifyDailyClaims
+        });
+      } else {
+        setError(responseData.message || 'Failed to update notification preferences');
+      }
+    } catch (error: any) {
+      console.error('Error updating notification preferences:', error);
+      setError(error.message || 'Failed to update notification preferences');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction pour rediriger vers l'authentification Discord
+  const handleDiscordLink = () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return;
+    }
+
+    // Construire l'URL de redirection avec l'adresse du wallet
+    const redirectUrl = `${DISCORD_API_BASE}/login?walletAddress=${account}`;
+    
+    // Rediriger vers l'URL d'authentification Discord
+    window.location.href = redirectUrl;
+  };
+
+  // Récupérer le statut Discord au chargement du composant
+  useEffect(() => {
+    if (isConnected && account) {
+      fetchDiscordStatus();
+    }
+  }, [isConnected, account]);
+
+  if (!isConnected) {
+    return (
+      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg text-center">
+        <p className="text-gray-400">Veuillez connecter votre portefeuille pour lier votre compte Discord</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 space-y-6">
+      {/* En-tête avec titre */}
+      <div className="flex justify-between items-center">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 rounded-full bg-indigo-500/20 backdrop-blur-sm">
+            <MessageCircle className="w-5 h-5 text-indigo-400" />
+          </div>
+          <h3 className="text-xl font-semibold text-white">Intégration Discord</h3>
+        </div>
+        {error && (
+          <DashboardBadge color="red">
+            <span className="text-xs">{error}</span>
+          </DashboardBadge>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center items-center py-8">
+          <Spinner />
+        </div>
+      ) : discordState.linked ? (
+        <div className="space-y-4">
+          {/* Informations du compte Discord lié */}
+          <div className="flex items-center space-x-4">
+            {discordState.discordAvatar ? (
+              <img 
+                src={`https://cdn.discordapp.com/avatars/${discordState.discordId}/${discordState.discordAvatar}.png`} 
+                alt="Avatar Discord" 
+                className="w-12 h-12 rounded-full border-2 border-indigo-500"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-full bg-indigo-500/30 flex items-center justify-center">
+                <MessageCircle className="w-6 h-6 text-indigo-300" />
+              </div>
+            )}
+            <div>
+              <p className="text-white font-medium">{discordState.discordUsername}</p>
+              <p className="text-gray-400 text-sm">Compte Discord lié</p>
+            </div>
+          </div>
+
+          {/* Badge Early Contributor si applicable */}
+          {discordState.isEarlyContributor && (
+            <div className="flex items-center space-x-2 bg-gradient-to-r from-yellow-500/20 to-amber-500/20 p-3 rounded-lg">
+              <Award className="w-5 h-5 text-yellow-400" />
+              <div>
+                <p className="text-white font-medium">Early Contributor</p>
+                <p className="text-gray-400 text-xs">Vous faites partie des 5000 premiers contributeurs !</p>
+              </div>
+            </div>
+          )}
+
+          {/* Préférences de notification */}
+          <div className="mt-4 pt-4 border-t border-gray-700/50">
+            <div className="flex justify-between items-center">
+              <div className="flex items-center space-x-2">
+                {discordState.notifyDailyClaims ? (
+                  <Bell className="w-5 h-5 text-green-400" />
+                ) : (
+                  <BellOff className="w-5 h-5 text-gray-400" />
+                )}
+                <p className="text-white">Notifications de daily claims</p>
+              </div>
+              <DashboardButton
+                onClick={toggleNotifications}
+                color={discordState.notifyDailyClaims ? "green" : "gray"}
+                size="sm"
+              >
+                {discordState.notifyDailyClaims ? "Activées" : "Désactivées"}
+              </DashboardButton>
+            </div>
+            <p className="text-gray-400 text-xs mt-1">
+              {discordState.notifyDailyClaims 
+                ? "Vous recevrez des messages privés sur Discord lorsque vos récompenses quotidiennes seront disponibles." 
+                : "Vous ne recevrez pas de notifications pour vos récompenses quotidiennes."}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4 py-4">
+          <p className="text-gray-300">
+            Liez votre compte Discord pour recevoir des notifications de daily claims et obtenir le rôle "Early Contributor" si vous êtes parmi les 5000 premiers utilisateurs.
+          </p>
+          <DashboardButton
+            onClick={handleDiscordLink}
+            color="indigo"
+            className="w-full flex items-center justify-center space-x-2"
+          >
+            <MessageCircle className="w-5 h-5" />
+            <span>Lier mon compte Discord</span>
+            <ExternalLink className="w-4 h-4 ml-1" />
+          </DashboardButton>
+        </div>
+      )}
+    </Card>
+  );
+}

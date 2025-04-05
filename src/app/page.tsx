@@ -19,6 +19,7 @@ import { DailyRewards } from '@/components/rewards/DailyRewards';
 import RSSFeed from '@/components/RSSFeed';
 import UnifiedDHTView from '@/components/dht/UnifiedDHTView';
 import RewardsMechanism from '@/components/ecosystem/RewardsMechanism';
+import DiscordLink from '@/components/discord/DiscordLink';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
@@ -81,6 +82,7 @@ export default function Dashboard() {
               <div className="space-y-6">
                 <WalletStatus />
                 {isConnected && <DailyRewards />}
+                {isConnected && <DiscordLink />}
                 {isConnected && <NodeStatusSummary />}
               </div>
             </div>
