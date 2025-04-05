@@ -289,9 +289,14 @@ export default function DiscordLink() {
                 <MessageCircle className="w-6 h-6 text-indigo-300" />
               </div>
             )}
-            <div>
-              <p className="text-white font-medium">{discordState.discordUsername}</p>
-              <p className="text-gray-400 text-sm">Compte Discord lié</p>
+            <div className="flex-grow">
+              <div className="flex items-center justify-between">
+                <p className="text-white font-medium">{discordState.discordUsername}</p>
+                <DashboardBadge variant="success" className="ml-2">
+                  <span className="text-xs font-medium">PAIRED</span>
+                </DashboardBadge>
+              </div>
+              <p className="text-gray-400 text-sm">Compte Discord associé à votre wallet</p>
             </div>
           </div>
 
@@ -355,6 +360,12 @@ export default function DiscordLink() {
         </div>
       ) : (
         <div className="space-y-4 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="text-white font-medium">Statut de liaison</h4>
+            <DashboardBadge variant="danger" className="ml-2">
+              <span className="text-xs font-medium">NOT PAIRED</span>
+            </DashboardBadge>
+          </div>
           <p className="text-gray-300">
             Liez votre compte Discord pour recevoir des notifications de daily claims et obtenir le rôle "Early Contributor" si vous êtes parmi les 5000 premiers utilisateurs.
           </p>
