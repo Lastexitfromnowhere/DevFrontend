@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { DashboardButton } from '@/components/ui/DashboardButton';
@@ -13,7 +13,32 @@ import { authService } from '@/services/authService';
 // URL de base pour les requêtes Discord
 const DISCORD_API_BASE = `${config.API_BASE_URL}/api/discord`;
 
-export default function DiscordCallback() {
+// Composant principal avec Suspense
+export default function DiscordCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingState />}>
+      <DiscordCallbackContent />
+    </Suspense>
+  );
+}
+
+// Composant de chargement
+function LoadingState() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-black to-gray-900 p-4">
+      <Card className="w-full max-w-md p-6 text-center">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <Spinner size="lg" />
+          <h2 className="text-xl font-semibold text-white">Chargement...</h2>
+          <p className="text-gray-400">Vérification de la liaison Discord en cours</p>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+// Composant client avec la logique
+function DiscordCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
