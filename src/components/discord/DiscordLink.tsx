@@ -223,17 +223,35 @@ export default function DiscordLink() {
     }
   };
 
-  // Récupérer le statut Discord au chargement du composant
+  // Vérifier si le compte est lié lors du chargement du composant
   useEffect(() => {
     if (isConnected && account) {
-      // Vérifier si on vient d'être redirigé depuis Discord
-      const urlParams = new URLSearchParams(window.location.search);
-      const discordLinked = urlParams.get('discordLinked');
+      fetchDiscordStatus();
+    }
+    
+    // Vérifier si nous revenons d'une redirection Discord
+    const urlParams = new URLSearchParams(window.location.search);
+    const discordLinked = urlParams.get('discordLinked');
+    const discordUsername = urlParams.get('username');
+    
+    if (discordLinked === 'true') {
+      console.log('Détection de retour de liaison Discord avec succès!');
       
-      if (discordLinked === 'true') {
-        // Nettoyer l'URL
-        const newUrl = window.location.pathname;
-        window.history.replaceState({}, document.title, newUrl);
+      // Mettre à jour l'état local immédiatement
+      if (discordUsername) {
+        setDiscordState(prev => ({
+          ...prev,
+          linked: true,
+          discordUsername: discordUsername
+        }));
+        
+        // Nettoyer l'URL pour éviter de retraiter les paramètres lors d'un rafraîchissement
+        const cleanUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+        
+        // Afficher un message de succès temporaire
+        setError(null);
+        alert(`Compte Discord ${discordUsername} lié avec succès!`);
         
         // Mettre à jour le statut immédiatement
         console.log('Redirection depuis Discord détectée, mise à jour du statut...');
