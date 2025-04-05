@@ -161,7 +161,7 @@ export default function DiscordLink() {
           <h3 className="text-xl font-semibold text-white">Intégration Discord</h3>
         </div>
         {error && (
-          <DashboardBadge color="red">
+          <DashboardBadge variant="danger">
             <span className="text-xs">{error}</span>
           </DashboardBadge>
         )}
@@ -216,7 +216,7 @@ export default function DiscordLink() {
               </div>
               <DashboardButton
                 onClick={toggleNotifications}
-                color={discordState.notifyDailyClaims ? "green" : "gray"}
+                variant={discordState.notifyDailyClaims ? "success" : "secondary"}
                 size="sm"
               >
                 {discordState.notifyDailyClaims ? "Activées" : "Désactivées"}
@@ -236,7 +236,7 @@ export default function DiscordLink() {
           </p>
           <DashboardButton
             onClick={handleDiscordLink}
-            color="indigo"
+            variant="primary"
             className="w-full flex items-center justify-center space-x-2"
           >
             <MessageCircle className="w-5 h-5" />
