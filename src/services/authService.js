@@ -205,8 +205,22 @@ export const getWalletAddressFromToken = () => {
 // Fonction pour générer un token avec une adresse de wallet
 export const generateToken = async (walletAddress) => {
   try {
+    console.log('🔍 Tentative de génération de token pour:', walletAddress);
+    
+    if (!walletAddress) {
+      console.error('❌ Erreur: Adresse de wallet non fournie pour la génération du token');
+      throw new Error('Adresse de wallet requise');
+    }
+    
     const response = await axios.post(`${API_URL}/auth/token`, {
       walletAddress
+    });
+    
+    console.log('📝 Réponse du serveur pour la génération de token:', {
+      status: response.status,
+      success: response.data?.success,
+      hasToken: !!response.data?.token,
+      expiresAt: response.data?.expiresAt
     });
     
     if (response.data.success && response.data.token) {
@@ -216,9 +230,15 @@ export const generateToken = async (walletAddress) => {
       };
     }
     
-    throw new Error('Échec de génération du token');
+    console.error('❌ Échec de génération du token:', response.data);
+    throw new Error(response.data.message || 'Échec de génération du token');
   } catch (error) {
-    console.error('Erreur lors de la génération du token:', error);
+    console.error('❌ Erreur lors de la génération du token:', error);
+    console.error('Détails:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status
+    });
     throw error;
   }
 };
@@ -232,20 +252,56 @@ export const saveToken = (token, expiresAt, walletAddress) => {
 
 // Fonction pour rafraîchir le token si nécessaire
 export const refreshTokenIfNeeded = async () => {
-  if (isTokenExpired()) {
+  console.log('🔄 Vérification de la nécessité de rafraîchir le token...');
+  
+  // Vérifier si le token est expiré
+  const isExpired = isTokenExpired();
+  console.log('📝 Token expiré?', isExpired ? 'Oui' : 'Non');
+  
+  if (isExpired) {
+    console.log('🔄 Token expiré, tentative de rafraîchissement...');
     const walletAddress = getWalletAddress();
+    console.log('📝 Adresse du wallet récupérée:', walletAddress || 'Non disponible');
+    
     if (walletAddress) {
       try {
+        console.log('🔄 Génération d\'un nouveau token pour', walletAddress);
         const { token, expiresAt } = await generateToken(walletAddress);
+        
+        if (!token) {
+          console.error('❌ Erreur: Token non généré');
+          return false;
+        }
+        
+        console.log('✅ Nouveau token généré, sauvegarde en cours...');
         saveToken(token, expiresAt, walletAddress);
+        console.log('✅ Token rafraîcht avec succès!');
         return true;
       } catch (error) {
-        console.error('Erreur lors du rafraîchissement du token:', error);
+        console.error('❌ Erreur lors du rafraîchissement du token:', error);
+        console.error('Détails:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status
+        });
+        
+        // Si l'erreur est due à une authentification invalide, nettoyer le localStorage
+        if (error.response?.status === 401) {
+          console.warn('⚠️ Erreur d\'authentification 401, nettoyage du localStorage...');
+          localStorage.removeItem(TOKEN_KEY);
+          localStorage.removeItem(WALLET_ADDRESS_KEY);
+          localStorage.removeItem(TOKEN_EXPIRY_KEY);
+        }
+        
         return false;
       }
+    } else {
+      console.error('❌ Impossible de rafraîchir le token: adresse de wallet non disponible');
+      return false;
     }
-    return false;
   }
+  
+  console.log('✅ Token valide, pas besoin de rafraîchissement');
   return true;
 };
 

@@ -83,21 +83,50 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
       if (connected && publicKey) {
         const walletAddress = publicKey.toBase58();
         try {
-          console.log('Generating token for wallet:', walletAddress);
+          console.log('🔑 Tentative de génération de token pour le wallet:', walletAddress);
+          
+          // Vérifier si le wallet a des comptes
+          if (!publicKey) {
+            console.error('⚠️ ERREUR: Pas de clé publique disponible dans le wallet');
+            return;
+          }
+          
           const storedAddress = authService.getWalletAddress();
+          console.log('📝 Adresse stockée précédemment:', storedAddress);
+          console.log('📝 Token expiré?', authService.isTokenExpired() ? 'Oui' : 'Non');
           
           // Vérifier si nous avons déjà un token valide pour cette adresse
           if (storedAddress !== walletAddress || authService.isTokenExpired()) {
+            console.log('🔄 Génération d\'un nouveau token...');
             // Générer un nouveau token pour cette adresse
             const { token, expiresAt } = await authService.generateToken(walletAddress);
             authService.saveToken(token, expiresAt, walletAddress);
-            console.log('New token generated and saved');
+            console.log('✅ Nouveau token généré et enregistré');
+            console.log('📝 Détails du token:', {
+              tokenLength: token ? token.length : 0,
+              expiresAt: expiresAt ? new Date(expiresAt).toLocaleString() : 'Non spécifié'
+            });
           } else {
-            console.log('Using existing valid token');
+            console.log('✅ Utilisation du token existant valide');
+            // Vérifier que le token est bien présent
+            const currentToken = authService.getToken();
+            if (!currentToken) {
+              console.warn('⚠️ Token manquant malgré adresse valide, génération d\'un nouveau token...');
+              const { token, expiresAt } = await authService.generateToken(walletAddress);
+              authService.saveToken(token, expiresAt, walletAddress);
+              console.log('✅ Nouveau token généré et enregistré');
+            }
           }
-        } catch (error) {
-          console.error('Error generating authentication token:', error);
+        } catch (error: any) {
+          console.error('❌ Erreur lors de la génération du token d\'authentification:', error);
+          console.error('Détails de l\'erreur:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+          });
         }
+      } else {
+        console.log('⚠️ Wallet non connecté ou clé publique non disponible');
       }
     };
 
