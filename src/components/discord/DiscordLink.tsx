@@ -85,6 +85,17 @@ export default function DiscordLink() {
       });
       
       console.log('Discord status response:', response);
+    console.log('Discord status data:', response.data);
+    
+    // Afficher les détails de la réponse pour le débogage
+    const data = response.data as any;
+    if (data.isLinked) {
+      console.log('Compte Discord lié avec succès !');
+      console.log('Username:', data.discordUser?.username);
+      console.log('ID Discord:', data.discordUser?.id);
+    } else {
+      console.log('Compte Discord non lié. Message:', data.message);
+    }
       
       const responseData = response.data as any;
       
