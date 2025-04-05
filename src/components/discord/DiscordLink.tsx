@@ -40,9 +40,11 @@ export default function DiscordLink() {
   const checkDiscordServer = async () => {
     try {
       // Essayer d'accéder à la route de diagnostic sans authentification
-      const response = await axios.get(`${config.API_BASE_URL}/api/discord-debug`);
+      const response = await axios.get(`${config.API_BASE_URL}/discord-debug`);
       console.log('Discord server check response:', response);
-      return response.data.success;
+      // Utiliser une assertion de type pour indiquer à TypeScript que nous connaissons la structure
+      const responseData = response.data as { success: boolean };
+      return responseData.success;
     } catch (error) {
       console.error('Error checking Discord server:', error);
       return false;
@@ -72,7 +74,7 @@ export default function DiscordLink() {
       
       try {
         // Essayer d'abord la route de diagnostic sans authentification
-        const debugResponse = await axios.get(`${DISCORD_API_BASE}/link-debug`);
+        const debugResponse = await axios.get(`${config.API_BASE_URL}/discord/link-debug`);
         console.log('Discord debug response:', debugResponse);
       } catch (debugError) {
         console.warn('Debug route not accessible:', debugError);
