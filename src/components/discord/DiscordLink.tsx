@@ -137,7 +137,7 @@ export default function DiscordLink() {
     try {
       // Utiliser directement l'URL d'authentification Discord avec les paramètres nécessaires
       const DISCORD_CLIENT_ID = '1341850853488984107'; // Utiliser l'ID client de votre fichier .env
-      const REDIRECT_URI = encodeURIComponent('https://lastexitvpn.duckdns.org/discord/callback');
+      const REDIRECT_URI = encodeURIComponent('https://lastexitvpn.duckdns.org/api/discord/callback');
       const state = Buffer.from(JSON.stringify({ walletAddress: account })).toString('base64');
       
       // Construire l'URL d'authentification Discord
