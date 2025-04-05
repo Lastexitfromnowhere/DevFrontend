@@ -39,25 +39,32 @@ export const useRewards = () => {
     setError(null);
 
     try {
+      console.log('Fetching rewards from:', `${apiService.getBaseUrl()}/dailyClaims`);
       const response = await apiService.fetchRewards(account);
+      console.log('Rewards API response:', response);
       
-      if (response.status === 'success' && response.data) {
-        const { 
-          canClaimToday, 
-          lastClaimDate, 
-          nextClaimTime, 
-          claimHistory, 
-          totalClaimed,
-          consecutiveDays 
-        } = response.data;
-
+      // Vérifier si la réponse est un objet Axios avec data ou si c'est déjà l'objet de données
+      const responseData = response.data ? response.data : response;
+      
+      // Vérifier si la réponse contient success=true (format backend) ou status=success (format ancien)
+      if ((responseData.success === true || response.status === 'success') && responseData) {
+        console.log('Rewards data:', responseData);
+        
+        // Extraire les données en tenant compte des deux formats possibles
+        const canClaimToday = responseData.canClaim !== undefined ? responseData.canClaim : responseData.canClaimToday;
+        const lastClaimDate = responseData.lastClaimDate;
+        const nextClaimTime = responseData.nextClaimTime;
+        const claimHistory = responseData.claimHistory || [];
+        const totalClaimed = responseData.totalClaimed || responseData.availableRewards || 0;
+        const consecutiveDays = responseData.consecutiveDays || 0;
+        
         setStats({
-          totalRewards: totalClaimed || 0,
-          consecutiveDays: consecutiveDays || 0,
+          totalRewards: totalClaimed,
+          consecutiveDays: consecutiveDays,
           lastClaimDate: lastClaimDate,
           nextClaimTime: nextClaimTime,
           canClaimToday: canClaimToday,
-          claimHistory: claimHistory || [],
+          claimHistory: claimHistory,
           referralBonus: 0 // À implémenter plus tard
         });
       } else if (response.status === 'offline') {
@@ -65,7 +72,9 @@ export const useRewards = () => {
         console.warn('Impossible de récupérer les récompenses: mode hors ligne');
         setError('Le serveur est temporairement indisponible. Certaines fonctionnalités peuvent être limitées.');
       } else {
-        throw new Error(response.error || 'Failed to fetch rewards');
+        const errorMsg = responseData.message || response.error || 'Failed to fetch rewards';
+        console.error('Error in rewards response:', errorMsg);
+        throw new Error(errorMsg);
       }
     } catch (err: any) {
       console.error('Error fetching rewards:', err);
