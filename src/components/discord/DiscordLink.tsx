@@ -63,7 +63,11 @@ export default function DiscordLink() {
     }
 
     setIsLoading(true);
+    setError(null); // Réinitialiser les erreurs précédentes
+    
     try {
+      console.log('Vérification du statut de liaison Discord pour le wallet:', account);
+      
       // Vérifier d'abord si le serveur Discord est accessible
       const isServerAccessible = await checkDiscordServer();
       if (!isServerAccessible) {
@@ -75,37 +79,35 @@ export default function DiscordLink() {
       
       // Obtenir les en-têtes d'authentification
       const headers = await authService.getAuthHeaders();
+      console.log('En-têtes d\'authentification obtenus:', headers);
       
       try {
         // Essayer d'abord la route de diagnostic sans authentification
         const debugResponse = await axios.get(`${config.API_BASE_URL}/discord/link-debug`);
-        console.log('Discord debug response:', debugResponse);
+        console.log('Discord debug response:', debugResponse.data);
       } catch (debugError) {
         console.warn('Debug route not accessible:', debugError);
       }
       
+      console.log('Appel de la route de vérification de liaison Discord...');
       const response = await axios.get(`${DISCORD_API_BASE}/link`, {
         headers
       });
       
-      console.log('Discord status response:', response);
-    console.log('Discord status data:', response.data);
-    
-    // Afficher les détails de la réponse pour le débogage
-    const data = response.data as any;
-    if (data.isLinked) {
-      console.log('Compte Discord lié avec succès !');
-      console.log('Username:', data.discordUser?.username);
-      console.log('ID Discord:', data.discordUser?.id);
-    } else {
-      console.log('Compte Discord non lié. Message:', data.message);
-    }
+      console.log('Réponse complète de la vérification de liaison Discord:', response);
+      console.log('Données de la réponse:', response.data);
       
+      // Afficher les détails de la réponse pour le débogage
       const responseData = response.data as any;
       
-      if (responseData.success) {
+      if (responseData.isLinked) {
+        console.log('✅ Compte Discord lié avec succès !');
+        console.log('Username:', responseData.discordUser?.username);
+        console.log('ID Discord:', responseData.discordUser?.id);
+        
+        // Mettre à jour l'état avec les informations du compte Discord lié
         setDiscordState({
-          linked: responseData.isLinked || false,
+          linked: true,
           discordUsername: responseData.discordUser?.username || null,
           discordAvatar: responseData.discordUser?.avatar || null,
           discordId: responseData.discordUser?.id || null,
@@ -114,12 +116,21 @@ export default function DiscordLink() {
           registrationOrder: null // Vérifier séparément
         });
         
-        // Si le compte est lié, vérifier le statut d'early contributor
-        if (responseData.isLinked) {
-          checkEarlyContributor(headers);
-        }
+        // Vérifier le statut d'early contributor
+        checkEarlyContributor(headers);
       } else {
-        setError(responseData.message || 'Failed to fetch Discord status');
+        console.log('❌ Compte Discord non lié. Message:', responseData.message);
+        
+        // Réinitialiser l'état de liaison Discord
+        setDiscordState({
+          linked: false,
+          discordUsername: null,
+          discordAvatar: null,
+          discordId: null,
+          notifyDailyClaims: true,
+          isEarlyContributor: false,
+          registrationOrder: null
+        });
       }
     } catch (error: any) {
       console.error('Error fetching Discord status:', error);
