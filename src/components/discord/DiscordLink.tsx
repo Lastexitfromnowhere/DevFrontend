@@ -211,7 +211,22 @@ export default function DiscordLink() {
   // Récupérer le statut Discord au chargement du composant
   useEffect(() => {
     if (isConnected && account) {
-      fetchDiscordStatus();
+      // Vérifier si on vient d'être redirigé depuis Discord
+      const urlParams = new URLSearchParams(window.location.search);
+      const discordLinked = urlParams.get('discordLinked');
+      
+      if (discordLinked === 'true') {
+        // Nettoyer l'URL
+        const newUrl = window.location.pathname;
+        window.history.replaceState({}, document.title, newUrl);
+        
+        // Mettre à jour le statut immédiatement
+        console.log('Redirection depuis Discord détectée, mise à jour du statut...');
+        fetchDiscordStatus();
+      } else {
+        // Vérification normale
+        fetchDiscordStatus();
+      }
     }
   }, [isConnected, account]);
 
