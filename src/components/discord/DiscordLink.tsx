@@ -3,11 +3,12 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import { config } from '@/config/env';
 import axios from 'axios';
 import { authService } from '@/services/authService';
+import { useRewards } from '@/hooks/useRewards';
 import { Spinner } from '../ui/Spinner';
 import { Card } from '../ui/Card';
 import { DashboardButton } from '../ui/DashboardButton';
 import { DashboardBadge } from '../ui/DashboardBadge';
-import { MessageCircle, Award, Bell, BellOff, ExternalLink } from 'lucide-react';
+import { MessageCircle, Award, Bell, BellOff, ExternalLink, Coins } from 'lucide-react';
 
 // URL de base pour les requêtes Discord
 const DISCORD_API_BASE = `${config.API_BASE_URL}/discord`;
@@ -35,6 +36,9 @@ export default function DiscordLink() {
     isEarlyContributor: false,
     registrationOrder: null
   });
+  
+  // Utiliser le hook useRewards pour récupérer le solde des rewards
+  const { stats: rewardsStats, isLoading: rewardsLoading } = useRewards();
 
   // Fonction pour vérifier si le serveur Discord est accessible
   const checkDiscordServer = async () => {
@@ -301,6 +305,27 @@ export default function DiscordLink() {
               </div>
             </div>
           )}
+          
+          {/* Affichage du solde des rewards */}
+          <div className="flex items-center space-x-2 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 p-3 rounded-lg mt-3">
+            <Coins className="w-5 h-5 text-indigo-400" />
+            <div>
+              <p className="text-white font-medium">Solde de rewards</p>
+              <p className="text-indigo-300 font-bold">
+                {rewardsLoading ? (
+                  <span className="flex items-center">
+                    <Spinner size="sm" className="mr-2" />
+                    Chargement...
+                  </span>
+                ) : (
+                  `${rewardsStats.totalRewards} RWRD`
+                )}
+              </p>
+              {rewardsStats.canClaimToday && (
+                <p className="text-green-400 text-xs mt-1">Récompense quotidienne disponible !</p>
+              )}
+            </div>
+          </div>
 
           {/* Préférences de notification */}
           <div className="mt-4 pt-4 border-t border-gray-700/50">

@@ -39,7 +39,9 @@ export const useRewards = () => {
     setError(null);
 
     try {
-      console.log('Fetching rewards from:', `${apiService.getBaseUrl()}/dailyClaims`);
+      // Utiliser l'URL de base de l'API directement depuis la configuration
+      const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://lastexitvpn.duckdns.org';
+      console.log('Fetching rewards from:', `${API_BASE_URL}/dailyClaims`);
       const response = await apiService.fetchRewards(account);
       console.log('Rewards API response:', response);
       
