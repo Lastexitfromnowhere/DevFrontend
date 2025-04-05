@@ -40,7 +40,7 @@ export default function DiscordLink() {
   const checkDiscordServer = async () => {
     try {
       // Essayer d'accéder à la route de diagnostic sans authentification
-      const response = await axios.get(`${config.API_BASE_URL}/discord-debug`);
+      const response = await axios.get(`${config.API_BASE_URL}/discord/link-debug`);
       console.log('Discord server check response:', response);
       // Utiliser une assertion de type pour indiquer à TypeScript que nous connaissons la structure
       const responseData = response.data as { success: boolean };
