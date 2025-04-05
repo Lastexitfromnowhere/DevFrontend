@@ -135,27 +135,18 @@ export default function DiscordLink() {
 
     setIsLoading(true);
     try {
-      // Vérifier que le token est valide et le rafraîchir si nécessaire
-      await authService.refreshTokenIfNeeded();
+      // Utiliser directement l'URL d'authentification Discord avec les paramètres nécessaires
+      const DISCORD_CLIENT_ID = '1341850853488984107'; // Utiliser l'ID client de votre fichier .env
+      const REDIRECT_URI = encodeURIComponent('https://lastexitvpn.duckdns.org/api/discord/callback');
+      const state = Buffer.from(JSON.stringify({ walletAddress: account })).toString('base64');
       
-      // Obtenir les en-têtes d'authentification
-      const headers = await authService.getAuthHeaders();
+      // Construire l'URL d'authentification Discord
+      const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=identify&state=${state}`;
       
-      // Appeler l'API pour obtenir l'URL d'authentification Discord
-      const response = await axios.get(`${DISCORD_API_BASE}/auth`, {
-        headers
-      });
+      console.log('Redirecting to Discord auth URL:', discordAuthUrl);
       
-      console.log('Discord auth response:', response);
-      
-      const responseData = response.data as any;
-      
-      if (responseData.success && responseData.authUrl) {
-        // Rediriger vers l'URL d'authentification Discord
-        window.location.href = responseData.authUrl;
-      } else {
-        setError(responseData.message || 'Échec de l\'initialisation de l\'authentification Discord');
-      }
+      // Rediriger vers l'URL d'authentification Discord
+      window.location.href = discordAuthUrl;
     } catch (error: any) {
       console.error('Error initiating Discord auth:', error);
       setError(error.message || 'Échec de l\'initialisation de l\'authentification Discord');
