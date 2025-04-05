@@ -51,7 +51,7 @@ export default function DiscordLink() {
       // Obtenir les en-têtes d'authentification
       const headers = await authService.getAuthHeaders();
       
-      const response = await axios.get(`${DISCORD_API_BASE}/status`, {
+      const response = await axios.get(`${DISCORD_API_BASE}/link`, {
         headers
       });
       
@@ -61,14 +61,19 @@ export default function DiscordLink() {
       
       if (responseData.success) {
         setDiscordState({
-          linked: responseData.linked || false,
-          discordUsername: responseData.discordUser?.discordUsername || null,
-          discordAvatar: responseData.discordUser?.discordAvatar || null,
-          discordId: responseData.discordUser?.discordId || null,
-          notifyDailyClaims: responseData.discordUser?.notifyDailyClaims || true,
-          isEarlyContributor: responseData.discordUser?.isEarlyContributor || false,
-          registrationOrder: responseData.discordUser?.registrationOrder || null
+          linked: responseData.isLinked || false,
+          discordUsername: responseData.discordUser?.username || null,
+          discordAvatar: responseData.discordUser?.avatar || null,
+          discordId: responseData.discordUser?.id || null,
+          notifyDailyClaims: true, // Valeur par défaut
+          isEarlyContributor: false, // Vérifier séparément
+          registrationOrder: null // Vérifier séparément
         });
+        
+        // Si le compte est lié, vérifier le statut d'early contributor
+        if (responseData.isLinked) {
+          checkEarlyContributor(headers);
+        }
       } else {
         setError(responseData.message || 'Failed to fetch Discord status');
       }
@@ -122,17 +127,65 @@ export default function DiscordLink() {
   };
 
   // Fonction pour rediriger vers l'authentification Discord
-  const handleDiscordLink = () => {
+  const handleDiscordLink = async () => {
     if (!isConnected || !account) {
       setError('Wallet not connected');
       return;
     }
 
-    // Construire l'URL de redirection avec l'adresse du wallet
-    const redirectUrl = `${DISCORD_API_BASE}/login?walletAddress=${account}`;
-    
-    // Rediriger vers l'URL d'authentification Discord
-    window.location.href = redirectUrl;
+    setIsLoading(true);
+    try {
+      // Vérifier que le token est valide et le rafraîchir si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Obtenir les en-têtes d'authentification
+      const headers = await authService.getAuthHeaders();
+      
+      // Appeler l'API pour obtenir l'URL d'authentification Discord
+      const response = await axios.get(`${DISCORD_API_BASE}/auth`, {
+        headers
+      });
+      
+      console.log('Discord auth response:', response);
+      
+      const responseData = response.data as any;
+      
+      if (responseData.success && responseData.authUrl) {
+        // Rediriger vers l'URL d'authentification Discord
+        window.location.href = responseData.authUrl;
+      } else {
+        setError(responseData.message || 'Échec de l\'initialisation de l\'authentification Discord');
+      }
+    } catch (error: any) {
+      console.error('Error initiating Discord auth:', error);
+      setError(error.message || 'Échec de l\'initialisation de l\'authentification Discord');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fonction pour vérifier si l'utilisateur est un early contributor
+  const checkEarlyContributor = async (headers: any) => {
+    try {
+      const response = await axios.get(`${DISCORD_API_BASE}/early-contributor`, {
+        headers
+      });
+      
+      console.log('Early contributor response:', response);
+      
+      const responseData = response.data as any;
+      
+      if (responseData.success) {
+        setDiscordState(prevState => ({
+          ...prevState,
+          isEarlyContributor: responseData.isEarlyContributor || false,
+          registrationOrder: responseData.registrationOrder || null
+        }));
+      }
+    } catch (error: any) {
+      console.error('Error checking early contributor status:', error);
+      // Ne pas afficher d'erreur à l'utilisateur pour cette vérification
+    }
   };
 
   // Récupérer le statut Discord au chargement du composant
