@@ -14,7 +14,20 @@ import { Switch } from '../ui/Switch';
 // URL de base pour les requêtes Discord
 const DISCORD_API_BASE = `${config.API_BASE_URL}/discord`;
 const DISCORD_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
-const REDIRECT_URI = encodeURIComponent(`${window.location.origin}/discord-callback`);
+
+const getRedirectUri = () => {
+  if (typeof window !== 'undefined') {
+    return encodeURIComponent(`${window.location.origin}/discord-callback`);
+  }
+  // Fallback pour le SSR
+  return encodeURIComponent(`${process.env.NEXT_PUBLIC_FRONTEND_URL}/discord-callback`);
+};
+
+const setLocalStorageState = (state: string) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('discordAuthState', state);
+  }
+};
 
 interface DiscordLinkState {
   linked: boolean;
@@ -54,7 +67,7 @@ export default function DiscordLink() {
 
   const checkDiscordServer = async () => {
     try {
-      await axios.get(`${DISCORD_API_BASE}/status`);
+      await axios.get(`${DISCORD_API_BASE}/server-status`);
       return true;
     } catch (error) {
       console.error('Erreur lors de la vérification du serveur Discord:', error);
@@ -64,8 +77,9 @@ export default function DiscordLink() {
 
   const generateDiscordAuthUrl = () => {
     const state = Math.random().toString(36).substring(2, 15);
-    localStorage.setItem('discordAuthState', state);
-    return `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=identify&state=${state}`;
+    setLocalStorageState(state);
+    const redirectUri = getRedirectUri();
+    return `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=identify&state=${state}`;
   };
 
   const handleDiscordLink = async () => {
@@ -101,6 +115,9 @@ export default function DiscordLink() {
       await axios.delete(`${DISCORD_API_BASE}/unlink`, {
         headers: {
           Authorization: `Bearer ${token}`
+        },
+        params: {
+          walletAddress: account
         }
       });
       
@@ -174,6 +191,9 @@ export default function DiscordLink() {
       const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/status`, {
         headers: {
           Authorization: `Bearer ${token}`
+        },
+        params: {
+          walletAddress: account
         }
       });
       
@@ -209,7 +229,8 @@ export default function DiscordLink() {
       
       await axios.post(`${DISCORD_API_BASE}/callback`, {
         code,
-        redirectUri: decodeURIComponent(REDIRECT_URI)
+        redirectUri: decodeURIComponent(getRedirectUri()),
+        walletAddress: account
       }, {
         headers: {
           Authorization: `Bearer ${token}`
