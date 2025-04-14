@@ -121,8 +121,76 @@ export default function Dashboard() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-8 text-center text-sm text-gray-300 py-4 border-t border-gray-700/30 bg-black/20 backdrop-blur-sm rounded-lg">
-          {`> brand-exit@2025 ~ Building the decentralized future`}
+        <footer className="mt-8 text-gray-300 py-6 border-t border-gray-700/30 bg-black/20 backdrop-blur-sm rounded-lg">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+              {/* Company */}
+              <div>
+                <h3 className="text-blue-400 font-semibold mb-4">Brand Exit</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <a href="/about" className="text-gray-400 hover:text-blue-400 transition-colors">About Us</a>
+                  </li>
+                  <li>
+                    <a href="/contact" className="text-gray-400 hover:text-blue-400 transition-colors">Contact</a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Resources */}
+              <div>
+                <h3 className="text-blue-400 font-semibold mb-4">Resources</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <a href="/faq" className="text-gray-400 hover:text-blue-400 transition-colors">FAQ</a>
+                  </li>
+                  <li>
+                    <a href="/run-node" className="text-gray-400 hover:text-blue-400 transition-colors">Run a Node</a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Legal */}
+              <div>
+                <h3 className="text-blue-400 font-semibold mb-4">Legal</h3>
+                <ul className="space-y-2">
+                  <li>
+                    <a href="/terms" className="text-gray-400 hover:text-blue-400 transition-colors">Terms of Service</a>
+                  </li>
+                  <li>
+                    <a href="/privacy-policy" className="text-gray-400 hover:text-blue-400 transition-colors">Privacy Policy</a>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Social */}
+              <div>
+                <h3 className="text-blue-400 font-semibold mb-4">Connect</h3>
+                <div className="flex space-x-4">
+                  <a
+                    href="https://github.com/your-repo"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-blue-400 transition-colors"
+                  >
+                    <Terminal size={20} />
+                  </a>
+                  <a
+                    href="https://discord.gg/windvpn"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-400 hover:text-blue-400 transition-colors"
+                  >
+                    <Network size={20} />
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center text-sm border-t border-gray-700/30 pt-8">
+              {`> brand-exit@2025 ~ Building the decentralized future`}
+            </div>
+          </div>
         </footer>
       </div>
     </div>

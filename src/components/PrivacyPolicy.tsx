@@ -1,20 +1,29 @@
 import React from "react";
 import { ShieldCheck, Lock, Globe, User, Settings, Info } from "lucide-react";
+import { Card } from "@/components/ui/Card";
 
-const Section = ({ icon: Icon, title, children }: { icon: any, title: string, children: React.ReactNode }) => (
-  <div className="bg-slate-800 rounded-2xl p-6 shadow-xl mb-6 border border-slate-700">
-    <h2 className="text-xl text-teal-400 font-semibold flex items-center gap-2 mb-2">
-      <Icon className="w-5 h-5 text-teal-300" />
-      {title}
-    </h2>
-    <p className="text-slate-300 leading-relaxed">{children}</p>
-  </div>
+interface SectionProps {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+}
+
+const Section = ({ icon: Icon, title, children }: SectionProps) => (
+  <Card className="mb-6" variant="hover">
+    <div className="space-y-2">
+      <h2 className="text-xl font-semibold flex items-center gap-2 text-blue-400">
+        <Icon className="w-5 h-5 text-blue-300" />
+        {title}
+      </h2>
+      <p className="text-gray-300 leading-relaxed">{children}</p>
+    </div>
+  </Card>
 );
 
 export default function PrivacyPolicy() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold text-center text-sky-300 mb-8">
+    <div className="container max-w-4xl mx-auto px-4 py-10">
+      <h1 className="text-3xl font-bold text-center text-blue-400 mb-8">
         Privacy Policy
       </h1>
 
@@ -42,9 +51,14 @@ export default function PrivacyPolicy() {
         We may update this policy occasionally. When we do, we'll inform you via the dashboard or Discord.
       </Section>
 
-      <div className="text-center mt-10 text-slate-400">
-        For any questions, contact us at <a href="mailto:support@windvpn.app" className="text-teal-300 hover:underline">support@windvpn.app</a>.
-      </div>
+      <Card className="mt-10 text-center">
+        <p className="text-gray-400">
+          For any questions, contact us at{" "}
+          <a href="mailto:support@windvpn.app" className="text-blue-400 hover:underline">
+            support@windvpn.app
+          </a>
+        </p>
+      </Card>
     </div>
   );
 }

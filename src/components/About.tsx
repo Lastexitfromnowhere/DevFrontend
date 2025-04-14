@@ -1,21 +1,54 @@
 import React from "react";
 import Image from "next/image";
 import { Users, Rocket, Globe, Shield, TerminalSquare, Coins } from "lucide-react";
+import { Card } from "@/components/ui/Card";
 
-const Block = ({ icon: Icon, title, children }: { icon: any, title: string, children: React.ReactNode }) => (
-  <div className="bg-slate-800 rounded-2xl p-6 shadow-xl mb-6 border border-slate-700">
-    <h2 className="text-xl text-purple-400 font-semibold flex items-center gap-2 mb-2">
-      <Icon className="w-5 h-5 text-purple-300" />
-      {title}
-    </h2>
-    <p className="text-slate-300 leading-relaxed">{children}</p>
-  </div>
+interface BlockProps {
+  icon: React.ElementType;
+  title: string;
+  children: React.ReactNode;
+}
+
+const Block = ({ icon: Icon, title, children }: BlockProps) => (
+  <Card className="mb-6" variant="hover">
+    <div className="space-y-2">
+      <h2 className="text-xl font-semibold flex items-center gap-2 text-blue-400">
+        <Icon className="w-5 h-5 text-blue-300" />
+        {title}
+      </h2>
+      <p className="text-gray-300 leading-relaxed">{children}</p>
+    </div>
+  </Card>
 );
+
+interface TeamMember {
+  name: string;
+  role: string;
+  avatar: string;
+}
+
+const teamMembers: TeamMember[] = [
+  {
+    name: "AdminX",
+    role: "Core Architect",
+    avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=AdminX"
+  },
+  {
+    name: "GhostNode",
+    role: "Security & Infrastructure",
+    avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=GhostNode"
+  },
+  {
+    name: "VibeChain",
+    role: "Community Ops",
+    avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=VibeChain"
+  }
+];
 
 export default function About() {
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold text-center text-purple-300 mb-8">
+    <div className="container max-w-4xl mx-auto px-4 py-10">
+      <h1 className="text-3xl font-bold text-center text-blue-400 mb-8">
         About Wind VPN
       </h1>
 
@@ -43,41 +76,25 @@ export default function About() {
         Wind VPN is built by passionate developers, privacy advocates, and early adopters. We're expanding—join us on Discord and help shape the future!
       </Block>
 
-      <h2 className="text-2xl font-bold text-center text-purple-300 mt-12 mb-6">
+      <h2 className="text-2xl font-bold text-center text-blue-400 mt-12 mb-6">
         Meet the Team
       </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {[
-          {
-            name: "AdminX",
-            role: "Core Architect",
-            avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=AdminX"
-          },
-          {
-            name: "GhostNode",
-            role: "Security & Infrastructure",
-            avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=GhostNode"
-          },
-          {
-            name: "VibeChain",
-            role: "Community Ops",
-            avatar: "https://api.dicebear.com/7.x/identicon/svg?seed=VibeChain"
-          }
-        ].map((member, idx) => (
-          <div key={idx} className="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-lg text-center">
+        {teamMembers.map((member, idx) => (
+          <Card key={idx} className="text-center" variant="hover">
             <div className="relative w-20 h-20 mx-auto mb-4">
               <Image
                 src={member.avatar}
                 alt={member.name}
                 width={80}
                 height={80}
-                className="rounded-full border-2 border-purple-400"
+                className="rounded-full border-2 border-blue-400"
               />
             </div>
-            <h3 className="text-lg font-semibold text-purple-200">{member.name}</h3>
-            <p className="text-sm text-slate-400">{member.role}</p>
-          </div>
+            <h3 className="text-lg font-semibold text-blue-200">{member.name}</h3>
+            <p className="text-sm text-gray-400">{member.role}</p>
+          </Card>
         ))}
       </div>
     </div>
