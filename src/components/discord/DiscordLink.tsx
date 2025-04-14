@@ -204,7 +204,10 @@ export default function DiscordLink() {
   };
 
   const checkDiscordStatus = async () => {
-    if (!isConnected || !account) return;
+    if (!isConnected || !account) {
+      console.log('Non connecté ou pas de compte:', { isConnected, account });
+      return;
+    }
     
     setIsLoading(true);
     setError(null);
@@ -212,10 +215,13 @@ export default function DiscordLink() {
     try {
       const token = authService.getToken();
       if (!token) {
+        console.log('Pas de token trouvé');
         setError("Vous n'êtes pas authentifié. Veuillez vous connecter.");
         setIsLoading(false);
         return;
       }
+      
+      console.log('Vérification du statut Discord pour:', { account, token: token.substring(0, 10) + '...' });
       
       const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/status`, {
         headers: {
@@ -226,8 +232,10 @@ export default function DiscordLink() {
         }
       });
       
+      console.log('Réponse du statut Discord:', response.data);
+      
       // Mettre à jour l'état que le compte soit lié ou non
-      setDiscordState({
+      const newState = {
         linked: response.data.linked || false,
         discordUsername: response.data.discordUsername || null,
         discordAvatar: response.data.discordAvatar || null,
@@ -235,9 +243,16 @@ export default function DiscordLink() {
         notifyDailyClaims: response.data.notifyDailyClaims !== undefined ? response.data.notifyDailyClaims : true,
         isEarlyContributor: response.data.isEarlyContributor || false,
         registrationOrder: response.data.registrationOrder || null
+      };
+      
+      console.log('Mise à jour de l\'état avec:', newState);
+      setDiscordState(newState);
+    } catch (error: any) {
+      console.error('Erreur détaillée lors de la vérification du statut Discord:', {
+        error: error.message,
+        response: error.response?.data,
+        status: error.response?.status
       });
-    } catch (error) {
-      console.error('Erreur lors de la vérification du statut Discord:', error);
       // En cas d'erreur, réinitialiser l'état
       setDiscordState({
         linked: false,
@@ -300,6 +315,7 @@ export default function DiscordLink() {
     };
     
     if (isConnected && account) {
+      console.log('useEffect déclenché - Vérification du statut Discord', { isConnected, account });
       checkDiscordStatus();
     }
     
