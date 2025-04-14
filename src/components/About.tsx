@@ -1,4 +1,5 @@
 import React from "react";
+import Image from "next/image";
 import { Users, Rocket, Globe, Shield, TerminalSquare, Coins } from "lucide-react";
 
 const Block = ({ icon: Icon, title, children }: { icon: any, title: string, children: React.ReactNode }) => (
@@ -65,11 +66,15 @@ export default function About() {
           }
         ].map((member, idx) => (
           <div key={idx} className="bg-slate-800 rounded-xl p-4 border border-slate-700 shadow-lg text-center">
-            <img
-              src={member.avatar}
-              alt={member.name}
-              className="w-20 h-20 rounded-full mx-auto mb-4 border-2 border-purple-400"
-            />
+            <div className="relative w-20 h-20 mx-auto mb-4">
+              <Image
+                src={member.avatar}
+                alt={member.name}
+                width={80}
+                height={80}
+                className="rounded-full border-2 border-purple-400"
+              />
+            </div>
             <h3 className="text-lg font-semibold text-purple-200">{member.name}</h3>
             <p className="text-sm text-slate-400">{member.role}</p>
           </div>

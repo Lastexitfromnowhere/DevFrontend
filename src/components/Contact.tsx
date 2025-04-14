@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { Mail, MessageCircle, Github, Twitter } from "lucide-react";
 
 const ContactCard = ({ icon: Icon, title, description, link, linkText }: { 
@@ -73,12 +74,12 @@ export default function Contact() {
         <p className="text-slate-300 mb-6 max-w-2xl mx-auto">
           Interested in running a node and earning rewards? Check out our detailed guide on getting started.
         </p>
-        <a
+        <Link
           href="/run-node"
           className="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
         >
           Learn About Running a Node →
-        </a>
+        </Link>
       </div>
     </div>
   );
