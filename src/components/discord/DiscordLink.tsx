@@ -67,7 +67,7 @@ export default function DiscordLink() {
 
   const checkDiscordServer = async () => {
     try {
-      await axios.get(`${DISCORD_API_BASE}/server-status`);
+      await axios.get(`${DISCORD_API_BASE}/status`);
       return true;
     } catch (error) {
       console.error('Erreur lors de la vérification du serveur Discord:', error);
