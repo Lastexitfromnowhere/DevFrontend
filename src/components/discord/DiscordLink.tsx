@@ -88,14 +88,43 @@ export default function DiscordLink() {
     setIsLoading(true);
     setError(null);
     
-    const isServerAvailable = await checkDiscordServer();
-    if (!isServerAvailable) {
-      setError("Le serveur Discord n'est pas accessible pour le moment. Veuillez réessayer plus tard.");
+    try {
+      // Vérifier d'abord si le compte est déjà lié
+      const token = authService.getToken();
+      if (!token) {
+        setError("Vous n'êtes pas authentifié. Veuillez vous connecter.");
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/status`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
+        params: {
+          walletAddress: account
+        }
+      });
+
+      if (response.data && response.data.linked) {
+        setError("Ce wallet est déjà lié à un compte Discord.");
+        setIsLoading(false);
+        return;
+      }
+      
+      const isServerAvailable = await checkDiscordServer();
+      if (!isServerAvailable) {
+        setError("Le serveur Discord n'est pas accessible pour le moment. Veuillez réessayer plus tard.");
+        setIsLoading(false);
+        return;
+      }
+      
+      window.location.href = generateDiscordAuthUrl();
+    } catch (error) {
+      console.error('Erreur lors de la vérification du statut:', error);
+      setError("Une erreur est survenue lors de la vérification du statut. Veuillez réessayer.");
       setIsLoading(false);
-      return;
     }
-    
-    window.location.href = generateDiscordAuthUrl();
   };
 
   const handleDiscordUnlink = async () => {
