@@ -226,19 +226,28 @@ export default function DiscordLink() {
         }
       });
       
-      if (response.data && response.data.linked) {
-        setDiscordState({
-          linked: true,
-          discordUsername: response.data.discordUsername || null,
-          discordAvatar: response.data.discordAvatar || null,
-          discordId: response.data.discordId || null,
-          notifyDailyClaims: response.data.notifyDailyClaims !== undefined ? response.data.notifyDailyClaims : true,
-          isEarlyContributor: response.data.isEarlyContributor || false,
-          registrationOrder: response.data.registrationOrder || null
-        });
-      }
+      // Mettre à jour l'état que le compte soit lié ou non
+      setDiscordState({
+        linked: response.data.linked || false,
+        discordUsername: response.data.discordUsername || null,
+        discordAvatar: response.data.discordAvatar || null,
+        discordId: response.data.discordId || null,
+        notifyDailyClaims: response.data.notifyDailyClaims !== undefined ? response.data.notifyDailyClaims : true,
+        isEarlyContributor: response.data.isEarlyContributor || false,
+        registrationOrder: response.data.registrationOrder || null
+      });
     } catch (error) {
       console.error('Erreur lors de la vérification du statut Discord:', error);
+      // En cas d'erreur, réinitialiser l'état
+      setDiscordState({
+        linked: false,
+        discordUsername: null,
+        discordAvatar: null,
+        discordId: null,
+        notifyDailyClaims: true,
+        isEarlyContributor: false,
+        registrationOrder: null
+      });
     } finally {
       setIsLoading(false);
     }
