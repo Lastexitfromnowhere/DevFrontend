@@ -48,6 +48,15 @@ interface DiscordStatusResponse {
   registrationOrder?: number;
 }
 
+interface DiscordLinkResponse {
+  success: boolean;
+  message?: string;
+  discordUsername?: string;
+  discordAvatar?: string;
+  discordId?: string;
+  isEarlyContributor?: boolean;
+}
+
 export default function DiscordLink() {
   const { isConnected, account } = useWalletContext();
   const [isLoading, setIsLoading] = useState(false);
@@ -133,7 +142,7 @@ export default function DiscordLink() {
       
       const redirectUri = getRedirectUri();
       
-      const response = await axios.post(`${DISCORD_API_BASE}/link`, {
+      const response = await axios.post<DiscordLinkResponse>(`${DISCORD_API_BASE}/link`, {
         code,
         redirectUri: decodeURIComponent(redirectUri)
       }, {
