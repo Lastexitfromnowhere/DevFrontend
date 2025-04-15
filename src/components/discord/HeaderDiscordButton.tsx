@@ -3,10 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import axios from 'axios';
-import { Discord } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { DISCORD_API_BASE } from '@/utils/constants';
-import authService from '@/services/authService';
+import { config } from '@/config/env';
+import { authService } from '@/services/authService';
+
+// URL de base pour les requêtes Discord
+const DISCORD_API_BASE = `${config.API_BASE_URL}/discord`;
 
 interface DiscordStatusResponse {
   linked: boolean;
@@ -129,24 +132,49 @@ export default function HeaderDiscordButton() {
     }
   }, [isConnected, account]);
 
+  // Fonction pour générer l'URL de l'avatar Discord
+  const getDiscordAvatarUrl = () => {
+    if (!discordState.discordId || !discordState.discordAvatar) return null;
+    return `https://cdn.discordapp.com/avatars/${discordState.discordId}/${discordState.discordAvatar}.png?size=32`;
+  };
+
   if (!isConnected) return null;
+
+  // Générer l'URL de l'avatar
+  const avatarUrl = getDiscordAvatarUrl();
 
   return (
     <Button
       onClick={handleDiscordLink}
       disabled={isLoading}
-      className={`px-3 py-1 h-auto text-xs flex items-center ${
+      className={`px-3 py-1 h-auto text-xs flex items-center gap-2 ${
         discordState.linked 
           ? 'bg-purple-700 hover:bg-purple-600' 
           : 'bg-gray-700 hover:bg-gray-600'
       }`}
       title={discordState.linked ? `Connecté en tant que ${discordState.discordUsername}` : 'Lier mon compte Discord'}
     >
-      <Discord size={16} className="mr-1" />
       {discordState.linked ? (
-        <span className="max-w-[100px] truncate">{discordState.discordUsername}</span>
+        <>
+          {avatarUrl ? (
+            <img 
+              src={avatarUrl} 
+              alt="Discord Avatar" 
+              className="w-5 h-5 rounded-full border border-purple-300/30"
+            />
+          ) : (
+            <MessageCircle size={16} className="text-purple-300" />
+          )}
+          <span className="max-w-[100px] truncate">{discordState.discordUsername}</span>
+          {discordState.isEarlyContributor && (
+            <span className="bg-yellow-500/20 text-yellow-300 text-[10px] px-1 py-0.5 rounded-sm">★</span>
+          )}
+        </>
       ) : (
-        'Discord'
+        <>
+          <MessageCircle size={16} />
+          <span>Discord</span>
+        </>
       )}
     </Button>
   );
