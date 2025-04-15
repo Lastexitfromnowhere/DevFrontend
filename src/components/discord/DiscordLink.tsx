@@ -79,7 +79,13 @@ export default function DiscordLink() {
     const state = Math.random().toString(36).substring(2, 15);
     setLocalStorageState(state);
     const redirectUri = getRedirectUri();
-    return `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=identify&state=${state}`;
+    if (!DISCORD_CLIENT_ID) {
+      console.warn('[Discord] DISCORD_CLIENT_ID is not defined!');
+    }
+    const url = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=identify&state=${state}`;
+    console.log('[Discord] URL générée pour OAuth2:', url);
+    console.log('[Discord] DISCORD_CLIENT_ID:', DISCORD_CLIENT_ID);
+    return url;
   };
 
   const handleDiscordLink = async () => {
