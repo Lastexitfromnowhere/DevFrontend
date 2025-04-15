@@ -215,7 +215,7 @@ export default function HeaderDiscordButton() {
   const avatarUrl = getDiscordAvatarUrl();
 
   return (
-    <div className="relative inline-block" ref={menuRef}>
+    <div className="relative inline-block z-50" ref={menuRef}>
       {discordState.linked ? (
         <>
           <Button
@@ -246,7 +246,7 @@ export default function HeaderDiscordButton() {
           </Button>
           
           {menuOpen && (
-            <div className="absolute top-full right-0 mt-2 w-56 rounded-md shadow-[0_0_15px_rgba(255,255,255,0.2)] bg-gray-900/70 backdrop-blur-md border border-white/20 text-white z-50 overflow-hidden transition-all duration-300 ease-in-out animate-in fade-in-50 slide-in-from-top-5">
+            <div className="absolute top-full right-0 mt-2 w-56 rounded-md shadow-[0_0_15px_rgba(255,255,255,0.2)] bg-gray-900/70 backdrop-blur-md border border-white/20 text-white z-[9999] overflow-hidden transition-all duration-300 ease-in-out animate-in fade-in-50 slide-in-from-top-5">
               <div className="px-4 py-3 font-medium border-b border-white/10 text-white/90">Mon compte Discord</div>
               
               <div 
