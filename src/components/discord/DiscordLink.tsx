@@ -144,12 +144,9 @@ export default function DiscordLink() {
         return;
       }
       
-      await axios.delete(`${DISCORD_API_BASE}/unlink`, {
+      await axios.delete(`${DISCORD_API_BASE}/link`, {
         headers: {
           Authorization: `Bearer ${token}`
-        },
-        params: {
-          walletAddress: account
         }
       });
       
