@@ -82,7 +82,12 @@ function DiscordCallbackContent() {
       // Attendre un peu pour laisser le temps au backend de traiter la liaison
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const response = await axios.get(`${DISCORD_API_BASE}/link-status`, {
+      interface DiscordStatusResponse {
+        linked: boolean;
+        isEarlyContributor?: boolean;
+        // Ajoute d’autres champs si besoin
+      }
+      const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/link-status`, {
         headers
       });
       
