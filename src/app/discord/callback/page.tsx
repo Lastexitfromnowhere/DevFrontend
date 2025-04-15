@@ -108,9 +108,53 @@ function DiscordCallbackContent() {
     }
   }, [checkEarlyContributor]);
 
+  // Fonction pour compléter la liaison Discord directement depuis le frontend
+  const completeDiscordLink = useCallback(async (code: string) => {
+    try {
+      setStatus('loading');
+      setMessage('Liaison de votre compte Discord en cours...');
+      
+      // Vérifier que le token est valide et le rafraîchir si nécessaire
+      await authService.refreshTokenIfNeeded();
+      
+      // Obtenir les en-têtes d'authentification
+      const headers = await authService.getAuthHeaders();
+      
+      // Définir l'interface pour la réponse de l'API
+      interface DiscordCompleteLinkResponse {
+        success: boolean;
+        message?: string;
+        isEarlyContributor?: boolean;
+      }
+
+      // Appeler l'API pour compléter la liaison avec le code
+      const response = await axios.post<DiscordCompleteLinkResponse>(`${DISCORD_API_BASE}/complete-link`, {
+        code
+      }, {
+        headers
+      });
+      
+      console.log('Discord complete-link response:', response);
+      
+      if (response.data.success) {
+        setStatus('success');
+        setMessage('Votre compte Discord a été lié avec succès !');
+        setIsEarlyContributor(response.data.isEarlyContributor || false);
+      } else {
+        setStatus('error');
+        setMessage(response.data.message || 'Erreur lors de la liaison de votre compte Discord.');
+      }
+    } catch (error: any) {
+      console.error('Error completing Discord link:', error);
+      setStatus('error');
+      setMessage('Une erreur est survenue lors de la liaison de votre compte Discord.');
+    }
+  }, []);
+
   useEffect(() => {
     const code = searchParams?.get('code') || null;
     const error = searchParams?.get('error') || null;
+    const noToken = searchParams?.get('noToken') || null;
     
     if (error) {
       setStatus('error');
@@ -124,9 +168,16 @@ function DiscordCallbackContent() {
       return;
     }
     
-    // Le code est présent, le backend va s'occuper de traiter ce code
-    // Nous devons juste vérifier si la liaison a réussi
-    checkDiscordStatus();
+    // Si noToken=true, cela signifie que le backend n'a pas pu extraire le walletAddress
+    // et nous a redirigé vers le frontend pour compléter la liaison
+    if (noToken === 'true') {
+      console.log('Redirection depuis le backend sans token, tentative de liaison directe');
+      completeDiscordLink(code);
+    } else {
+      // Le code est présent, le backend va s'occuper de traiter ce code
+      // Nous devons juste vérifier si la liaison a réussi
+      checkDiscordStatus();
+    }
   }, [searchParams, checkDiscordStatus]);
 
   // Redirection à la page d'accueil après un délai
