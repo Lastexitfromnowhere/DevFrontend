@@ -17,10 +17,10 @@ const DISCORD_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
 
 const getRedirectUri = () => {
   if (typeof window !== 'undefined') {
-    return encodeURIComponent(`${window.location.origin}/discord-callback`);
+    return encodeURIComponent(`${window.location.origin}/discord/callback`);
   }
   // Fallback pour le SSR
-  return encodeURIComponent(`${process.env.NEXT_PUBLIC_FRONTEND_URL}/discord-callback`);
+  return encodeURIComponent(`${process.env.NEXT_PUBLIC_FRONTEND_URL}/discord/callback`);
 };
 
 const setLocalStorageState = (state: string) => {
@@ -97,12 +97,9 @@ export default function DiscordLink() {
         return;
       }
 
-      const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/status`, {
+      const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/link-status`, {
         headers: {
           Authorization: `Bearer ${token}`
-        },
-        params: {
-          walletAddress: account
         }
       });
 
@@ -223,12 +220,9 @@ export default function DiscordLink() {
       
       console.log('Vérification du statut Discord pour:', { account, token: token.substring(0, 10) + '...' });
       
-      const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/status`, {
+      const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/link-status`, {
         headers: {
           Authorization: `Bearer ${token}`
-        },
-        params: {
-          walletAddress: account
         }
       });
       
