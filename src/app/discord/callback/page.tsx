@@ -88,9 +88,9 @@ function DiscordCallbackContent() {
       
       console.log('Discord status response:', response);
       
-      if (response.data.success && response.data.linked) {
+      if (response.data.success) {
         setStatus('success');
-        setMessage('Votre compte Discord a été lié avec succès !');
+        setMessage(response.data.message || 'Le serveur Discord est accessible.');
         
         // Vérifier si l'utilisateur est un early contributor
         await checkEarlyContributor(headers);
