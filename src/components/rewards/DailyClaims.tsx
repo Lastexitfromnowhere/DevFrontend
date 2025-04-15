@@ -167,6 +167,25 @@ export default function DailyClaims() {
     
     return `${diffHrs}h ${diffMins}m`;
   };
+  
+  // Calculer le solde total à partir de l'historique des réclamations
+  const calculateTotalBalance = (): number => {
+    // Si l'historique des réclamations est vide, retourner les récompenses disponibles
+    if (!rewards.claimHistory || rewards.claimHistory.length === 0) {
+      return rewards.availableRewards;
+    }
+    
+    // Calculer la somme de toutes les réclamations réussies
+    const totalClaimed = rewards.claimHistory
+      .filter(claim => claim.status === 'success')
+      .reduce((sum, claim) => sum + claim.amount, 0);
+    
+    // Ajouter les récompenses disponibles au total réclamé
+    return totalClaimed + rewards.availableRewards;
+  };
+  
+  // Obtenir le solde total
+  const totalBalance = calculateTotalBalance();
 
   // Récupérer les récompenses au chargement du composant
   useEffect(() => {
@@ -193,22 +212,13 @@ export default function DailyClaims() {
   return (
     <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6">
       {/* En-tête avec titre */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-center items-center mb-2">
         <div className="flex items-center space-x-3">
           <div className="p-2 rounded-full bg-yellow-500/20 backdrop-blur-sm">
             <Award className="w-5 h-5 text-yellow-400" />
           </div>
           <h3 className="text-xl font-semibold text-white">Récompenses quotidiennes</h3>
         </div>
-        <DashboardButton
-          variant="secondary"
-          onClick={fetchRewards}
-          loading={isLoading}
-          icon={<RefreshCw className="w-3 h-3" />}
-          size="sm"
-        >
-          Actualiser
-        </DashboardButton>
       </div>
 
       {/* Message d'erreur */}
@@ -224,9 +234,15 @@ export default function DailyClaims() {
         <div className="flex flex-col items-center text-center mb-4">
           <h4 className="text-gray-300 font-semibold mb-2">Votre solde actuel</h4>
           <div className="text-4xl font-bold text-white bg-gradient-to-r from-yellow-400 to-amber-600 bg-clip-text text-transparent">
-            {isLoading ? <Spinner size="lg" /> : rewards.availableRewards.toFixed(3)}
+            {isLoading ? <Spinner size="lg" /> : totalBalance.toFixed(3)}
           </div>
           <div className="text-lg font-medium text-gray-400 mt-1">RWRD</div>
+          
+          {rewards.availableRewards > 0 && (
+            <div className="mt-2 text-sm text-gray-300">
+              <span className="text-green-400 font-medium">{rewards.availableRewards.toFixed(3)}</span> RWRD disponibles à réclamer
+            </div>
+          )}
         </div>
         
         <div className="flex justify-center mt-4">
