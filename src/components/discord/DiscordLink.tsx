@@ -3,13 +3,11 @@ import { useWalletContext } from '@/contexts/WalletContext';
 import { config } from '@/config/env';
 import axios from 'axios';
 import { authService } from '@/services/authService';
-import { useRewards } from '@/hooks/useRewards';
 import { Spinner } from '../ui/Spinner';
 import { Card } from '../ui/Card';
 import { DashboardBadge } from '../ui/DashboardBadge';
-import { MessageCircle, Award, Bell, BellOff, Unlink, Coins, LogIn, Link } from 'lucide-react';
+import { MessageCircle, Award, Unlink, LogIn, Link } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { Switch } from '../ui/Switch';
 
 // URL de base pour les requêtes Discord
 const DISCORD_API_BASE = `${config.API_BASE_URL}/discord`;
@@ -72,7 +70,8 @@ export default function DiscordLink() {
     registrationOrder: null
   });
   
-  const { stats: rewardsData, isLoading: rewardsLoading } = useRewards();
+  // Les notifications Discord sont toujours activées par défaut (notifyDailyClaims: true)
+  // Les utilisateurs recevront des notifications sur Discord lorsqu'ils réclament leurs récompenses
 
   const checkDiscordServer = async () => {
     try {
@@ -217,46 +216,6 @@ export default function DiscordLink() {
     }
   };
   
-  const handleNotificationToggle = async (checked: boolean) => {
-    if (!isConnected || !account || !discordState.linked) return;
-    
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const token = authService.getToken();
-      if (!token) {
-        setError("Vous n'êtes pas authentifié. Veuillez vous connecter.");
-        setIsLoading(false);
-        return;
-      }
-      
-      const response = await axios.post<DiscordLinkResponse>(`${DISCORD_API_BASE}/notifications`, {
-        notifyDailyClaims: checked
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      console.log('Réponse de mise à jour des notifications:', response.data);
-      
-      if (response.data.success) {
-        setDiscordState(prev => ({
-          ...prev,
-          notifyDailyClaims: checked
-        }));
-      } else {
-        setError(response.data.message || "Une erreur est survenue lors de la mise à jour des préférences de notification.");
-      }
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour des préférences de notification:', error);
-      setError("Une erreur est survenue lors de la mise à jour de vos préférences de notification. Veuillez réessayer.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const checkDiscordStatus = async () => {
     if (!isConnected || !account) {
       console.log('Non connecté ou pas de compte:', { isConnected, account });
@@ -390,40 +349,7 @@ export default function DiscordLink() {
             </div>
           )}
           
-          <div className="flex items-center space-x-1 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 p-1.5 rounded-md">
-            <Coins className="w-3.5 h-3.5 text-indigo-400" />
-            <p className="text-white text-xs font-medium">
-              {rewardsLoading ? (
-                <span className="flex items-center">
-                  <Spinner size="sm" className="mr-1" />
-                  Chargement...
-                </span>
-              ) : (
-                `${rewardsData?.totalRewards || 0} WIND`
-              )}
-            </p>
-          </div>
 
-          <div className="flex items-center space-x-2">
-            <Switch 
-              checked={discordState.notifyDailyClaims} 
-              onCheckedChange={handleNotificationToggle}
-              disabled={isLoading}
-            />
-            <span className="text-white text-xs">
-              {discordState.notifyDailyClaims ? (
-                <span className="flex items-center">
-                  <Bell className="w-3 h-3 mr-1 text-green-400" />
-                  Notifications activées
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <BellOff className="w-3 h-3 mr-1 text-red-400" />
-                  Notifications désactivées
-                </span>
-              )}
-            </span>
-          </div>
 
           <Button
             variant="danger"
