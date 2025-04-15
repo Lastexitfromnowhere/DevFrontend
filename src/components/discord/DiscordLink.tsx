@@ -7,13 +7,15 @@ import { useRewards } from '@/hooks/useRewards';
 import { Spinner } from '../ui/Spinner';
 import { Card } from '../ui/Card';
 import { DashboardBadge } from '../ui/DashboardBadge';
-import { MessageCircle, Award, Bell, BellOff, Unlink, Coins } from 'lucide-react';
+import { MessageCircle, Award, Bell, BellOff, Unlink, Coins, LogIn, Link } from 'lucide-react';
 import { Button } from '../ui/Button';
 import { Switch } from '../ui/Switch';
 
 // URL de base pour les requêtes Discord
 const DISCORD_API_BASE = `${config.API_BASE_URL}/discord`;
 const DISCORD_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
+// Lien d'invitation direct pour rejoindre le serveur Discord
+const DISCORD_INVITE_LINK = 'https://discord.gg/tW3ESBHQ';
 
 const getRedirectUri = () => {
   // Utiliser toujours l'URL du backend pour le callback Discord
@@ -99,41 +101,69 @@ export default function DiscordLink() {
     setError(null);
     
     try {
-      // Vérifier d'abord si le compte est déjà lié
+      const serverAvailable = await checkDiscordServer();
+      if (!serverAvailable) {
+        setError("Le serveur Discord est actuellement indisponible. Veuillez réessayer plus tard.");
+        setIsLoading(false);
+        return;
+      }
+      
+      const authUrl = generateDiscordAuthUrl();
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Erreur lors de la redirection vers Discord:', error);
+      setError("Une erreur est survenue lors de la redirection vers Discord. Veuillez réessayer.");
+      setIsLoading(false);
+    }
+  };
+  
+  const exchangeCodeForToken = async (code: string) => {
+    if (!isConnected || !account) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
       const token = authService.getToken();
       if (!token) {
         setError("Vous n'êtes pas authentifié. Veuillez vous connecter.");
         setIsLoading(false);
         return;
       }
-
-      const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/link-status`, {
+      
+      const redirectUri = getRedirectUri();
+      
+      const response = await axios.post(`${DISCORD_API_BASE}/link`, {
+        code,
+        redirectUri: decodeURIComponent(redirectUri)
+      }, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
-
-      if (response.data && response.data.linked) {
-        setError("Ce wallet est déjà lié à un compte Discord.");
-        setIsLoading(false);
-        return;
-      }
       
-      const isServerAvailable = await checkDiscordServer();
-      if (!isServerAvailable) {
-        setError("Le serveur Discord n'est pas accessible pour le moment. Veuillez réessayer plus tard.");
-        setIsLoading(false);
-        return;
-      }
+      console.log('Réponse de liaison Discord:', response.data);
       
-      window.location.href = generateDiscordAuthUrl();
-    } catch (error) {
-      console.error('Erreur lors de la vérification du statut:', error);
-      setError("Une erreur est survenue lors de la vérification du statut. Veuillez réessayer.");
+      if (response.data.success) {
+        setDiscordState(prev => ({
+          ...prev,
+          linked: true,
+          discordUsername: response.data.discordUsername || null,
+          discordAvatar: response.data.discordAvatar || null,
+          discordId: response.data.discordId || null,
+          isEarlyContributor: response.data.isEarlyContributor || false
+        }));
+      } else {
+        setError(response.data.message || "Une erreur est survenue lors de la liaison avec Discord.");
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de l\'échange du code:', error);
+      setError(error.response?.data?.message || "Une erreur est survenue lors de la liaison avec Discord.");
+    } finally {
       setIsLoading(false);
     }
   };
-
+  
   const handleDiscordUnlink = async () => {
     if (!isConnected || !account) return;
     
@@ -148,32 +178,36 @@ export default function DiscordLink() {
         return;
       }
       
-      await axios.delete(`${DISCORD_API_BASE}/link`, {
+      const response = await axios.delete(`${DISCORD_API_BASE}/link`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       
-      setDiscordState({
-        linked: false,
-        discordUsername: null,
-        discordAvatar: null,
-        discordId: null,
-        notifyDailyClaims: true,
-        isEarlyContributor: false,
-        registrationOrder: null
-      });
+      console.log('Réponse de déliaison Discord:', response.data);
       
-      alert("Votre compte Discord a été délié avec succès.");
-    } catch (error) {
-      console.error('Erreur lors du délien du compte Discord:', error);
-      setError("Une erreur est survenue lors du délien de votre compte Discord. Veuillez réessayer.");
+      if (response.data.success) {
+        setDiscordState({
+          linked: false,
+          discordUsername: null,
+          discordAvatar: null,
+          discordId: null,
+          notifyDailyClaims: true,
+          isEarlyContributor: false,
+          registrationOrder: null
+        });
+      } else {
+        setError(response.data.message || "Une erreur est survenue lors de la déliaison avec Discord.");
+      }
+    } catch (error: any) {
+      console.error('Erreur lors de la déliaison Discord:', error);
+      setError(error.response?.data?.message || "Une erreur est survenue lors de la déliaison avec Discord.");
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleNotificationToggle = async () => {
+  
+  const handleNotificationToggle = async (checked: boolean) => {
     if (!isConnected || !account || !discordState.linked) return;
     
     setIsLoading(true);
@@ -187,18 +221,24 @@ export default function DiscordLink() {
         return;
       }
       
-      await axios.post(`${DISCORD_API_BASE}/preferences`, {
-        notifyDailyClaims: !discordState.notifyDailyClaims
+      const response = await axios.post(`${DISCORD_API_BASE}/notifications`, {
+        notifyDailyClaims: checked
       }, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
       
-      setDiscordState(prev => ({
-        ...prev,
-        notifyDailyClaims: !prev.notifyDailyClaims
-      }));
+      console.log('Réponse de mise à jour des notifications:', response.data);
+      
+      if (response.data.success) {
+        setDiscordState(prev => ({
+          ...prev,
+          notifyDailyClaims: checked
+        }));
+      } else {
+        setError(response.data.message || "Une erreur est survenue lors de la mise à jour des préférences de notification.");
+      }
     } catch (error) {
       console.error('Erreur lors de la mise à jour des préférences de notification:', error);
       setError("Une erreur est survenue lors de la mise à jour de vos préférences de notification. Veuillez réessayer.");
@@ -249,53 +289,13 @@ export default function DiscordLink() {
       console.log('Mise à jour de l\'état avec:', newState);
       setDiscordState(newState);
     } catch (error: any) {
-      console.error('Erreur détaillée lors de la vérification du statut Discord:', {
-        error: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      // En cas d'erreur, réinitialiser l'état
-      setDiscordState({
-        linked: false,
-        discordUsername: null,
-        discordAvatar: null,
-        discordId: null,
-        notifyDailyClaims: true,
-        isEarlyContributor: false,
-        registrationOrder: null
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const exchangeCodeForToken = async (code: string) => {
-    setIsLoading(true);
-    setError(null);
-    
-    try {
-      const token = authService.getToken();
-      if (!token) {
-        setError("Vous n'êtes pas authentifié. Veuillez vous connecter.");
-        setIsLoading(false);
-        return;
+      console.error('Erreur lors de la vérification du statut Discord:', error);
+      if (error.response?.status === 404) {
+        // C'est normal si l'utilisateur n'a pas encore lié son compte
+        console.log('Utilisateur non lié à Discord');
+      } else {
+        setError(error.response?.data?.message || "Une erreur est survenue lors de la vérification du statut Discord.");
       }
-      
-      await axios.post(`${DISCORD_API_BASE}/callback`, {
-        code,
-        redirectUri: decodeURIComponent(getRedirectUri()),
-        walletAddress: account
-      }, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      
-      await checkDiscordStatus();
-      alert("Votre compte Discord a été lié avec succès.");
-    } catch (error) {
-      console.error('Erreur lors de l\'échange du code d\'autorisation:', error);
-      setError("Une erreur est survenue lors de la liaison de votre compte Discord. Veuillez réessayer.");
     } finally {
       setIsLoading(false);
     }
@@ -401,7 +401,17 @@ export default function DiscordLink() {
               disabled={isLoading}
             />
             <span className="text-white text-xs">
-              {discordState.notifyDailyClaims ? "Notifications activées" : "Notifications désactivées"}
+              {discordState.notifyDailyClaims ? (
+                <span className="flex items-center">
+                  <Bell className="w-3 h-3 mr-1 text-green-400" />
+                  Notifications activées
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <BellOff className="w-3 h-3 mr-1 text-red-400" />
+                  Notifications désactivées
+                </span>
+              )}
             </span>
           </div>
 
@@ -424,17 +434,29 @@ export default function DiscordLink() {
               <span className="text-xs font-medium">NOT PAIRED</span>
             </DashboardBadge>
           </div>
-          <p className="text-gray-300">
-            Liez votre compte Discord pour recevoir des notifications de daily claims et obtenir le rôle "Early Contributor" si vous êtes parmi les 5000 premiers utilisateurs.
+          <p className="text-gray-400 text-sm mb-4">
+            Rejoignez notre serveur Discord et connectez votre compte pour recevoir des notifications et des récompenses.
           </p>
-          <Button 
-            onClick={handleDiscordLink}
-            className="bg-indigo-700 hover:bg-indigo-600 w-full"
-            disabled={!isConnected || isLoading}
-          >
-            <MessageCircle className="mr-2" />
-            {isLoading ? 'Connexion en cours...' : 'Connecter Discord'}
-          </Button>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
+            <Button 
+              onClick={() => window.open(DISCORD_INVITE_LINK, '_blank')}
+              className="bg-indigo-700 hover:bg-indigo-600 w-full"
+            >
+              <LogIn className="mr-2" />
+              Rejoindre le serveur
+            </Button>
+            <Button 
+              onClick={handleDiscordLink}
+              className="bg-purple-700 hover:bg-purple-600 w-full"
+              disabled={!isConnected || isLoading}
+            >
+              <Link className="mr-2" />
+              {isLoading ? 'Liaison en cours...' : 'Lier mon compte'}
+            </Button>
+          </div>
+          <p className="text-gray-500 text-xs italic text-center">
+            Rejoignez d'abord le serveur Discord, puis liez votre compte pour recevoir vos récompenses.
+          </p>
         </div>
       )}
     </Card>
