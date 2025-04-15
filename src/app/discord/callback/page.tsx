@@ -139,29 +139,27 @@ function DiscordCallbackContent() {
       <Card className="w-full max-w-md p-6 text-center">
         <div className="flex flex-col items-center justify-center space-y-4">
           {status === 'loading' ? (
-            <>
-              <Spinner size="lg" />
-              <h2 className="text-xl font-semibold text-white">Chargement...</h2>
-              <p className="text-gray-400">Vérification de la liaison Discord en cours</p>
-            </>
+            <Spinner size="lg" />
           ) : status === 'success' ? (
             <>
-              <Check className="w-16 h-16 text-green-500" />
-              <h2 className="text-xl font-semibold text-white">{message}</h2>
+              <Check className="mx-auto mb-2 h-12 w-12 text-green-500" />
+              <h2 className="text-xl font-semibold text-white">Succès</h2>
+              <p className="text-gray-400">{message}</p>
               {isEarlyContributor && (
-                <div className="flex items-center space-x-2 text-yellow-500">
-                  <Award className="w-5 h-5" />
-                  <span>Early Contributor Status Activé !</span>
+                <div className="mt-4 flex items-center justify-center space-x-2">
+                  <Award className="h-6 w-6 text-yellow-500" />
+                  <span className="text-yellow-400 font-medium">Early Contributor</span>
                 </div>
               )}
-              <DashboardButton />
+              <DashboardButton className="mt-6" />
             </>
           ) : (
             <>
-              <AlertTriangle className="w-16 h-16 text-red-500" />
-              <h2 className="text-xl font-semibold text-white">Erreur</h2>
-              <p className="text-gray-400">{message}</p>
-              <DashboardButton />
+              <X className="mx-auto mb-2 h-12 w-12 text-red-500" />
+              <h2 className="text-xl font-semibold text-red-500">Erreur</h2>
+              <p className="text-gray-400">{message || "Une erreur inconnue est survenue."}</p>
+              <p className="text-xs text-red-400 mt-2">Si le problème persiste, vérifiez votre connexion ou contactez le support. (Le serveur Discord ou le backend est peut-être inaccessible)</p>
+              <DashboardButton className="mt-6" />
             </>
           )}
         </div>
