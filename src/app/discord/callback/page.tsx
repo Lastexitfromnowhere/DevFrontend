@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Card } from '@/components/ui/Card';
 import { DashboardButton } from '@/components/ui/DashboardButton';
 import { Spinner } from '@/components/ui/Spinner';
-import { Check, X, Award, AlertTriangle } from 'lucide-react';
+import { Check, X, Award, AlertTriangle, Home } from 'lucide-react';
 import { config } from '@/config/env';
 import axios from 'axios';
 import { authService } from '@/services/authService';
@@ -85,7 +85,7 @@ function DiscordCallbackContent() {
       interface DiscordStatusResponse {
         linked: boolean;
         isEarlyContributor?: boolean;
-        // Ajoute d’autres champs si besoin
+        // Ajoute d'autres champs si besoin
       }
       const response = await axios.get<DiscordStatusResponse>(`${DISCORD_API_BASE}/link-status`, {
         headers
@@ -178,7 +178,7 @@ function DiscordCallbackContent() {
       // Nous devons juste vérifier si la liaison a réussi
       checkDiscordStatus();
     }
-  }, [searchParams, checkDiscordStatus]);
+  }, [searchParams, checkDiscordStatus, completeDiscordLink]);
 
   // Redirection à la page d'accueil après un délai
   const redirectToHome = useCallback(() => {
@@ -205,7 +205,13 @@ function DiscordCallbackContent() {
                   <span className="text-yellow-400 font-medium">Early Contributor</span>
                 </div>
               )}
-              <DashboardButton className="mt-6" />
+              <DashboardButton 
+                className="mt-6"
+                onClick={() => router.push('/')}
+                icon={<Home className="h-4 w-4" />}
+              >
+                Retour à Last Exit
+              </DashboardButton>
             </>
           ) : (
             <>
@@ -213,7 +219,13 @@ function DiscordCallbackContent() {
               <h2 className="text-xl font-semibold text-red-500">Erreur</h2>
               <p className="text-gray-400">{message || "Une erreur inconnue est survenue."}</p>
               <p className="text-xs text-red-400 mt-2">Si le problème persiste, vérifiez votre connexion ou contactez le support. (Le serveur Discord ou le backend est peut-être inaccessible)</p>
-              <DashboardButton className="mt-6" />
+              <DashboardButton 
+                className="mt-6"
+                onClick={() => router.push('/')}
+                icon={<Home className="h-4 w-4" />}
+              >
+                Retour à Last Exit
+              </DashboardButton>
             </>
           )}
         </div>
