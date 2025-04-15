@@ -79,7 +79,14 @@ export default function DiscordLink() {
     if (!DISCORD_CLIENT_ID) {
       console.warn('[Discord] DISCORD_CLIENT_ID is not defined!');
     }
-    const url = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=identify&state=${state}`;
+    
+    // Ajouter les scopes nécessaires pour rejoindre le serveur et gérer les rôles
+    // identify: obtenir les informations de base du profil
+    // guilds.join: ajouter l'utilisateur au serveur
+    // bot: pour que le bot puisse gérer les rôles (optionnel si le bot est déjà dans le serveur)
+    const scopes = ['identify', 'guilds.join'].join('%20');
+    
+    const url = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scopes}&state=${state}&permissions=268435456`;
     console.log('[Discord] URL générée pour OAuth2:', url);
     console.log('[Discord] DISCORD_CLIENT_ID:', DISCORD_CLIENT_ID);
     return url;
