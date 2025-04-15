@@ -39,7 +39,7 @@ server {
 
         # Ajouter les en-têtes CORS (seulement pour les requêtes non-OPTIONS)
         if ($request_method != 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app' always;
+            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app, https://wind-frontend-last-exits-projects.vercel.app' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, x-wallet-address' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
@@ -47,7 +47,7 @@ server {
 
         # Gestion spécifique pour les requêtes OPTIONS
         if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app' always;
+            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app, https://wind-frontend-last-exits-projects.vercel.app' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, x-wallet-address' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
@@ -77,7 +77,7 @@ server {
 
         # Ajouter les en-têtes CORS (seulement pour les requêtes non-OPTIONS)
         if ($request_method != 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app' always;
+            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app, https://wind-frontend-last-exits-projects.vercel.app' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, x-wallet-address' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
@@ -85,7 +85,7 @@ server {
 
         # Gestion spécifique pour les requêtes OPTIONS
         if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app' always;
+            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app, https://wind-frontend-last-exits-projects.vercel.app' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, x-wallet-address' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
@@ -115,7 +115,7 @@ server {
 
         # Ajouter les en-têtes CORS (seulement pour les requêtes non-OPTIONS)
         if ($request_method != 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app' always;
+            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app, https://wind-frontend-last-exits-projects.vercel.app' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, x-wallet-address' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
@@ -123,7 +123,7 @@ server {
 
         # Gestion spécifique pour les requêtes OPTIONS
         if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app' always;
+            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app, https://wind-frontend-last-exits-projects.vercel.app' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, x-wallet-address' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
@@ -153,7 +153,7 @@ server {
 
         # Ajouter les en-têtes CORS (seulement pour les requêtes non-OPTIONS)
         if ($request_method != 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app' always;
+            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app, https://wind-frontend-last-exits-projects.vercel.app' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, x-wallet-address' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
@@ -161,7 +161,7 @@ server {
 
         # Gestion spécifique pour les requêtes OPTIONS
         if ($request_method = 'OPTIONS') {
-            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app' always;
+            add_header 'Access-Control-Allow-Origin' 'https://wind-frontend-rosy.vercel.app, https://wind-frontend-last-exits-projects.vercel.app' always;
             add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
             add_header 'Access-Control-Allow-Headers' 'Content-Type, Authorization, x-wallet-address' always;
             add_header 'Access-Control-Allow-Credentials' 'true' always;
