@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import axios from 'axios';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, LogOut, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { config } from '@/config/env';
 import { authService } from '@/services/authService';
@@ -34,6 +34,9 @@ interface DiscordLinkResponse {
 export default function HeaderDiscordButton() {
   const { isConnected, account } = useWalletContext();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
   const [discordState, setDiscordState] = useState({
     linked: false,
     discordUsername: null as string | null,
@@ -179,11 +182,26 @@ export default function HeaderDiscordButton() {
     }
   };
 
+  // Effet pour vérifier le statut Discord
   useEffect(() => {
     if (isConnected && account) {
       checkDiscordStatus();
     }
   }, [isConnected, account]);
+  
+  // Effet pour fermer le menu lorsqu'on clique en dehors
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // Fonction pour générer l'URL de l'avatar Discord
   const getDiscordAvatarUrl = () => {
@@ -197,59 +215,80 @@ export default function HeaderDiscordButton() {
   const avatarUrl = getDiscordAvatarUrl();
 
   return (
-    <div className="relative inline-block">
-      <Button
-        onClick={handleDiscordLink}
-        onContextMenu={(e) => {
-          if (discordState.linked) {
-            e.preventDefault();
-            handleDiscordUnlink();
-          }
-        }}
-        disabled={isLoading}
-        className={`px-4 py-2 h-auto text-sm flex items-center gap-3 min-w-[140px] ${
-          discordState.linked 
-            ? 'bg-purple-700 hover:bg-purple-600' 
-            : 'bg-gray-700 hover:bg-gray-600'
-        }`}
-        title={discordState.linked 
-          ? `Connecté en tant que ${discordState.discordUsername}. Clic droit pour délier.` 
-          : 'Lier mon compte Discord'}
-      >
-        {isLoading ? (
-          <span className="animate-pulse">...</span>
-        ) : discordState.linked ? (
-          <>
-            {avatarUrl ? (
-              <img 
-                src={avatarUrl} 
-                alt="Discord Avatar" 
-                className="w-7 h-7 rounded-full border border-purple-300/30"
-              />
+    <div className="relative inline-block" ref={menuRef}>
+      {discordState.linked ? (
+        <>
+          <Button
+            onClick={() => setMenuOpen(!menuOpen)}
+            disabled={isLoading}
+            className="px-4 py-2 h-auto text-sm flex items-center gap-3 min-w-[140px] bg-opacity-30 backdrop-blur-md bg-purple-900 hover:bg-purple-800 hover:bg-opacity-40 border border-white/30 shadow-[0_0_10px_rgba(255,255,255,0.3)] transition-all duration-300 ease-in-out"
+            title={`Connecté en tant que ${discordState.discordUsername}`}
+          >
+            {isLoading ? (
+              <span className="animate-pulse">...</span>
             ) : (
-              <MessageCircle size={20} className="text-purple-300" />
+              <>
+                {avatarUrl ? (
+                  <img 
+                    src={avatarUrl} 
+                    alt="Discord Avatar" 
+                    className="w-7 h-7 rounded-full border border-purple-300/30"
+                  />
+                ) : (
+                  <MessageCircle size={20} className="text-purple-300" />
+                )}
+                <span className="max-w-[100px] truncate">{discordState.discordUsername}</span>
+                {discordState.isEarlyContributor && (
+                  <span className="bg-yellow-500/20 text-yellow-300 text-[10px] px-1 py-0.5 rounded-sm">★</span>
+                )}
+              </>
             )}
-            <span className="max-w-[100px] truncate">{discordState.discordUsername}</span>
-            {discordState.isEarlyContributor && (
-              <span className="bg-yellow-500/20 text-yellow-300 text-[10px] px-1 py-0.5 rounded-sm">★</span>
-            )}
-          </>
-        ) : (
-          <>
-            <MessageCircle size={20} />
-            <span>Discord</span>
-          </>
-        )}
-      </Button>
-      
-      {discordState.linked && (
-        <div 
-          className="absolute top-full right-0 mt-2 text-sm cursor-pointer bg-red-700 hover:bg-red-600 text-white px-4 py-2 rounded shadow-lg font-medium transition-all duration-200 ease-in-out"
-          onClick={handleDiscordUnlink}
-          title="Délier mon compte Discord"
+          </Button>
+          
+          {menuOpen && (
+            <div className="absolute top-full right-0 mt-2 w-56 rounded-md shadow-[0_0_15px_rgba(255,255,255,0.2)] bg-gray-900/70 backdrop-blur-md border border-white/20 text-white z-50 overflow-hidden transition-all duration-300 ease-in-out animate-in fade-in-50 slide-in-from-top-5">
+              <div className="px-4 py-3 font-medium border-b border-white/10 text-white/90">Mon compte Discord</div>
+              
+              <div 
+                className="flex items-center gap-2 px-4 py-3 cursor-pointer hover:bg-purple-900/30 transition-colors duration-200"
+                onClick={() => {
+                  window.open('https://discord.gg/windprotocol', '_blank');
+                  setMenuOpen(false);
+                }}
+              >
+                <ExternalLink size={16} className="text-purple-300" />
+                <span>Ouvrir Discord</span>
+              </div>
+              
+              <div 
+                className="flex items-center gap-2 px-4 py-3 cursor-pointer text-red-300 hover:bg-red-900/20 hover:text-red-200 transition-colors duration-200"
+                onClick={() => {
+                  handleDiscordUnlink();
+                  setMenuOpen(false);
+                }}
+              >
+                <LogOut size={16} />
+                <span>Délier mon compte</span>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <Button
+          onClick={handleDiscordLink}
+          disabled={isLoading}
+          className="px-4 py-2 h-auto text-sm flex items-center gap-3 min-w-[140px] bg-opacity-30 backdrop-blur-md bg-gray-800 hover:bg-gray-700 hover:bg-opacity-40 border border-white/20 shadow-[0_0_8px_rgba(255,255,255,0.2)] transition-all duration-300 ease-in-out"
+          title="Lier mon compte Discord"
         >
-          Délier mon compte
-        </div>
+          {isLoading ? (
+            <span className="animate-pulse">...</span>
+          ) : (
+            <>
+              <MessageCircle size={20} />
+              <span>Discord</span>
+            </>
+          )}
+        </Button>
       )}
     </div>
   );
