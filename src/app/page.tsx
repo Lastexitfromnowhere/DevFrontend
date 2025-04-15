@@ -20,6 +20,7 @@ import RSSFeed from '@/components/RSSFeed';
 import UnifiedDHTView from '@/components/dht/UnifiedDHTView';
 import RewardsMechanism from '@/components/ecosystem/RewardsMechanism';
 import DiscordLink from '@/components/discord/DiscordLink';
+import HeaderDiscordButton from '@/components/discord/HeaderDiscordButton';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
@@ -104,11 +105,15 @@ export default function Dashboard() {
               </div>
             </div>
             
-            <nav className="flex space-x-4">
+            <div className="flex items-center space-x-4">
+              <HeaderDiscordButton />
+              
+              <nav className="flex space-x-4">
               {renderSectionButton('ecosystem', <Terminal size={20} />, 'Ecosystem')}
               {renderSectionButton('vpn', <Shield size={20} />, 'VPN Node')}
               {renderSectionButton('goals', <Target size={20} />, 'Site Goals')}
             </nav>
+            </div>
           </div>
         </header>
 
