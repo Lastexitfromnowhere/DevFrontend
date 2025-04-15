@@ -82,21 +82,19 @@ function DiscordCallbackContent() {
       // Attendre un peu pour laisser le temps au backend de traiter la liaison
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      const response = await axios.get<DiscordResponse>(`${DISCORD_API_BASE}/status`, {
+      const response = await axios.get(`${DISCORD_API_BASE}/link-status`, {
         headers
       });
       
-      console.log('Discord status response:', response);
+      console.log('Discord link-status response:', response);
       
-      if (response.data.success) {
+      if (response.data.linked) {
         setStatus('success');
-        setMessage(response.data.message || 'Le serveur Discord est accessible.');
-        
-        // Vérifier si l'utilisateur est un early contributor
-        await checkEarlyContributor(headers);
+        setMessage('Votre compte Discord a été lié avec succès !');
+        setIsEarlyContributor(response.data.isEarlyContributor || false);
       } else {
         setStatus('error');
-        setMessage(response.data.message || 'Erreur lors de la liaison avec Discord. Veuillez réessayer.');
+        setMessage('Votre compte Discord n\'est pas lié à ce wallet.');
       }
     } catch (error: any) {
       console.error('Error checking Discord status:', error);
