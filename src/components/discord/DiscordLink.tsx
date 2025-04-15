@@ -16,11 +16,8 @@ const DISCORD_API_BASE = `${config.API_BASE_URL}/discord`;
 const DISCORD_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
 
 const getRedirectUri = () => {
-  if (typeof window !== 'undefined') {
-    return encodeURIComponent(`${window.location.origin}/discord/callback`);
-  }
-  // Fallback pour le SSR
-  return encodeURIComponent(`${process.env.NEXT_PUBLIC_FRONTEND_URL}/discord/callback`);
+  // Utiliser toujours l'URL du backend pour le callback Discord
+  return encodeURIComponent('http://lastexitvpn.duckdns.org/discord/callback');
 };
 
 const setLocalStorageState = (state: string) => {
