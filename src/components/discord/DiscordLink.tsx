@@ -55,6 +55,7 @@ interface DiscordLinkResponse {
   discordAvatar?: string;
   discordId?: string;
   isEarlyContributor?: boolean;
+  notifyDailyClaims?: boolean;
 }
 
 export default function DiscordLink() {
@@ -187,7 +188,7 @@ export default function DiscordLink() {
         return;
       }
       
-      const response = await axios.delete(`${DISCORD_API_BASE}/link`, {
+      const response = await axios.delete<DiscordLinkResponse>(`${DISCORD_API_BASE}/link`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
@@ -230,7 +231,7 @@ export default function DiscordLink() {
         return;
       }
       
-      const response = await axios.post(`${DISCORD_API_BASE}/notifications`, {
+      const response = await axios.post<DiscordLinkResponse>(`${DISCORD_API_BASE}/notifications`, {
         notifyDailyClaims: checked
       }, {
         headers: {
