@@ -219,83 +219,63 @@ export default function DailyClaims() {
         </div>
       )}
 
-      {/* Récompenses disponibles */}
-      <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4 transition-all duration-300">
-        <div className="flex justify-between items-center">
-          <div>
-            <h4 className="text-gray-300 font-semibold mb-1">Récompenses disponibles</h4>
-            <div className="text-2xl font-bold text-white">
-              {isLoading ? <Spinner size="sm" /> : <><span className="text-yellow-400">{rewards.availableRewards.toFixed(3)}</span> RWRD</>}
-            </div>
+      {/* Solde actuel */}
+      <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-6 transition-all duration-300">
+        <div className="flex flex-col items-center text-center mb-4">
+          <h4 className="text-gray-300 font-semibold mb-2">Votre solde actuel</h4>
+          <div className="text-4xl font-bold text-white bg-gradient-to-r from-yellow-400 to-amber-600 bg-clip-text text-transparent">
+            {isLoading ? <Spinner size="lg" /> : rewards.availableRewards.toFixed(3)}
           </div>
+          <div className="text-lg font-medium text-gray-400 mt-1">RWRD</div>
+        </div>
+        
+        <div className="flex justify-center mt-4">
           <DashboardButton
             variant="primary"
             onClick={claimDailyRewards}
             loading={isClaiming}
             disabled={!rewards.canClaim || isClaiming}
             icon={<Award className="w-4 h-4" />}
+            className="w-full max-w-xs"
           >
-            Réclamer
+            {rewards.canClaim ? "Réclamer ma récompense quotidienne" : "Récompense déjà réclamée"}
           </DashboardButton>
         </div>
         
         {/* Temps avant prochaine réclamation */}
-        <div className="mt-3 flex items-center text-sm bg-black/20 backdrop-blur-sm p-2 rounded-md">
-          <Clock className="w-4 h-4 mr-1 text-blue-400" />
+        <div className="mt-4 flex items-center justify-center text-sm bg-black/20 backdrop-blur-sm p-3 rounded-md">
+          <Clock className="w-4 h-4 mr-2 text-blue-400" />
           {rewards.canClaim ? (
-            <span className="text-green-400">Prêt à réclamer !</span>
+            <span className="text-green-400 font-medium">Prêt à réclamer maintenant !</span>
           ) : (
             <span className="text-gray-300">Prochaine réclamation dans : <span className="text-blue-400 font-medium">{getTimeRemaining()}</span></span>
           )}
         </div>
       </div>
 
-      {/* Statistiques */}
+      {/* Informations complémentaires */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-3 transition-all duration-300 hover:bg-black/40">
-          <div className="flex items-center mb-1">
+        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4 transition-all duration-300 hover:bg-black/40">
+          <div className="flex items-center mb-2">
             <div className="p-1.5 rounded-full bg-blue-500/20 backdrop-blur-sm mr-2">
               <Calendar className="text-blue-400 h-4 w-4" />
             </div>
             <p className="text-gray-300 text-sm">Dernière réclamation</p>
           </div>
-          <p className="text-white font-medium">
+          <p className="text-white font-medium text-center mt-1">
             {rewards.lastClaimDate ? new Date(rewards.lastClaimDate).toLocaleDateString() : 'Jamais'}
           </p>
         </div>
-        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-3 transition-all duration-300 hover:bg-black/40">
-          <div className="flex items-center mb-1">
+        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4 transition-all duration-300 hover:bg-black/40">
+          <div className="flex items-center mb-2">
             <div className="p-1.5 rounded-full bg-green-500/20 backdrop-blur-sm mr-2">
               <TrendingUp className="text-green-400 h-4 w-4" />
             </div>
-            <p className="text-gray-300 text-sm">Historique</p>
+            <p className="text-gray-300 text-sm">Taux journalier</p>
           </div>
-          <p className="text-white font-medium">{rewards.claimHistory.length} <span className="text-gray-400">réclamations</span></p>
+          <p className="text-white font-medium text-center mt-1">+1.000 <span className="text-gray-400">RWRD / jour</span></p>
         </div>
       </div>
-
-      {/* Historique des réclamations */}
-      {rewards.claimHistory.length > 0 && (
-        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4">
-          <h4 className="text-white font-semibold mb-3">Historique des réclamations</h4>
-          <div className="space-y-2 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
-            {rewards.claimHistory.map((claim, index) => (
-              <div key={index} className="flex justify-between items-center p-2 bg-black/20 backdrop-blur-sm rounded-md border border-gray-700/20">
-                <div className="flex items-center">
-                  <Award className="w-3 h-3 text-yellow-400 mr-2" />
-                  <span className="text-sm text-gray-300">{new Date(claim.timestamp).toLocaleDateString()}</span>
-                </div>
-                <div className="flex items-center">
-                  <span className="text-sm font-medium text-white mr-2">{claim.amount.toFixed(3)}</span>
-                  <DashboardBadge variant={claim.status === 'success' ? 'success' : 'danger'} size="sm">
-                    {claim.status === 'success' ? 'Réussi' : 'Échoué'}
-                  </DashboardBadge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       
       <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
         {`// Connectez-vous quotidiennement pour maximiser vos récompenses`}
