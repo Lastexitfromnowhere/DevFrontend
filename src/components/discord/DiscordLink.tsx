@@ -445,27 +445,20 @@ export default function DiscordLink() {
             </DashboardBadge>
           </div>
           <p className="text-gray-400 text-sm mb-4">
-            Rejoignez notre serveur Discord et connectez votre compte pour recevoir des notifications et des récompenses.
+            Connectez votre compte Discord pour rejoindre automatiquement notre serveur, recevoir des notifications et des récompenses.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-2">
-            <Button 
-              onClick={() => window.open(DISCORD_INVITE_LINK, '_blank')}
-              className="bg-indigo-700 hover:bg-indigo-600 w-full"
-            >
-              <LogIn className="mr-2" />
-              Rejoindre le serveur
-            </Button>
+          <div className="flex justify-center mb-2">
             <Button 
               onClick={handleDiscordLink}
-              className="bg-purple-700 hover:bg-purple-600 w-full"
+              className="bg-purple-700 hover:bg-purple-600 w-full max-w-xs"
               disabled={!isConnected || isLoading}
             >
               <Link className="mr-2" />
-              {isLoading ? 'Liaison en cours...' : 'Lier mon compte'}
+              {isLoading ? 'Liaison en cours...' : 'Lier mon compte Discord'}
             </Button>
           </div>
           <p className="text-gray-500 text-xs italic text-center">
-            Rejoignez d'abord le serveur Discord, puis liez votre compte pour recevoir vos récompenses.
+            En liant votre compte, vous rejoindrez automatiquement notre serveur Discord et pourrez recevoir vos récompenses.
           </p>
         </div>
       )}
