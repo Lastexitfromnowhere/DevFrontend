@@ -18,6 +18,7 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [itemsMinted, setItemsMinted] = useState<number | null>(null);
 
   const handleMint = async () => {
     if (!publicKey) {
@@ -36,6 +37,8 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
         address: new PublicKey(candyMachineId),
       });
 
+      setItemsMinted(candyMachine.itemsMinted.toNumber());
+
       const candyGuard = candyMachine.candyGuard;
 
       const priceBasisPoints =
@@ -45,7 +48,6 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
 
       console.log('🔍 Expected Price:', presalePrice, '| Candy Machine Price:', candyMachinePrice);
 
-      // Comparaison tolérante
       if (Math.abs(candyMachinePrice - presalePrice) > 0.000001) {
         setError(`Price mismatch. Expected ${presalePrice} SOL, found ${candyMachinePrice} SOL`);
         return;
@@ -56,6 +58,8 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
         collectionUpdateAuthority: candyMachine.authorityAddress,
         group: 'default',
       });
+
+      setItemsMinted((prev) => (prev !== null ? prev + 1 : null));
 
       alert(`✅ NFT minted successfully!\n\nView on Solscan:\nhttps://solscan.io/token/${nft.address.toBase58()}?cluster=devnet`);
     } catch (err) {
@@ -86,10 +90,13 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
       />
       {/* Texte à gauche */}
       <div className="flex-1 z-10 flex flex-col justify-center items-start p-8 md:p-12">
-        <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-8 leading-tight">LAST<br />PARADOX</h1>
+        <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-tight">LAST<br />PARADOX</h1>
         <p className="text-gray-400 text-lg mb-2 tracking-widest">CLAIM YOUR NFT</p>
-        <p className="text-gray-500 text-base mb-8">ONLY 5,000 NFTS AVAILABLE</p>
-        {error && <div className="text-red-400 font-medium mb-4">{error}</div>}
+        <p className="text-gray-500 text-base mb-2">ONLY 5,000 NFTS AVAILABLE</p>
+        {itemsMinted !== null && (
+          <p className="text-gray-400 text-sm mt-1">{itemsMinted} / 5000 NFTs minted</p>
+        )}
+        {error && <div className="text-red-400 font-medium mt-4">{error}</div>}
       </div>
 
       {/* Carte à droite */}
