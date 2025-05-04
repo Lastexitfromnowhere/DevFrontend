@@ -14,6 +14,8 @@ import {
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import { authService } from '@/services/authService';
+import { ConnectionProvider } from '@solana/wallet-adapter-react';
+import { clusterApiUrl } from '@solana/web3.js';
 
 // Interface du contexte de portefeuille
 interface WalletContextType {
@@ -43,15 +45,19 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
     new SolflareWalletAdapter()
   ], []);
 
+  const endpoint = useMemo(() => clusterApiUrl('devnet'), []);
+
   return (
-    <WalletProvider 
-      wallets={wallets} 
-      autoConnect
-    >
-      <WalletContextWrapper>
-        {children}
-      </WalletContextWrapper>
-    </WalletProvider>
+    <ConnectionProvider endpoint={endpoint}>
+      <WalletProvider 
+        wallets={wallets} 
+        autoConnect
+      >
+        <WalletContextWrapper>
+          {children}
+        </WalletContextWrapper>
+      </WalletProvider>
+    </ConnectionProvider>
   );
 };
 
