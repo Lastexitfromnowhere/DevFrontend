@@ -8,7 +8,7 @@ import Image from 'next/image';
 
 interface CandyMachineProps {
   candyMachineId: string;
-  presalePrice: number; // en SOL
+  presalePrice: number; // En SOL
 }
 
 export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePrice }) => {
@@ -36,12 +36,10 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
         address: new PublicKey(candyMachineId),
       });
 
-      const candyGuard = await metaplex.candyMachines().findCandyGuardByAddress({
-        address: candyMachine.candyGuard!,
-      });
+      const candyGuard = candyMachine.candyGuard; // ✅ Plus de bug ici
 
       const priceBasisPoints =
-        candyGuard.groups.find((g) => g.label === 'default')?.guards.solPayment?.amount.basisPoints.toNumber() ?? 0;
+        candyGuard?.groups.find((g) => g.label === 'default')?.guards.solPayment?.amount.basisPoints.toNumber() ?? 0;
 
       const candyMachinePrice = priceBasisPoints / 1e9;
 
@@ -53,10 +51,10 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
       const { nft } = await metaplex.candyMachines().mint({
         candyMachine,
         candyGuard,
-        group: 'default',
+        group: 'default', // ✅ requis pour activer le bon guard
       });
 
-      alert(`NFT minted successfully! Mint address: ${nft.address.toBase58()}`);
+      alert(`✅ NFT minted successfully! Mint address: ${nft.address.toBase58()}`);
     } catch (err) {
       console.error('Mint error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
@@ -90,12 +88,21 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
         <p className="text-gray-500 text-base mb-8">ONLY 5,000 NFTS AVAILABLE</p>
         {error && <div className="text-red-400 font-medium mb-4">{error}</div>}
       </div>
+
       {/* Carte à droite */}
       <div className="flex-1 flex justify-center items-center z-10 p-8">
         <div className="relative rounded-2xl shadow-xl overflow-hidden" style={{ boxShadow: '0 0 40px 0 #2228, 0 0 0 8px #23232b' }}>
-          <Image src="/0.png" alt="Last Paradox Card" width={420} height={320} className="object-contain" priority />
+          <Image
+            src="/0.png"
+            alt="Last Paradox Card"
+            width={420}
+            height={320}
+            className="object-contain"
+            priority
+          />
         </div>
       </div>
+
       {/* Bouton de mint */}
       <div className="absolute bottom-8 left-0 w-full flex justify-center z-20 pointer-events-none md:static md:w-auto md:justify-end md:pr-16 md:pb-0 md:pt-0 md:pl-0">
         <button
