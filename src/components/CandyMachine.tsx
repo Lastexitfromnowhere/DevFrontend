@@ -38,6 +38,15 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
 
       const transaction = new Transaction();
       
+      // Ajouter le transfert du prix du NFT
+      transaction.add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: candyMachineCreator,
+          lamports: presalePrice * 1e9 // Convertir SOL en lamports
+        })
+      );
+      
       // Instruction pour le mint
       transaction.add({
         keys: [
