@@ -36,13 +36,19 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
         new PublicKey('cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ')
       );
 
+      // PDA pour le compte de paiement
+      const [paymentAccount] = await PublicKey.findProgramAddress(
+        [Buffer.from('candy_machine'), candyMachinePubkey.toBuffer(), Buffer.from('payment')],
+        new PublicKey('cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ')
+      );
+
       const transaction = new Transaction();
       
       // Ajouter le transfert du prix du NFT
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: candyMachineCreator,
+          toPubkey: paymentAccount,
           lamports: presalePrice * 1e9 // Convertir SOL en lamports
         })
       );
@@ -54,6 +60,7 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
           { pubkey: candyMachineCreator, isSigner: false, isWritable: false },
           { pubkey: publicKey, isSigner: true, isWritable: true },
           { pubkey: mintAuthority, isSigner: false, isWritable: false },
+          { pubkey: paymentAccount, isSigner: false, isWritable: true },
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
           { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
         ],
