@@ -50,8 +50,8 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
 
       const { nft } = await metaplex.candyMachines().mint({
         candyMachine,
-        
-        group: 'default', // ✅ requis pour activer le bon guard
+        collectionUpdateAuthority: candyMachine.authorityAddress,
+        group: 'default',
       });
 
       alert(`✅ NFT minted successfully! Mint address: ${nft.address.toBase58()}`);
