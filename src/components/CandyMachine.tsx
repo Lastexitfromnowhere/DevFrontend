@@ -50,7 +50,7 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
 
       const { nft } = await metaplex.candyMachines().mint({
         candyMachine,
-        candyGuard,
+        
         group: 'default', // ✅ requis pour activer le bon guard
       });
 
