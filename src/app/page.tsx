@@ -21,6 +21,7 @@ import UnifiedDHTView from '@/components/dht/UnifiedDHTView';
 import RewardsMechanism from '@/components/ecosystem/RewardsMechanism';
 import DiscordLink from '@/components/discord/DiscordLink';
 import HeaderDiscordButton from '@/components/discord/HeaderDiscordButton';
+import { CandyMachine } from '@/components/CandyMachine';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
@@ -72,6 +73,7 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <EcosystemDescription />
+            <CandyMachine candyMachineId="3CwyuaEk3BcMjBYV5UagZB3MDkBjGLuKCmEVyqxECSH2" presalePrice={0.037} />
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Main Content - 3 colonnes */}
               <div className="lg:col-span-3 space-y-6">
