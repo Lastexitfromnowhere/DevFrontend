@@ -21,7 +21,7 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
     try {
       setIsLoading(true);
       setError(null);
-      const connection = new Connection('https://api.mainnet-beta.solana.com', 'confirmed');
+      const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
       const candyMachinePubkey = new PublicKey('3CwyuaEk3BcMjBYV5UagZB3MDkBjGLuKCmEVyqxECSH2');
       
       // PDA pour le Candy Machine
