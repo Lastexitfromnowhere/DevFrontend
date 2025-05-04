@@ -10,7 +10,6 @@ import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
-  BackpackWalletAdapter,
 } from '@solana/wallet-adapter-wallets';
 
 import { WalletContextProvider } from '@/contexts/WalletContext';
@@ -25,7 +24,6 @@ export default function ClientProviders({ children }: { children: ReactNode }) {
   const wallets = [
     new PhantomWalletAdapter(),
     new SolflareWalletAdapter(),
-    new BackpackWalletAdapter(),
   ];
 
   return (
