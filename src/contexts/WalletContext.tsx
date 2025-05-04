@@ -17,6 +17,14 @@ import { authService } from '@/services/authService';
 import { ConnectionProvider } from '@solana/wallet-adapter-react';
 import { clusterApiUrl } from '@solana/web3.js';
 
+// Déterminer le réseau en fonction de l'environnement
+const getNetwork = () => {
+  if (process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet') {
+    return 'mainnet-beta';
+  }
+  return 'devnet';
+};
+
 // Interface du contexte de portefeuille
 interface WalletContextType {
   isConnected: boolean;
@@ -45,7 +53,7 @@ export const WalletContextProvider = ({ children }: { children: ReactNode }) => 
     new SolflareWalletAdapter()
   ], []);
 
-  const endpoint = useMemo(() => clusterApiUrl('devnet'), []);
+  const endpoint = useMemo(() => clusterApiUrl(getNetwork()), []);
 
   return (
     <ConnectionProvider endpoint={endpoint}>
