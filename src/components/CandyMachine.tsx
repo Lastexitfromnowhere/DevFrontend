@@ -79,7 +79,7 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
       <div className="flex-1 flex justify-center items-center z-10 p-8">
         <div className="relative rounded-2xl shadow-xl overflow-hidden" style={{boxShadow: '0 0 40px 0 #2228, 0 0 0 8px #23232b'}}>
           <Image
-            src="https://wind-frontend-rosy.vercel.app/LastParadox1.png"
+            src="https://wind-frontend-rosy.vercel.app/0.png"
             alt="Last Paradox Card"
             width={420}
             height={320}
