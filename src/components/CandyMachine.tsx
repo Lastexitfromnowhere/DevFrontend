@@ -24,21 +24,12 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
       const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
       const candyMachinePubkey = new PublicKey('3CwyuaEk3BcMjBYV5UagZB3MDkBjGLuKCmEVyqxECSH2');
       
-      // PDA pour le Candy Machine
-      const [candyMachineCreator] = await PublicKey.findProgramAddress(
-        [Buffer.from('candy_machine'), candyMachinePubkey.toBuffer()],
-        new PublicKey('cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ')
-      );
+      // Compte créateur du Candy Machine (défini dans config.json)
+      const candyMachineCreator = new PublicKey('D6CTcGFzBdwFZ8X31uPGVkpP5yPJn9KQRos1V5c8Ggho');
 
       // PDA pour le mint
       const [mintAuthority] = await PublicKey.findProgramAddress(
         [Buffer.from('candy_machine'), candyMachinePubkey.toBuffer(), Buffer.from('mint_authority')],
-        new PublicKey('cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ')
-      );
-
-      // PDA pour le compte de paiement
-      const [paymentAccount] = await PublicKey.findProgramAddress(
-        [Buffer.from('candy_machine'), candyMachinePubkey.toBuffer(), Buffer.from('payment')],
         new PublicKey('cndy3Z4yapfJBmL3ShUp5exZKqR3z33thTzeNMm2gRZ')
       );
 
@@ -48,7 +39,7 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
       transaction.add(
         SystemProgram.transfer({
           fromPubkey: publicKey,
-          toPubkey: paymentAccount,
+          toPubkey: candyMachineCreator,
           lamports: presalePrice * 1e9 // Convertir SOL en lamports
         })
       );
@@ -60,7 +51,6 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
           { pubkey: candyMachineCreator, isSigner: false, isWritable: false },
           { pubkey: publicKey, isSigner: true, isWritable: true },
           { pubkey: mintAuthority, isSigner: false, isWritable: false },
-          { pubkey: paymentAccount, isSigner: false, isWritable: true },
           { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
           { pubkey: SYSVAR_RENT_PUBKEY, isSigner: false, isWritable: false },
         ],
