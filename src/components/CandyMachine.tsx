@@ -12,6 +12,7 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
   const { publicKey, sendTransaction } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
 
   const handleMint = async () => {
     if (!publicKey) {
@@ -69,7 +70,16 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
   };
 
   return (
-    <div className="w-full bg-[#19191b] rounded-3xl shadow-2xl p-0 md:p-8 flex flex-col md:flex-row items-center justify-between overflow-hidden relative" style={{minHeight: 400}}>
+    <div 
+      className="w-full bg-[#19191b] rounded-3xl shadow-2xl p-0 md:p-8 flex flex-col md:flex-row items-center justify-between overflow-hidden relative transition-all duration-500" 
+      style={{
+        minHeight: 400,
+        filter: isHovered ? 'none' : 'blur(8px)',
+        transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+      }}
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
       {/* Halo effet */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none" style={{background: 'radial-gradient(ellipse at 20% 0%, rgba(120,120,255,0.12) 0%, transparent 70%)'}} />
       {/* Texte à gauche */}
