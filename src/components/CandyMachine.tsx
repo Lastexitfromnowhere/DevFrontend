@@ -36,15 +36,18 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
         address: new PublicKey(candyMachineId),
       });
 
-      const candyGuard = candyMachine.candyGuard; // ✅ Plus de bug ici
+      const candyGuard = candyMachine.candyGuard;
 
       const priceBasisPoints =
         candyGuard?.groups.find((g) => g.label === 'default')?.guards.solPayment?.amount.basisPoints.toNumber() ?? 0;
 
       const candyMachinePrice = priceBasisPoints / 1e9;
 
-      if (candyMachinePrice !== presalePrice) {
-        setError('Price mismatch with Candy Machine configuration');
+      console.log('🔍 Expected Price:', presalePrice, '| Candy Machine Price:', candyMachinePrice);
+
+      // Comparaison tolérante
+      if (Math.abs(candyMachinePrice - presalePrice) > 0.000001) {
+        setError(`Price mismatch. Expected ${presalePrice} SOL, found ${candyMachinePrice} SOL`);
         return;
       }
 
@@ -54,7 +57,7 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
         group: 'default',
       });
 
-      alert(`✅ NFT minted successfully! Mint address: ${nft.address.toBase58()}`);
+      alert(`✅ NFT minted successfully!\n\nView on Solscan:\nhttps://solscan.io/token/${nft.address.toBase58()}?cluster=devnet`);
     } catch (err) {
       console.error('Mint error:', err);
       setError(err instanceof Error ? err.message : 'An error occurred');
