@@ -2,27 +2,26 @@
 
 import { FC, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { Connection, PublicKey } from '@solana/web3.js';
-import { Metaplex, walletAdapterIdentity } from '@metaplex-foundation/js';
+import { Connection, PublicKey, Transaction, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
+import { Metaplex, walletAdapterIdentity, toMetaplexFile } from '@metaplex-foundation/js';
 import Image from 'next/image';
 
-interface CandyMachineProps {
-  candyMachineId: string;
-  presalePrice: number; // En SOL
+interface MintNFTProps {
+  ipfsCid: string;
 }
 
-export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePrice }) => {
+export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
   const wallet = useWallet();
   const { publicKey } = wallet;
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const [itemsMinted, setItemsMinted] = useState<number | null>(null);
+  const [mintedCount, setMintedCount] = useState<number>(0);
 
   const handleMint = async () => {
     if (!publicKey) {
-      setError('Please connect your wallet');
+      setError('Veuillez connecter votre wallet');
       return;
     }
 
@@ -33,38 +32,35 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
       const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
       const metaplex = Metaplex.make(connection).use(walletAdapterIdentity(wallet));
 
-      const candyMachine = await metaplex.candyMachines().findByAddress({
-        address: new PublicKey(candyMachineId),
+      // Récupérer les métadonnées depuis Pinata
+      const metadataUrl = `https://gateway.pinata.cloud/ipfs/${ipfsCid}/0.json`;
+      const response = await fetch(metadataUrl);
+      const metadata = await response.json();
+
+      // Créer l'URI pour l'image
+      const imageUri = `https://gateway.pinata.cloud/ipfs/${ipfsCid}/${metadata.image}`;
+
+      // Créer le NFT
+      const { nft } = await metaplex.nfts().create({
+        uri: metadataUrl,
+        name: metadata.name,
+        symbol: "LPN",
+        sellerFeeBasisPoints: 500, // 5%
+        creators: [
+          {
+            address: publicKey,
+            share: 100,
+          },
+        ],
+        isMutable: true,
       });
 
-      setItemsMinted(candyMachine.itemsMinted.toNumber());
+      setMintedCount(prev => prev + 1);
 
-      const candyGuard = candyMachine.candyGuard;
-
-      const priceBasisPoints =
-        candyGuard?.groups.find((g) => g.label === 'default')?.guards.solPayment?.amount.basisPoints.toNumber() ?? 0;
-
-      const candyMachinePrice = priceBasisPoints / 1e9;
-
-      console.log('🔍 Expected Price:', presalePrice, '| Candy Machine Price:', candyMachinePrice);
-
-      if (Math.abs(candyMachinePrice - presalePrice) > 0.000001) {
-        setError(`Price mismatch. Expected ${presalePrice} SOL, found ${candyMachinePrice} SOL`);
-        return;
-      }
-
-      const { nft } = await metaplex.candyMachines().mint({
-        candyMachine,
-        collectionUpdateAuthority: candyMachine.authorityAddress,
-        group: 'default',
-      });
-
-      setItemsMinted((prev) => (prev !== null ? prev + 1 : null));
-
-      alert(`✅ NFT minted successfully!\n\nView on Solscan:\nhttps://solscan.io/token/${nft.address.toBase58()}?cluster=devnet`);
+      alert(`✅ NFT minté avec succès!\n\nVoir sur Solscan:\nhttps://solscan.io/token/${nft.address.toBase58()}?cluster=devnet`);
     } catch (err) {
-      console.error('Mint error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      console.error('Erreur de mint:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
     } finally {
       setIsLoading(false);
     }
@@ -72,39 +68,51 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
 
   return (
     <div
-      className="w-full bg-[#19191b] rounded-3xl shadow-2xl p-0 md:p-8 flex flex-col md:flex-row items-center justify-between overflow-hidden relative transition-all duration-500"
+      className="w-full rounded-3xl shadow-2xl p-0 md:p-8 flex flex-col md:flex-row items-center justify-between overflow-hidden relative transition-all duration-500"
       style={{
         minHeight: 400,
         filter: isHovered ? 'none' : 'blur(8px)',
         transform: isHovered ? 'scale(1.02)' : 'scale(1)',
+        backgroundImage: 'url("https://wind-frontend-rosy.vercel.app/LastParadox1.png")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Halo effet */}
+      {/* Overlay sombre pour améliorer la lisibilité */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        style={{
+          filter: isHovered ? 'none' : 'blur(8px)',
+        }}
+      />
+      
+      {/* Effet de halo */}
       <div
         className="absolute top-0 left-0 w-full h-full pointer-events-none"
         style={{
           background: 'radial-gradient(ellipse at 20% 0%, rgba(120,120,255,0.12) 0%, transparent 70%)',
         }}
       />
+      
       {/* Texte à gauche */}
       <div className="flex-1 z-10 flex flex-col justify-center items-start p-8 md:p-12">
         <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-tight">LAST<br />PARADOX</h1>
-        <p className="text-gray-400 text-lg mb-2 tracking-widest">CLAIM YOUR NFT</p>
-        <p className="text-gray-500 text-base mb-2">ONLY 5,000 NFTS AVAILABLE</p>
-        {itemsMinted !== null && (
-          <p className="text-gray-400 text-sm mt-1">{itemsMinted} / 5000 NFTs minted</p>
+        <p className="text-gray-400 text-lg mb-2 tracking-widest">MINTEZ VOTRE NFT</p>
+        <p className="text-gray-500 text-base mb-2">COLLECTION EXCLUSIVE</p>
+        {mintedCount > 0 && (
+          <p className="text-gray-400 text-sm mt-1">{mintedCount} NFT(s) minté(s)</p>
         )}
         {error && <div className="text-red-400 font-medium mt-4">{error}</div>}
       </div>
 
-      {/* Carte à droite */}
+      {/* Image à droite */}
       <div className="flex-1 flex justify-center items-center z-10 p-8">
         <div className="relative rounded-2xl shadow-xl overflow-hidden" style={{ boxShadow: '0 0 40px 0 #2228, 0 0 0 8px #23232b' }}>
           <Image
-            src="/0.png"
-            alt="Last Paradox Card"
+            src={`https://gateway.pinata.cloud/ipfs/${ipfsCid}/0.png`}
+            alt="Last Paradox NFT"
             width={420}
             height={320}
             className="object-contain"
@@ -120,9 +128,9 @@ export const CandyMachine: FC<CandyMachineProps> = ({ candyMachineId, presalePri
           disabled={isLoading || !publicKey}
           className="pointer-events-auto bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 px-10 rounded-xl shadow-lg text-lg transition-all duration-200 hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Processing transaction...' : `Buy NFT (${presalePrice} SOL)`}
+          {isLoading ? 'Transaction en cours...' : 'Minter NFT'}
         </button>
       </div>
     </div>
   );
-};
+}; 
