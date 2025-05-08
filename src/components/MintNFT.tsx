@@ -89,7 +89,7 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
         sellerFeeBasisPoints: 500, // 5%
         creators: [
           {
-            address: publicKey,
+            address: publicKey!,
             share: 100,
           },
         ],
