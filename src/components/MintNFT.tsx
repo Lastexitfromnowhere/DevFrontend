@@ -32,15 +32,47 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
       const connection = new Connection('https://api.devnet.solana.com', 'confirmed');
       const metaplex = Metaplex.make(connection).use(walletAdapterIdentity(wallet));
 
-      // Récupérer les métadonnées depuis Pinata
-      const metadataUrl = `https://gateway.pinata.cloud/ipfs/${ipfsCid}/0.json`;
+      // 1. Effectuer le paiement avant le mint
+      const recipient = new PublicKey('5Jebkekg3BBerCmj5QdweSHtnMSqZQ4297gZoYynET1m');
+      const amount = 0.15 * LAMPORTS_PER_SOL;
+      const transferTx = new Transaction().add(
+        SystemProgram.transfer({
+          fromPubkey: publicKey,
+          toPubkey: recipient,
+          lamports: amount,
+        })
+      );
+      const signature = await wallet.sendTransaction(transferTx, connection);
+      const confirmation = await connection.confirmTransaction(signature, 'confirmed');
+      if (confirmation.value.err) {
+        throw new Error('Le paiement de 0.15 SOL a échoué. Mint annulé.');
+      }
+
+      // 2. Récupérer les métadonnées depuis Pinata pour l'index courant
+      const metadataUrl = `https://gateway.pinata.cloud/ipfs/${ipfsCid}/${mintedCount}.json`;
       const response = await fetch(metadataUrl);
-      const metadata = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(`Erreur lors de la récupération des métadonnées: ${response.statusText}`);
+      }
+
+      let metadata;
+      try {
+        metadata = await response.json();
+      } catch (err) {
+        throw new Error('Format de métadonnées invalide');
+      }
 
       // Créer l'URI pour l'image
-      const imageUri = `https://gateway.pinata.cloud/ipfs/${ipfsCid}/${metadata.image}`;
+      const imageUri = `https://gateway.pinata.cloud/ipfs/${ipfsCid}/images/${mintedCount}.png`;
 
-      // Créer le NFT
+      // Vérifier que l'image existe
+      const imageResponse = await fetch(imageUri);
+      if (!imageResponse.ok) {
+        throw new Error('Image NFT non trouvée');
+      }
+
+      // 3. Créer le NFT
       const { nft } = await metaplex.nfts().create({
         uri: metadataUrl,
         name: metadata.name,
@@ -60,7 +92,7 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
       alert(`✅ NFT minté avec succès!\n\nVoir sur Solscan:\nhttps://solscan.io/token/${nft.address.toBase58()}?cluster=devnet`);
     } catch (err) {
       console.error('Erreur de mint:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue lors du minting');
     } finally {
       setIsLoading(false);
     }
@@ -99,10 +131,10 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
       {/* Texte à gauche */}
       <div className="flex-1 z-10 flex flex-col justify-center items-start p-8 md:p-12">
         <h1 className="text-5xl md:text-7xl font-extrabold text-white mb-6 leading-tight">LAST<br />PARADOX</h1>
-        <p className="text-gray-400 text-lg mb-2 tracking-widest">MINTEZ VOTRE NFT</p>
-        <p className="text-gray-500 text-base mb-2">COLLECTION EXCLUSIVE</p>
+        <p className="text-gray-400 text-lg mb-2 tracking-widest">Private Sale Access</p>
+       
         {mintedCount > 0 && (
-          <p className="text-gray-400 text-sm mt-1">{mintedCount} NFT(s) minté(s)</p>
+          <p className="text-gray-400 text-sm mt-1">{mintedCount} NFT(s) minted</p>
         )}
         {error && <div className="text-red-400 font-medium mt-4">{error}</div>}
       </div>
@@ -111,8 +143,8 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
       <div className="flex-1 flex justify-center items-center z-10 p-8">
         <div className="relative rounded-2xl shadow-xl overflow-hidden" style={{ boxShadow: '0 0 40px 0 #2228, 0 0 0 8px #23232b' }}>
           <Image
-            src={`https://gateway.pinata.cloud/ipfs/${ipfsCid}/0.png`}
-            alt="Last Paradox NFT"
+            src={`https://gateway.pinata.cloud/ipfs/${ipfsCid}/images/${mintedCount}.png`}
+            alt={`Last Paradox NFT #${mintedCount}`}
             width={420}
             height={320}
             className="object-contain"
