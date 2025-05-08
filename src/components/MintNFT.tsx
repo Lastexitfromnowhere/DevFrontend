@@ -18,13 +18,21 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
   const [error, setError] = useState<string | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [mintedCount, setMintedCount] = useState<number>(0);
+  const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
+  const [pendingMint, setPendingMint] = useState(false);
+  const [lastPaymentSig, setLastPaymentSig] = useState<string | null>(null);
 
   const handleMint = async () => {
     if (!publicKey) {
       setError('Veuillez connecter votre wallet');
       return;
     }
+    setShowPaymentConfirm(true);
+  };
 
+  const confirmAndMint = async () => {
+    setShowPaymentConfirm(false);
+    setPendingMint(true);
     try {
       setIsLoading(true);
       setError(null);
@@ -43,6 +51,7 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
         })
       );
       const signature = await wallet.sendTransaction(transferTx, connection);
+      setLastPaymentSig(signature);
       const confirmation = await connection.confirmTransaction(signature, 'confirmed');
       if (confirmation.value.err) {
         throw new Error('Le paiement de 0.15 SOL a échoué. Mint annulé.');
@@ -95,6 +104,7 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue lors du minting');
     } finally {
       setIsLoading(false);
+      setPendingMint(false);
     }
   };
 
@@ -157,12 +167,51 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
       <div className="absolute bottom-8 left-0 w-full flex justify-center z-20 pointer-events-none md:static md:w-auto md:justify-end md:pr-16 md:pb-0 md:pt-0 md:pl-0">
         <button
           onClick={handleMint}
-          disabled={isLoading || !publicKey}
+          disabled={isLoading || !publicKey || pendingMint}
           className="pointer-events-auto bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold py-4 px-10 rounded-xl shadow-lg text-lg transition-all duration-200 hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          {isLoading ? 'Transaction en cours...' : 'Minter NFT'}
+          {isLoading || pendingMint ? 'Transaction en cours...' : 'Minter NFT'}
         </button>
       </div>
+
+      {/* Modale de confirmation de paiement */}
+      {showPaymentConfirm && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+          <div className="bg-gray-900 rounded-2xl p-8 shadow-2xl max-w-md w-full text-center">
+            <h2 className="text-2xl font-bold mb-4">Confirmer le paiement</h2>
+            <p className="mb-4">Vous allez payer <span className="text-blue-400 font-bold">0.15 SOL</span> pour minter ce NFT.<br/>Ce paiement est obligatoire pour accéder à la collection.</p>
+            <div className="flex justify-center gap-4 mt-6">
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold"
+                onClick={confirmAndMint}
+              >
+                Confirmer et payer
+              </button>
+              <button
+                className="bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold"
+                onClick={() => setShowPaymentConfirm(false)}
+              >
+                Annuler
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Affichage du hash de paiement si dispo */}
+      {lastPaymentSig && (
+        <div className="mt-4 text-xs text-blue-300">
+          Paiement envoyé :
+          <a
+            href={`https://solscan.io/tx/${lastPaymentSig}?cluster=devnet`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline ml-1"
+          >
+            Voir la transaction sur Solscan
+          </a>
+        </div>
+      )}
     </div>
   );
 }; 
