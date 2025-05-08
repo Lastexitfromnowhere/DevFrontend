@@ -45,7 +45,7 @@ export const MintNFT: FC<MintNFTProps> = ({ ipfsCid }) => {
       const amount = 0.15 * LAMPORTS_PER_SOL;
       const transferTx = new Transaction().add(
         SystemProgram.transfer({
-          fromPubkey: publicKey,
+          fromPubkey: publicKey!,
           toPubkey: recipient,
           lamports: amount,
         })
