@@ -1,12 +1,44 @@
 // src/services/authService.js
-import { API_BASE_URL } from '../config/env';
 import axios from 'axios';
 
-const API_URL = API_BASE_URL;
+// Utiliser des chemins relatifs pour que le proxy Next.js intercepte les requêtes
+const API_URL = '';
 const TOKEN_KEY = 'auth_token';
 const USER_KEY = 'user_info';
 const WALLET_ADDRESS_KEY = 'wallet_address';
 const TOKEN_EXPIRY_KEY = 'token_expiry';
+
+// Fonction pour détecter l'origine actuelle
+const getCurrentOrigin = () => {
+  if (typeof window !== 'undefined') {
+    return window.location.origin;
+  }
+  return 'https://wind-frontend-rosy.vercel.app'; // Valeur par défaut
+};
+
+// Déterminer l'origine à utiliser pour les en-têtes
+const getOriginForHeaders = () => {
+  const currentOrigin = getCurrentOrigin();
+  // Si l'origine actuelle est lastparadox.xyz, utiliser wind-frontend-rosy.vercel.app comme origine pour l'API
+  if (currentOrigin.includes('lastparadox.xyz')) {
+    return 'https://wind-frontend-rosy.vercel.app';
+  }
+  return currentOrigin;
+};
+
+// Créer une instance axios avec des en-têtes spécifiques pour contourner CORS
+const api = axios.create();
+
+// Ajouter un intercepteur pour ajouter les en-têtes à chaque requête
+api.interceptors.request.use(config => {
+  const originForHeaders = getOriginForHeaders();
+  config.headers = {
+    ...config.headers,
+    'Origin': originForHeaders,
+    'X-Forwarded-Host': new URL(originForHeaders).host
+  };
+  return config;
+});
 
 // Fonction pour enregistrer un nouvel utilisateur
 export const register = async (username, email, password) => {
