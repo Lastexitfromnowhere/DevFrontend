@@ -15,34 +15,34 @@ import {
 
 const empowermentFeatures = [
   {
-    icon: Key,
-    title: "Self-Custody",
-    description: "Be your own bank with secure wallet solutions."
-  },
-  {
     icon: Shield,
-    title: "Decentralized Identity",
-    description: "Take control of your online presence."
-  },
-  {
-    icon: CreditCard,
-    title: "DeFi Access",
-    description: "Participate in decentralized finance without intermediaries."
-  },
-  {
-    icon: Users,
-    title: "DAO Governance",
-    description: "Have a say in the projects you support."
-  },
-  {
-    icon: Database,
-    title: "Data Ownership",
-    description: "Control and monetize your personal data."
+    title: "VPN Privacy",
+    description: "Secure your connection with our decentralized VPN network."
   },
   {
     icon: Lock,
-    title: "Privacy First",
-    description: "Enhanced privacy through decentralized solutions."
+    title: "No-Logs Policy",
+    description: "Your browsing activity is never tracked or stored."
+  },
+  {
+    icon: Key,
+    title: "Encryption",
+    description: "Military-grade encryption protects all your data."
+  },
+  {
+    icon: Database,
+    title: "Decentralized Network",
+    description: "No single point of failure ensures constant availability."
+  },
+  {
+    icon: Users,
+    title: "Community Nodes",
+    description: "Powered by users, for users - a truly peer-to-peer network."
+  },
+  {
+    icon: CreditCard,
+    title: "Token Incentives",
+    description: "Earn rewards for contributing to network security."
   }
 ];
 
@@ -51,13 +51,13 @@ export default function Empowerment({ onClose }: { onClose: () => void }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="Web3 Empowerment"
-      className="max-w-2xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg"
+      title="Last Exit Network Security"
+      className="max-w-2xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow"
     >
       <div className="space-y-6 animate-fade-in-down">
         <p className="text-gray-300 bg-black/30 backdrop-blur-sm p-3 rounded-md border border-gray-700/30">
-          Web3 empowerment is about giving individuals control over their digital 
-          assets and online identities. Here's how we contribute to this vision:
+          Last Paradox Network is committed to providing secure, private, and decentralized VPN services.
+          Here's how we protect your online freedom and privacy:
         </p>
 
         <div className="grid md:grid-cols-2 gap-4">
@@ -87,7 +87,7 @@ export default function Empowerment({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
-          {`// Empowering users in the decentralized web, one feature at a time.`}
+          {`// Freedom • Security • Anonymity`}
         </div>
       </div>
     </Modal>
