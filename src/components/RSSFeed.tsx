@@ -3,6 +3,147 @@
 // src/components/RSSFeed.tsx
 import React, { useEffect, useState } from 'react';
 import { Card } from '@/components/ui/Card';
+import { NewspaperIcon, ExternalLink, AlertCircle } from 'lucide-react';
+import { Spinner } from '@/components/ui/Spinner';
+import { config } from '@/config/env';
+
+// Type pour les messages Discord
+interface DiscordAttachment {
+  url: string;
+  name: string;
+  contentType?: string;
+}
+
+interface DiscordNewsItem {
+  id: string;
+  content: string;
+  author: string;
+  timestamp: number;
+  date: string;
+  attachments: DiscordAttachment[];
+}
+
+interface DiscordNewsResponse {
+  success: boolean;
+  messages: DiscordNewsItem[];
+}
+
+export default function RSSFeed() {
+  const [news, setNews] = useState<DiscordNewsItem[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Format the message content to get a title (first line or first 60 chars)
+  const getMessageTitle = (content: string): string => {
+    if (!content) return "News Update";
+    const firstLine = content.split('\n')[0];
+    return firstLine.length > 60 ? `${firstLine.substring(0, 60)}...` : firstLine;
+  };
+
+  // Format the date to a more readable format
+  const formatDate = (dateString: string): string => {
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+
+  useEffect(() => {
+    const fetchDiscordNews = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`${config.API_BASE_URL}/discord/news`);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch Discord news: ${response.status}`);
+        }
+        const data: DiscordNewsResponse = await response.json();
+        if (data.success && Array.isArray(data.messages)) {
+          setNews(data.messages);
+          setError(null);
+        } else {
+          throw new Error('Invalid response format');
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to load news');
+        setNews([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchDiscordNews();
+    const interval = setInterval(fetchDiscordNews, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+            <NewspaperIcon className="text-blue-400" size={20} />
+          </div>
+          <h2 className="text-xl font-semibold text-white">Last Paradox Updates</h2>
+        </div>
+        {isLoading && <Spinner size="sm" />}
+      </div>
+      {error && (
+        <div className="text-center p-3 mb-4 bg-red-500/20 backdrop-blur-sm rounded-lg border border-red-700/30">
+          <div className="flex items-center justify-center space-x-2">
+            <AlertCircle className="text-red-400" size={16} />
+            <p className="text-red-300 text-sm">{error}</p>
+          </div>
+        </div>
+      )}
+      <div className="space-y-4">
+        {news.map((item) => (
+          <div 
+            key={item.id} 
+            className="p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg transition-all duration-300 hover:bg-black/40"
+          >
+            <div className="flex justify-between items-start">
+              <h3 className="font-medium text-white">{getMessageTitle(item.content)}</h3>
+              <span className="text-xs text-gray-400">{formatDate(item.date)}</span>
+            </div>
+            <p className="text-sm text-gray-300 mt-2 whitespace-pre-line">{item.content}</p>
+            <div className="flex justify-between items-center mt-3">
+              <span className="text-xs text-blue-400">By {item.author}</span>
+              {item.attachments && item.attachments.length > 0 && (
+                <div className="flex space-x-2">
+                  {item.attachments.map((attachment, index) => (
+                    <a 
+                      key={index}
+                      href={attachment.url} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center text-blue-400 hover:text-blue-300 text-xs"
+                    >
+                      {attachment.contentType?.includes('image') ? 'View image' : 'Download attachment'}
+                      <ExternalLink className="ml-1 w-3 h-3" />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
+        {news.length === 0 && !isLoading && !error && (
+          <div className="text-center py-6 text-gray-400">No updates available at the moment</div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
+
+// src/components/RSSFeed.tsx
+import React, { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/Card';
 import { NewspaperIcon, ArrowRight, ExternalLink, AlertCircle } from 'lucide-react';
 import { Spinner } from '@/components/ui/Spinner';
 import { config } from '@/config/env';
@@ -160,45 +301,7 @@ export default function RSSFeed() {
       </div>
     </Card>
   );
-}
-    source: "Treasury Updates"
-  }
-];
-
-export default function RSSFeed() {
-  return (
-    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-4">
-      <div className="flex items-center justify-between bg-black/30 backdrop-blur-sm p-3 rounded-lg border border-gray-700/30">
-        <div className="flex items-center space-x-2">
-          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
-            <NewspaperIcon className="text-blue-400" size={20} />
-          </div>
-          <h3 className="font-bold text-white">Latest Updates</h3>
-        </div>
-        <a 
-          href="#" 
-          className="text-sm text-blue-400 hover:text-blue-300 flex items-center bg-blue-500/10 backdrop-blur-sm p-1.5 rounded transition-all duration-200 border border-blue-500/20 hover:border-blue-500/40"
-        >
-          View All <ArrowRight size={16} className="ml-1" />
-        </a>
-      </div>
-
-      <div className="space-y-2">
-        {mockNews.map((item) => (
-          <a 
-            key={item.id}
-            href={item.link}
-            className="block p-3 rounded backdrop-blur-sm bg-black/30 hover:bg-black/50 
-                     transition-all duration-300 border border-gray-700/30
-                     hover:border-gray-600"
-          >
-            <div className="flex justify-between items-start">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-white flex items-center">
-                  {item.title}
-                  <ExternalLink size={12} className="ml-1 text-blue-400" />
-                </p>
-                <div className="flex items-center space-x-2 text-xs text-gray-400">
+}>
                   <span className="bg-blue-500/10 backdrop-blur-sm p-1 rounded">{item.source}</span>
                   <span>•</span>
                   <span>{new Date(item.date).toLocaleDateString()}</span>
