@@ -21,7 +21,7 @@ import UnifiedDHTView from '@/components/dht/UnifiedDHTView';
 import RewardsMechanism from '@/components/ecosystem/RewardsMechanism';
 import DiscordLink from '@/components/discord/DiscordLink';
 import HeaderDiscordButton from '@/components/discord/HeaderDiscordButton';
-import { MintNFT } from '@/components/MintNFT';
+import { TruffleMint } from '@/components/TruffleMint';
 
 const IPFS_CID = 'QmeZqms4zJXz91uNetmEKmxeG2fBQezGKz4egon5kiiai2';
 
@@ -75,7 +75,7 @@ export default function Dashboard() {
         return (
           <div className="space-y-6">
             <EcosystemDescription />
-            <MintNFT ipfsCid={IPFS_CID} />
+            <TruffleMint />
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
               {/* Main Content - 3 colonnes */}
               <div className="lg:col-span-3 space-y-6">
