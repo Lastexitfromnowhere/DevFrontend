@@ -16,7 +16,8 @@ if (typeof global !== 'undefined' && typeof global.CustomEvent !== 'function') {
 }
 
 // URL de base pour les requêtes DHT
-const API_BASE = config.API_BASE_URL;
+// Utiliser un chemin relatif pour que les requêtes passent par le proxy API configuré dans next.config.js
+const API_BASE = '/api';
 const DHT_API_BASE = `${API_BASE}/dht`;
 
 // Variables locales pour le cache et l'état
