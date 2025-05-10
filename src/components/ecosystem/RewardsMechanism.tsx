@@ -9,18 +9,18 @@ export default function RewardsMechanism({ onClose }: { onClose: () => void }) {
   const rewardsSections = [
     {
       icon: Shield,
-      title: "Principes de distribution",
+      title: "Distribution Principles",
       content: (
         <ul className="list-disc pl-6 text-gray-300 text-sm space-y-2">
-          <li>Attribution transparente des récompenses</li>
-          <li>Proportionnelle à l'engagement de l'utilisateur</li>
-          <li>Vérification décentralisée</li>
+          <li>Transparent reward attribution</li>
+          <li>Proportional to user engagement</li>
+          <li>Decentralized verification</li>
         </ul>
       )
     },
     {
       icon: Zap,
-      title: "Calcul des récompenses",
+      title: "Reward Calculation",
       content: (
         <pre className="text-blue-400 text-xs bg-black/30 backdrop-blur-sm p-3 rounded-md border border-gray-700/30 font-mono">
           {`function calculateRWRD(activity) {
@@ -35,18 +35,18 @@ export default function RewardsMechanism({ onClose }: { onClose: () => void }) {
     },
     {
       icon: Calendar,
-      title: "Périodes de réclamation",
+      title: "Claim Periods",
       content: (
         <div className="space-y-2 text-sm text-gray-300 bg-black/20 backdrop-blur-sm p-3 rounded-md">
-          <p>• Les récompenses quotidiennes sont réinitialisées à 00:00 UTC</p>
-          <p>• Bonus hebdomadaire pour les réclamations régulières</p>
-          <p>• Augmentation du multiplicateur mensuel</p>
+          <p>• Daily rewards reset at 00:00 UTC</p>
+          <p>• Weekly bonus for regular claims</p>
+          <p>• Monthly multiplier increase</p>
         </div>
       )
     },
     {
       icon: Star,
-      title: "Niveaux de récompense",
+      title: "Reward Levels",
       content: (
         <div className="space-y-2 bg-black/20 backdrop-blur-sm p-3 rounded-md">
           {[
@@ -71,8 +71,8 @@ export default function RewardsMechanism({ onClose }: { onClose: () => void }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="Mécanisme de récompenses"
-      className="max-w-2xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg"
+      title="Last Paradox Rewards"
+      className="max-w-2xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow"
     >
       <div className="space-y-6 animate-fade-in-down">
         {rewardsSections.map((section, index) => {
@@ -91,7 +91,7 @@ export default function RewardsMechanism({ onClose }: { onClose: () => void }) {
         })}
 
         <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
-          {`// Toutes les récompenses sont vérifiées sur la blockchain pour garantir la transparence`}
+          {`// Freedom • Security • Anonymity`}
         </div>
       </div>
     </Modal>

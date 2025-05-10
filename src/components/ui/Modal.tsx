@@ -4,13 +4,13 @@ import React, { ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
-// Interface mise à jour pour inclure le titre
+// Updated interface to include title
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   children: ReactNode;
   className?: string;
-  title?: string; // Ajout du titre comme propriété optionnelle
+  title?: string; // Added title as an optional property
 }
 
 export function Modal({ 
@@ -18,20 +18,20 @@ export function Modal({
   onClose, 
   children, 
   className = '',
-  title // Destructuration du titre
+  title // Destructuring the title
 }: ModalProps) {
-  // État pour tracker si le composant est monté côté client
+  // State to track if component is mounted on client side
   const [isMounted, setIsMounted] = useState(false);
 
-  // S'assure que le rendu n'a lieu que côté client
+  // Ensures rendering only happens on client side
   useEffect(() => {
     setIsMounted(true);
   }, []);
 
-  // Ne pas rendre si pas monté ou fermé
+  // Don't render if not mounted or closed
   if (!isOpen || !isMounted) return null;
 
-  // Utilisation de createPortal avec vérification côté client
+  // Using createPortal with client-side verification
   return isMounted ? createPortal(
     <div 
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -48,9 +48,9 @@ export function Modal({
           <X size={24} />
         </button>
         
-        {/* Rendu conditionnel du titre */}
+        {/* Conditional rendering of the title */}
         {title && (
-          <h2 className="text-xl font-bold text-green-300 mb-4">
+          <h2 className="text-xl font-bold text-gray-300 mb-4">
             {title}
           </h2>
         )}

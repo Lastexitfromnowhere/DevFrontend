@@ -51,7 +51,7 @@ export default function Empowerment({ onClose }: { onClose: () => void }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="Last Exit Network Security"
+      title="Last Paradox Network"
       className="max-w-2xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow"
     >
       <div className="space-y-6 animate-fade-in-down">

@@ -36,8 +36,8 @@ export default function LearningHub({ onClose }: { onClose: () => void }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="Centre d'apprentissage"
-      className="max-w-4xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg"
+      title="Last Paradox Learning Hub"
+      className="max-w-4xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow"
     >
       <div className="space-y-6 animate-fade-in-down">
         <div className="grid md:grid-cols-2 gap-4">
@@ -75,7 +75,7 @@ export default function LearningHub({ onClose }: { onClose: () => void }) {
                     <span className="text-white">{resource.type}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-400">Durée:</span>
+                    <span className="text-gray-400">Duration:</span>
                     <span className="text-white">{resource.duration}</span>
                   </div>
                 </div>
@@ -87,7 +87,7 @@ export default function LearningHub({ onClose }: { onClose: () => void }) {
                   onClick={() => window.open(resource.link, '_blank')}
                   className="mt-2"
                 >
-                  Accéder à la ressource
+                  Access Resource
                 </DashboardButton>
               </Card>
             );
@@ -95,7 +95,7 @@ export default function LearningHub({ onClose }: { onClose: () => void }) {
         </div>
 
         <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
-          {`// L'apprentissage continu est la clé de la maîtrise du Web3`}
+          {`// Freedom • Security • Anonymity`}
         </div>
       </div>
     </Modal>

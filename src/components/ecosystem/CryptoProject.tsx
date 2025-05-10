@@ -55,8 +55,8 @@ export default function CryptoProject({ onClose }: { onClose: () => void }) {
     <Modal
       isOpen={true}
       onClose={onClose}
-      title="Available Crypto Projects"
-      className="max-w-4xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg"
+      title="Last Paradox Projects"
+      className="max-w-4xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow"
     >
       <div className="space-y-6 animate-fade-in-down">
         <div className="grid md:grid-cols-2 gap-4">
@@ -66,7 +66,7 @@ export default function CryptoProject({ onClose }: { onClose: () => void }) {
               <Card 
                 key={index}
                 variant="hover"
-                className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg transition-all duration-500 space-y-4 hover:shadow-xl"
+                className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg transition-all duration-500 space-y-4 hover:shadow-xl hover:bg-black/50"
               >
                 <div className="flex items-center space-x-3">
                   <div className="p-2 bg-gray-800/60 backdrop-blur-sm border border-gray-700/30 rounded-lg">
@@ -114,9 +114,9 @@ export default function CryptoProject({ onClose }: { onClose: () => void }) {
           })}
         </div>
 
-        <p className="text-center text-xs text-gray-400">
-          {`// Projects subject to change. Always DYOR (Do Your Own Research)`}
-        </p>
+        <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
+          {`// Freedom • Security • Anonymity`}
+        </div>
       </div>
     </Modal>
   );
