@@ -13,40 +13,40 @@ import {
 
 const projects = [
   {
-    name: "Grass Node",
+    name: "Meson Network",
     icon: Leaf,
-    description: "Decentralized data sharing network. Earn rewards by providing network bandwidth and storage.",
-    rewardType: "Bandwidth & Storage",
+    description: "Decentralized bandwidth sharing network. Earn tokens by sharing unused internet bandwidth.",
+    rewardType: "Bandwidth Sharing",
     difficulty: "Easy",
-    estimatedMonthlyRewards: "50-200 RWRD",
-    website: "https://grassnode.io"
+    estimatedMonthlyRewards: "$20–$100 MESON",
+    website: "https://meson.network"
   },
   {
-    name: "Web3 Relay",
+    name: "Nodle",
     icon: Network,
-    description: "Blockchain infrastructure project. Earn by running validator nodes and maintaining network stability.",
-    rewardType: "Validator Nodes",
-    difficulty: "Medium",
-    estimatedMonthlyRewards: "100-500 RWRD",
-    website: "https://web3relay.com"
+    description: "IoT connectivity network using smartphones. Earn NODL tokens by enabling Bluetooth connections.",
+    rewardType: "Connectivity Sharing",
+    difficulty: "Easy",
+    estimatedMonthlyRewards: "$10–$50 NODL",
+    website: "https://www.nodle.com"
   },
   {
-    name: "Decentralized Compute",
+    name: "Akash Network",
     icon: Server,
-    description: "Distributed computing platform. Provide computing resources and earn passive income.",
-    rewardType: "Computational Power",
+    description: "Decentralized cloud computing marketplace. Rent your unused compute power to earn AKT.",
+    rewardType: "Cloud Compute",
     difficulty: "Advanced",
-    estimatedMonthlyRewards: "200-1000 RWRD",
-    website: "https://decentral-compute.io"
+    estimatedMonthlyRewards: "$50–$500 AKT",
+    website: "https://akash.network"
   },
   {
-    name: "Energy Chain",
+    name: "Energy Web",
     icon: Zap,
-    description: "Renewable energy blockchain. Contribute to green energy verification and earn rewards.",
+    description: "Blockchain for energy grid infrastructure. Help validate clean energy data and earn EWT.",
     rewardType: "Energy Validation",
     difficulty: "Medium",
-    estimatedMonthlyRewards: "75-300 RWRD",
-    website: "https://energychain.net"
+    estimatedMonthlyRewards: "$30–$150 EWT",
+    website: "https://www.energyweb.org"
   }
 ];
 
