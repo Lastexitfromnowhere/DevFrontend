@@ -11,26 +11,35 @@ export const TruffleMint: FC = () => {
 
   return (
     <div 
-      className="w-full h-64 relative rounded-lg overflow-hidden cursor-pointer"
+      className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow relative cursor-pointer overflow-hidden"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
       style={{
         backgroundImage: 'url(https://wind-frontend-rosy.vercel.app/truffle.png)',
         backgroundSize: 'cover',
-        backgroundPosition: 'center'
+        backgroundPosition: 'center',
+        backgroundBlendMode: 'overlay',
+        height: '250px'
       }}
     >
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-all duration-500 z-10 flex flex-col items-center justify-center"
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-all duration-500 z-10"
         style={{
-          opacity: isHovered ? 0.4 : 0.7,
+          opacity: isHovered ? 0.3 : 0.6,
         }}
       />
       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white">
-        <h2 className="text-2xl font-bold mb-4">Truffle Mint</h2>
+        <div className="text-center bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-700/30 mb-4">
+          <h2 className="text-xl font-semibold mb-2 text-white">
+            {`// Truffle Mint: Last Paradox`}
+          </h2>
+          <p className="text-gray-300 text-sm">
+            {`> Exclusive NFT collection on Truffle`}
+          </p>
+        </div>
         <button 
-          className="px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-full transition-colors duration-300"
+          className="px-6 py-2 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 hover:bg-blue-500/40 rounded-lg transition-all duration-300 text-blue-400 font-medium"
           onClick={handleClick}
         >
           Go
@@ -38,4 +47,4 @@ export const TruffleMint: FC = () => {
       </div>
     </div>
   );
-};
+}; 
