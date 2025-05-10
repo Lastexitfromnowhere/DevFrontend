@@ -10,7 +10,7 @@ import { DashboardBadge } from '@/components/ui/DashboardBadge';
 const milestones = [
   {
     icon: Shield,
-    title: "Decentralize VPN Network",
+    title: "Decentralized VPN Network",
     description: "Build a robust network of decentralized VPN nodes operated by the community",
     progress: 65,
     total: "1,200 Nodes",
@@ -20,17 +20,25 @@ const milestones = [
     icon: Users,
     title: "Community Growth",
     description: "Expand our ecosystem with active participants and node operators",
-    progress: 45,
+    progress: 5,
     total: "10,000 Users",
-    current: "4,500 Users"
+    current: "1,000 Users"
   },
   {
     icon: Rocket,
-    title: "Launch Brand Exit Token",
-    description: "Launch RWRD token with utility and governance rights",
-    progress: 80,
-    total: "Q1 2025",
-    current: "Development"
+    title: "Last Paradox Token",
+    description: "Launch community token with utility and governance rights",
+    progress: 5,
+    total: "Q2 2025",
+    current: "Planning"
+  },
+  {
+    icon: Award,
+    title: "NFT Private Sale",
+    description: "Exclusive NFT collection for early supporters with special benefits",
+    progress: 0,
+    total: "Q3 2025",
+    current: "Not Started"
   }
 ];
 
@@ -49,7 +57,7 @@ export default function SiteGoals() {
           <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
             <Target className="text-blue-400" size={20} />
           </div>
-          <h2 className="text-xl font-semibold text-white">Feuille de route du projet</h2>
+          <h2 className="text-xl font-semibold text-white">Project Roadmap</h2>
         </div>
 
         <div className="space-y-8">
@@ -70,8 +78,15 @@ export default function SiteGoals() {
                       progressClassName="bg-gradient-to-r from-blue-500 to-purple-500"
                     />
                     <div className="flex justify-between text-sm mt-2">
-                      <span className="text-gray-400">Progression: <span className="text-blue-400">{milestone.current}</span></span>
-                      <span className="text-gray-400">Objectif: <span className="text-white">{milestone.total}</span></span>
+                      <span className="text-gray-400">Progress: <span className="text-blue-400">{milestone.current}</span></span>
+                      <span className="text-gray-400">Goal: <span className="text-white">{milestone.total}</span></span>
+                    </div>
+                    <div className="mt-3">
+                      <DashboardBadge 
+                        variant={milestone.progress >= 75 ? "success" : milestone.progress >= 40 ? "warning" : "info"}
+                      >
+                        {milestone.progress >= 75 ? "Almost Complete" : milestone.progress >= 40 ? "In Progress" : "Just Started"}
+                      </DashboardBadge>
                     </div>
                   </div>
                 </div>
@@ -86,7 +101,7 @@ export default function SiteGoals() {
           <div className="p-2 rounded-full bg-yellow-500/20 backdrop-blur-sm">
             <Award className="text-yellow-400" size={20} />
           </div>
-          <h2 className="text-xl font-semibold text-white">Jalons communautaires</h2>
+          <h2 className="text-xl font-semibold text-white">Community Milestones</h2>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -99,7 +114,7 @@ export default function SiteGoals() {
         </div>
         
         <div className="mt-4 text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
-          {`// Les statistiques sont mises à jour quotidiennement`}
+          {`// Statistics are updated daily`}
         </div>
       </Card>
     </div>

@@ -48,8 +48,9 @@ export default function EcosystemDescription() {
     <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6"
       style={{
         backgroundImage: `url(https://wind-frontend-rosy.vercel.app/56.png)`,
-        backgroundSize: 'cover',
+        backgroundSize: 'contain',
         backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         backgroundBlendMode: 'overlay'
       }}
     >
