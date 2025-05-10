@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Last Exit Network ⚡ | Liberté • Sécurité • Anonymat",
-  description: "Plateforme de réseau VPN décentralisé et sécurisé basé sur la blockchain - Reprenez le contrôle de votre vie privée en ligne",
+  title: "Last Paradox Network ⚡ | Freedom • Security • Anonymity",
+  description: "Decentralized and secure VPN network platform based on blockchain - Take back control of your online privacy",
 };
 
 export default function RootLayout({

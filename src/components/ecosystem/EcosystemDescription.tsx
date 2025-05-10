@@ -47,7 +47,7 @@ export default function EcosystemDescription() {
   return (
     <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6"
       style={{
-        backgroundImage: `url(https://wind-frontend-rosy.vercel.app/354.png)`,
+        backgroundImage: `url(https://wind-frontend-rosy.vercel.app/56.png)`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundBlendMode: 'overlay'
@@ -57,10 +57,10 @@ export default function EcosystemDescription() {
       className="text-center bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-700/30"
     >
       <h2 className="text-xl font-semibold mb-2 text-white">
-        {`// Brand Exit: Web3 Ecosystem Navigator`}
+        {`// #: Web3 Ecosystem Navigator`}
       </h2>
       <p className="text-gray-300">
-        {`> Découvrez, apprenez et gagnez en toute confiance.`}
+        {`> Discover, learn and earn with confidence.`}
       </p>
     </div>
     

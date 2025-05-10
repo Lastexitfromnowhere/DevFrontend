@@ -105,7 +105,7 @@ export default function Dashboard() {
             <div className="flex flex-col items-start">
               <div className="flex items-center space-x-2 mb-2">
                 <Terminal size={24} className="text-blue-400" />
-                <h1 className="text-xl font-bold text-white">Brand Exit Dashboard</h1>
+                <h1 className="text-xl font-bold text-white">Dashboard</h1>
               </div>
             </div>
             
@@ -185,7 +185,7 @@ export default function Dashboard() {
                     <Terminal size={20} />
                   </a>
                   <a
-                    href="https://discord.gg/windvpn"
+                    href="https://discord.gg/bEvphRKq"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-gray-400 hover:text-blue-400 transition-colors"
