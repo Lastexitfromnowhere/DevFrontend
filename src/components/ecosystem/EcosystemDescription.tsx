@@ -47,7 +47,7 @@ export default function EcosystemDescription() {
   return (
     <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6"
       style={{
-        backgroundImage: `url(https://imgs.search.brave.com/XM523QAmeVG592m9BanovDtQZ7vZxSfoJKhBZnzTVgU/rs:fit:860:0:0:0/g:ce/aHR0cHM6Ly93YWxs/cGFwZXJhY2Nlc3Mu/Y29tL2Z1bGwvNTM5/MzQ0Mi5qcGc)`,
+        backgroundImage: `/354.png`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundBlendMode: 'overlay'
