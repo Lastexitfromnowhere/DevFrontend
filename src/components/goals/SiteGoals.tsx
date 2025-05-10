@@ -72,11 +72,12 @@ export default function SiteGoals() {
                   <div className="flex-1">
                     <h3 className="font-semibold text-white">{milestone.title}</h3>
                     <p className="text-sm text-gray-300 mb-3">{milestone.description}</p>
-                    <ProgressBar 
-                      progress={milestone.progress} 
-                      className="h-2 bg-gray-700/50"
-                      progressClassName="bg-gradient-to-r from-blue-500 to-purple-500"
-                    />
+                    <div className="h-2 bg-gray-700/50 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full rounded-full transition-all duration-500 bg-gradient-to-r from-white to-gray-400"
+                        style={{ width: `${Math.min(Math.max(milestone.progress, 0), 100)}%` }}
+                      />
+                    </div>
                     <div className="flex justify-between text-sm mt-2">
                       <span className="text-gray-400">Progress: <span className="text-blue-400">{milestone.current}</span></span>
                       <span className="text-gray-400">Goal: <span className="text-white">{milestone.total}</span></span>
