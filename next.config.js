@@ -5,38 +5,22 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://lastexitvpn.duckdns.org/api/:path*',
-        headers: {
-          'Origin': 'https://wind-frontend-rosy.vercel.app',
-          'X-Forwarded-Host': 'wind-frontend-rosy.vercel.app'
-        }
+        destination: 'https://lastexitvpn.duckdns.org/api/:path*'
       },
       // Redirection spécifique pour l'authentification
       {
         source: '/auth/:path*',
-        destination: 'https://lastexitvpn.duckdns.org/auth/:path*',
-        headers: {
-          'Origin': 'https://wind-frontend-rosy.vercel.app',
-          'X-Forwarded-Host': 'wind-frontend-rosy.vercel.app'
-        }
+        destination: 'https://lastexitvpn.duckdns.org/auth/:path*'
       },
       // Redirection spécifique pour WireGuard
       {
         source: '/wireguard/:path*',
-        destination: 'https://lastexitvpn.duckdns.org/api/wireguard/:path*',
-        headers: {
-          'Origin': 'https://wind-frontend-rosy.vercel.app',
-          'X-Forwarded-Host': 'wind-frontend-rosy.vercel.app'
-        }
+        destination: 'https://lastexitvpn.duckdns.org/api/wireguard/:path*'
       },
       // Utiliser un chemin relatif pour DHT qui sera géré par Nginx
       {
         source: '/dht/:path*',
-        destination: 'https://lastexitvpn.duckdns.org/dht/:path*',
-        headers: {
-          'Origin': 'https://wind-frontend-rosy.vercel.app',
-          'X-Forwarded-Host': 'wind-frontend-rosy.vercel.app'
-        }
+        destination: 'https://lastexitvpn.duckdns.org/dht/:path*'
       },
       // Redirection spécifique pour l'endpoint /status
       {
@@ -48,11 +32,7 @@ const nextConfig = {
             key: 'X-Wallet-Address',
             value: '(?<walletAddress>.*)'
           }
-        ],
-        headers: {
-          'Origin': 'https://wind-frontend-rosy.vercel.app',
-          'X-Forwarded-Host': 'wind-frontend-rosy.vercel.app'
-        }
+        ]
       }
     ];
   },
