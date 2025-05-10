@@ -18,14 +18,14 @@ export default function VPNRewards() {
           <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
             <Award className="text-blue-400" size={20} />
           </div>
-          <h3 className="text-xl font-semibold text-white">Récompenses du nœud</h3>
+          <h3 className="text-xl font-semibold text-white">Daily Rewards</h3>
         </div>
         
         <button 
           onClick={refreshRewards}
           disabled={isLoading}
           className="p-2 rounded-full bg-blue-500/10 hover:bg-blue-500/20 transition-colors duration-200"
-          title="Rafraîchir les récompenses"
+          title="Refresh daily rewards"
         >
           {isLoading ? <Spinner size="sm" /> : <RefreshCw size={16} className="text-blue-400" />}
         </button>
@@ -41,13 +41,13 @@ export default function VPNRewards() {
         <p className="text-3xl font-bold text-white">
           {totalEarnings.toFixed(2)} <span className="text-blue-400">RWRD</span>
         </p>
-        <p className="text-sm text-gray-300 mt-1">Total gagné</p>
+        <p className="text-sm text-gray-300 mt-1">Total claimed</p>
       </div>
 
       <div className="space-y-4">
         <div className="bg-black/20 backdrop-blur-sm p-3 rounded-lg border border-gray-700/30">
           <div className="flex justify-between items-center mb-2">
-            <span className="text-sm text-gray-300">Progression vers l'objectif mensuel</span>
+            <span className="text-sm text-gray-300">Progress toward monthly target</span>
             <DashboardBadge 
               variant={progress < 30 ? "danger" : progress < 70 ? "warning" : "success"} 
               size="sm"
@@ -66,14 +66,14 @@ export default function VPNRewards() {
             <div className="p-2 rounded-full bg-blue-500/10 backdrop-blur-sm mx-auto mb-2 w-fit">
               <Calendar className="text-blue-400" size={16} />
             </div>
-            <p className="text-gray-300 text-xs">Aujourd'hui</p>
+            <p className="text-gray-300 text-xs">Today's claim</p>
             <p className="text-white text-sm font-medium">{dailyEarnings.toFixed(2)} RWRD</p>
           </div>
           <div className="text-center p-3 bg-black/20 backdrop-blur-sm rounded-lg border border-gray-700/30 transition-all duration-300 hover:bg-black/30">
             <div className="p-2 rounded-full bg-blue-500/10 backdrop-blur-sm mx-auto mb-2 w-fit">
               <TrendingUp className="text-blue-400" size={16} />
             </div>
-            <p className="text-gray-300 text-xs">Cette semaine</p>
+            <p className="text-gray-300 text-xs">This week's claims</p>
             <p className="text-white text-sm font-medium">{weeklyEarnings.toFixed(2)} RWRD</p>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { DashboardBadge } from '../ui/DashboardBadge';
 import { Wifi, Server, Activity, RefreshCw, AlertTriangle, Users, Globe, Award } from 'lucide-react';
 import { Spinner } from '../ui/Spinner';
 
-// Définir l'interface pour un nœud VPN
+// Define the interface for a VPN node
 interface VPNNode {
   walletAddress?: string;
   ip?: string;
@@ -25,12 +25,12 @@ interface VPNNode {
   status?: string;
 }
 
-// Interface pour les props du composant
+// Interface for component props
 interface AvailableNodesProps {
   onSelectNode?: (nodeId: string) => void;
 }
 
-// Fonction pour formater la date relative
+// Function to format relative time
 const formatRelativeTime = (dateString: string | undefined): string => {
   if (!dateString) return 'Unknown';
   

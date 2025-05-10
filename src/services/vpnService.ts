@@ -3,10 +3,11 @@ import axios from 'axios';
 import { config } from '@/config/env';
 import { authService } from './authService';
 
-// URL de base pour les requêtes VPN
+// Base URL for VPN requests
 const VPN_API_BASE = `${config.API_BASE_URL}/vpn`;
+const API_BASE = `${config.API_BASE_URL}`;
 
-// Interface pour les récompenses VPN
+// Interface for VPN rewards
 export interface VPNRewardsData {
   totalEarnings: number;
   dailyEarnings: number;
@@ -16,38 +17,38 @@ export interface VPNRewardsData {
 }
 
 /**
- * Récupère les récompenses du nœud VPN pour l'adresse du wallet spécifiée
+ * Retrieves the daily claim rewards for the specified wallet address
  */
 export const getVPNRewards = async (): Promise<VPNRewardsData> => {
   try {
-    // Vérifier que le token est valide et le rafraîchir si nécessaire
+    // Check that the token is valid and refresh if necessary
     await authService.refreshTokenIfNeeded();
     
-    // Utiliser l'adresse du wallet stockée dans le token JWT
+    // Use the wallet address stored in the JWT token
     const walletAddress = authService.getWalletAddressFromToken();
     
     if (!walletAddress) {
-      throw new Error('Adresse de wallet non disponible');
+      throw new Error('Wallet address not available');
     }
     
-    // Vérifier si le token JWT correspond à l'adresse du wallet
+    // Verify if the JWT token matches the wallet address
     const tokenMatch = await authService.verifyTokenWalletMatch();
-    console.log('Le token correspond à l\'adresse du wallet:', tokenMatch);
+    console.log('Token matches wallet address:', tokenMatch);
     
-    // Obtenir les en-têtes d'authentification
+    // Get authentication headers
     const headers = await authService.getAuthHeaders();
     
-    console.log('Récupération des récompenses VPN pour:', walletAddress);
-    console.log('Entêtes d\'authentification:', headers);
+    console.log('Retrieving daily claim rewards for:', walletAddress);
+    console.log('Authentication headers:', headers);
     
-    const response = await axios.get(`${VPN_API_BASE}/rewards`, {
+    const response = await axios.get(`${API_BASE}/dailyClaims`, {
       headers,
       params: { walletAddress }
     });
     
-    console.log('Réponse API récompenses VPN:', response.data);
+    console.log('Daily claims API response:', response.data);
     
-    // Typage explicite pour response.data
+    // Explicit typing for response.data
     const responseData = response.data as {
       success?: boolean;
       totalEarnings?: number;
@@ -67,7 +68,7 @@ export const getVPNRewards = async (): Promise<VPNRewardsData> => {
       };
     }
     
-    // En cas de réponse sans succès, retourner des valeurs par défaut
+    // In case of unsuccessful response, return default values
     return {
       totalEarnings: 0,
       dailyEarnings: 0,
@@ -76,9 +77,9 @@ export const getVPNRewards = async (): Promise<VPNRewardsData> => {
       progress: 0
     };
   } catch (error) {
-    console.error('Erreur lors de la récupération des récompenses VPN:', error);
+    console.error('Error retrieving daily claim rewards:', error);
     
-    // En cas d'erreur, retourner des valeurs par défaut
+    // In case of error, return default values
     return {
       totalEarnings: 0,
       dailyEarnings: 0,

@@ -9,27 +9,27 @@ import { Network, Clock, Activity, Server } from 'lucide-react';
 export default function NodeStatusSummary() {
   const { status, loading, error } = useDHTNode();
   
-  // Formater la dernière mise à jour
+  // Format the last update
   const formatLastUpdated = (lastUpdated?: string) => {
-    if (!lastUpdated) return 'Jamais';
+    if (!lastUpdated) return 'Never';
     return new Date(lastUpdated).toLocaleString();
   };
 
-  // Obtenir le temps écoulé depuis la dernière mise à jour
+  // Get time elapsed since last update
   const getTimeSinceUpdate = (lastUpdated?: string) => {
-    if (!lastUpdated) return 'Jamais mis à jour';
+    if (!lastUpdated) return 'Never updated';
     
     const lastUpdateTime = new Date(lastUpdated).getTime();
     const now = new Date().getTime();
     const diffMs = now - lastUpdateTime;
     
-    // Convertir en secondes
+    // Convert to seconds
     const diffSec = Math.floor(diffMs / 1000);
     
     if (diffSec < 60) return `${diffSec}s`;
     if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m`;
     if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h`;
-    return `${Math.floor(diffSec / 86400)}j`;
+    return `${Math.floor(diffSec / 86400)}d`;
   };
 
   return (
@@ -37,11 +37,11 @@ export default function NodeStatusSummary() {
       <div className="flex flex-col">
         <div className="flex items-center space-x-2">
           <DashboardBadge variant={status.active ? "success" : "danger"} dot>
-            {status.active ? 'Actif' : 'Inactif'}
+            {status.active ? 'Active' : 'Inactive'}
           </DashboardBadge>
           {status.active && status.nodeType && (
             <DashboardBadge variant={status.nodeType === 'HOST' ? "info" : "success"}>
-              {status.nodeType === 'HOST' ? 'Hébergeur' : 'Client'}
+              {status.nodeType === 'HOST' ? 'Host' : 'Client'}
             </DashboardBadge>
           )}
           {status.active && status.protocol && (

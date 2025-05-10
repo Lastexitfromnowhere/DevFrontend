@@ -27,7 +27,7 @@ export default function NodeStatus() {
   
   // Initialize isHost from localStorage or default to false
   const [isHost, setIsHost] = React.useState(() => {
-    // Toujours démarrer en mode client par défaut
+    // Always start in client mode by default
     return false;
   });
 
@@ -41,11 +41,11 @@ export default function NodeStatus() {
     if (status.nodeType === 'HOST') {
       setIsHost(true);
     }
-    // Supprimer la réinitialisation automatique du mode hébergeur
-    // Ne jamais réinitialiser automatiquement le mode hébergeur, même si le nœud est inactif
+    // Remove automatic reset of host mode
+    // Never automatically reset host mode, even if the node is inactive
   }, [status.nodeType]);
 
-  // Fonction pour obtenir la couleur en fonction de la qualité de connexion
+  // Function to get color based on connection quality
   const getQualityColor = (quality?: number) => {
     if (!quality) return 'text-gray-500';
     if (quality >= 80) return 'text-green-500';
@@ -53,7 +53,7 @@ export default function NodeStatus() {
     return 'text-red-500';
   };
 
-  // Fonction pour obtenir l'icône et la couleur du tier
+  // Function to get the tier icon and color
   const getTierInfo = (tier?: string) => {
     switch (tier) {
       case 'ELITE':
@@ -65,7 +65,7 @@ export default function NodeStatus() {
     }
   };
 
-  // Fonction pour formater le temps d'uptime
+  // Function to format uptime
   const formatUptime = (uptime: number) => {
     const hours = Math.floor(uptime / 3600);
     const minutes = Math.floor((uptime % 3600) / 60);
@@ -82,9 +82,9 @@ export default function NodeStatus() {
 
   return (
     <div className="space-y-4">
-      {/* Carte principale */}
+      {/* Main card */}
       <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6">
-        {/* En-tête avec statut */}
+        {/* Header with status */}
         <div className="flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <h3 className="text-lg font-semibold text-white">Node Status</h3>
@@ -93,7 +93,7 @@ export default function NodeStatus() {
             </DashboardBadge>
             {status.status && ((status.status === 'ACTIVE') !== status.active) ? (
               <span className="text-xs text-yellow-400 ml-2">
-                (Statut incohérent: DB={status.status}, Cache={status.active ? 'ACTIVE' : 'INACTIVE'})
+                (Inconsistent status: DB={status.status}, Cache={status.active ? 'ACTIVE' : 'INACTIVE'})
               </span>
             ) : null}
           </div>
@@ -122,7 +122,7 @@ export default function NodeStatus() {
           </div>
         </div>
 
-        {/* Sélection du type de nœud */}
+        {/* Node type selection */}
         <div className="flex items-center justify-between mb-4 bg-black/20 backdrop-blur-sm p-3 rounded-md">
           <div className="flex items-center space-x-2">
             {isHost ? (
@@ -147,7 +147,7 @@ export default function NodeStatus() {
                 className="sr-only peer"
                 checked={isHost}
                 onChange={() => {
-                  // Si le nœud est actif, il faut d'abord l'arrêter
+                  // If the node is active, we need to stop it first
                   if (status.active) {
                     stopNode().then(() => {
                       const newIsHost = !isHost;
@@ -260,14 +260,14 @@ export default function NodeStatus() {
           </div>
         )}
 
-        {/* Message d'erreur */}
+        {/* Error message */}
         {error && (
           <div className="flex items-center justify-between text-red-500 bg-red-100 p-3 rounded">
             <div className="flex items-center space-x-2">
               <AlertTriangle className="w-4 h-4" />
               <span>{error}</span>
             </div>
-            {error.includes('authentification') && (
+            {error.includes('authentication') && (
               <DashboardButton
                 variant="secondary"
                 onClick={() => {
@@ -285,7 +285,7 @@ export default function NodeStatus() {
           </div>
         )}
 
-        {/* État de santé */}
+        {/* Health status */}
         {status.active && (
           <div className={`flex items-center space-x-2 p-2 rounded ${
             status.healthStatus === 'healthy' ? 'bg-green-100 text-green-700' :
@@ -297,7 +297,7 @@ export default function NodeStatus() {
           </div>
         )}
 
-        {/* Informations détaillées */}
+        {/* Detailed information */}
         {status.active && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Colonne de gauche - Informations de base */}

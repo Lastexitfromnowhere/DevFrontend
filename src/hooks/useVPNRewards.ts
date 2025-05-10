@@ -1,4 +1,5 @@
 // src/hooks/useVPNRewards.ts
+// Updated to use daily claims API
 import { useState, useEffect } from 'react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { getVPNRewards, VPNRewardsData } from '@/services/vpnService';
@@ -24,7 +25,7 @@ export function useVPNRewards(): UseVPNRewardsReturn {
 
   const fetchRewards = async () => {
     if (!isConnected) {
-      setError('Wallet not connected');
+      setError('Wallet not connected. Please connect your wallet to view daily rewards.');
       return;
     }
 
@@ -34,8 +35,8 @@ export function useVPNRewards(): UseVPNRewardsReturn {
       setRewards(rewardsData);
       setError(null);
     } catch (error: any) {
-      console.error('Error fetching VPN rewards:', error);
-      setError(error.message || 'Failed to fetch VPN rewards');
+      console.error('Error fetching daily rewards:', error);
+      setError(error.message || 'Failed to fetch daily rewards');
     } finally {
       setIsLoading(false);
     }
