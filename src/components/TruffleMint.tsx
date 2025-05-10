@@ -32,17 +32,17 @@ export const TruffleMint: FC = () => {
       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white">
         <div className="text-center bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-700/30 mb-4">
           <h2 className="text-xl font-semibold mb-2 text-white">
-            {`// Truffle Mint: Last Paradox`}
+            {`// Mint Page: Last Paradox`}
           </h2>
           <p className="text-gray-300 text-sm">
-            {`> Exclusive NFT collection on Truffle`}
+            {`> Last Paradox Genesis : Private Access`}
           </p>
         </div>
         <button 
-          className="px-6 py-2 bg-blue-500/20 backdrop-blur-sm border border-blue-400/30 hover:bg-blue-500/40 rounded-lg transition-all duration-300 text-blue-400 font-medium"
+          className="px-6 py-2 bg-black-500/20 backdrop-blur-sm border border-black-400/30 hover:bg-black-500/40 rounded-lg transition-all duration-300 text-white-400 font-medium"
           onClick={handleClick}
         >
-          Go
+          Enter
         </button>
       </div>
     </div>
