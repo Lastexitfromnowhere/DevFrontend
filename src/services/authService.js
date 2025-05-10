@@ -11,7 +11,7 @@ const TOKEN_EXPIRY_KEY = 'token_expiry';
 // Fonction pour enregistrer un nouvel utilisateur
 export const register = async (username, email, password) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/register`, {
+    const response = await axios.post(`/auth/register`, {
       username,
       email,
       password
@@ -33,7 +33,7 @@ export const register = async (username, email, password) => {
 // Fonction pour connecter un utilisateur avec username/password
 export const login = async (username, password) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/login`, {
+    const response = await axios.post(`/auth/login`, {
       username,
       password
     });
@@ -65,7 +65,7 @@ export const login = async (username, password) => {
 // Fonction pour connecter avec une adresse de wallet (conserver pour compatibilité)
 export const connectWithWallet = async (walletAddress) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/token`, {
+    const response = await axios.post(`/auth/token`, {
       walletAddress
     });
     
@@ -127,7 +127,7 @@ export const getUserProfile = async () => {
       };
     }
     
-    const response = await axios.get(`${API_URL}/auth/profile`, {
+    const response = await axios.get(`/auth/profile`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -212,7 +212,7 @@ export const generateToken = async (walletAddress) => {
       throw new Error('Adresse de wallet requise');
     }
     
-    const response = await axios.post(`${API_URL}/auth/token`, {
+    const response = await axios.post(`/auth/token`, {
       walletAddress
     });
     

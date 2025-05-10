@@ -7,6 +7,11 @@ const nextConfig = {
         source: '/api/:path*',
         destination: 'https://lastexitvpn.duckdns.org/api/:path*',
       },
+      // Redirection spécifique pour l'authentification
+      {
+        source: '/auth/:path*',
+        destination: 'https://lastexitvpn.duckdns.org/auth/:path*',
+      },
       // Redirection spécifique pour WireGuard
       {
         source: '/wireguard/:path*',
