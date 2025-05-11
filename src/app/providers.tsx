@@ -17,9 +17,9 @@ import { RewardsProvider } from '@/contexts/RewardsContext';
 import { OfflineIndicator } from '@/components/ui/OfflineIndicator';
 
 export default function ClientProviders({ children }: { children: ReactNode }) {
-  const network = WalletAdapterNetwork.Devnet;
+  const network = WalletAdapterNetwork.Mainnet;
 
-  const endpoint = 'https://api.devnet.solana.com';
+  const endpoint = 'https://api.mainnet-beta.solana.com';
 
   const wallets = [
     new PhantomWalletAdapter(),
