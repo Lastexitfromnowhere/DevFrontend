@@ -73,6 +73,11 @@ export default function RSSFeed() {
     }
   };
 
+  // Expansion/collapse state
+  const [expanded, setExpanded] = useState(false);
+  // Affiche les 2 derniers posts si non expandé, sinon tout
+  const visibleNews = expanded ? news : news.slice(0, 2);
+
   return (
     <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500">
       <div className="flex items-center justify-between mb-6">
@@ -95,7 +100,7 @@ export default function RSSFeed() {
       )}
 
       <div className="space-y-4">
-        {news.map((item) => (
+        {visibleNews.map((item) => (
           <div
             key={item.id}
             className="p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg transition-all duration-300 hover:bg-black/40"
@@ -128,6 +133,16 @@ export default function RSSFeed() {
             </div>
           </div>
         ))}
+        {news.length > 2 && (
+          <div className="flex justify-center">
+            <button
+              className="mt-2 px-4 py-1 rounded bg-blue-500/30 text-blue-200 hover:bg-blue-500/50 text-xs font-medium transition"
+              onClick={() => setExpanded((e) => !e)}
+            >
+              {expanded ? "Voir moins" : `Voir plus (${news.length - 2})`}
+            </button>
+          </div>
+        )}
         {news.length === 0 && !isLoading && !error && (
           <div className="text-center py-6 text-gray-400">
             No updates available at the moment
