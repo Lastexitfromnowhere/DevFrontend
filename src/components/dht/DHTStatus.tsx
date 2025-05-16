@@ -131,6 +131,34 @@ export default function DHTStatus() {
     }
   }, [isAuthenticated, fetchStatus, fetchNodes]);
 
+  // --- Effet de ping automatique DHT vers le backend (Redis) ---
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+    async function sendPing() {
+      if (status.isActive && status.nodeId && window?.fetch) {
+        try {
+          await fetch('/api/dht/ping', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              nodeId: status.nodeId,
+              walletAddress: (window as any).walletAddress || undefined,
+              deviceId: (window as any).deviceId || undefined,
+              lastSeen: Date.now(),
+            })
+          });
+        } catch (e) {
+          // Silencieux côté UI
+        }
+      }
+    }
+    if (status.isActive) {
+      sendPing();
+      interval = setInterval(sendPing, 30000);
+    }
+    return () => { if (interval) clearInterval(interval); };
+  }, [status.isActive, status.nodeId]);
+
   // Fonction pour exécuter le diagnostic de connectivité
   const runDiagnostic = async () => {
     setIsDiagnosticRunning(true);
