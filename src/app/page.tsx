@@ -17,7 +17,7 @@ import NodeStatusSummary from '@/components/vpn/NodeStatusSummary';
 import SiteGoals from '@/components/goals/SiteGoals';
 import { DailyRewards } from '@/components/rewards/DailyRewards';
 import RSSFeed from '@/components/RSSFeed';
-import UnifiedDHTView from '@/components/dht/UnifiedDHTView';
+import DHTNodes from '@/components/dht/DHTNodes';
 import RewardsMechanism from '@/components/ecosystem/RewardsMechanism';
 import DiscordLink from '@/components/discord/DiscordLink';
 import HeaderDiscordButton from '@/components/discord/HeaderDiscordButton';
@@ -62,7 +62,7 @@ export default function Dashboard() {
             
             {/* Section DHT Unifiée */}
             <div className="mt-8">
-              <UnifiedDHTView />
+              <DHTNodes />
             </div>
           </div>
         );
