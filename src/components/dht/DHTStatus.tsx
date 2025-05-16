@@ -127,7 +127,7 @@ export default function DHTStatus() {
   useEffect(() => {
     if (isAuthenticated) {
       fetchStatus();
-      fetchNodes(false); // false = ne pas utiliser les nœuds de démonstration
+      fetchNodes(); // Appel sans argument, la fonction ne prend plus de paramètre
     }
   }, [isAuthenticated, fetchStatus, fetchNodes]);
 
