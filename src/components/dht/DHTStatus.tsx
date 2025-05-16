@@ -135,7 +135,7 @@ export default function DHTStatus() {
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
     async function sendPing() {
-      if (status.isActive && status.nodeId && window?.fetch) {
+      if (status.isActive && status.nodeId) {
         try {
           await fetch('/api/dht/ping', {
             method: 'POST',
