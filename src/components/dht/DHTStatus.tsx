@@ -244,12 +244,22 @@ export default function DHTStatus() {
         ) : (
           <DashboardButton
             variant="primary"
-            icon={<Power className="h-4 w-4" />}
+            icon={
+              <span className="relative flex items-center justify-center">
+                <Power className="h-5 w-5 text-green-400 drop-shadow-glow animate-pulse" />
+                <span className="absolute -inset-1 rounded-full bg-green-400 opacity-30 blur-md animate-ping"></span>
+              </span>
+            }
             onClick={startNode}
             disabled={loading}
             loading={loading}
+            className="relative px-6 py-2 font-bold text-lg shadow-xl border-2 border-green-500 bg-gradient-to-br from-green-700 via-green-600 to-green-500 hover:from-green-600 hover:to-green-400 hover:scale-105 transition-all duration-200 ease-out focus:ring-2 focus:ring-green-400 focus:ring-offset-2"
           >
-            Démarrer
+            <span className="flex items-center gap-2">
+              <span>Lancer mon node</span>
+              <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800 animate-bounce">+1 crédit</span>
+            </span>
+            <span className="block text-xs font-normal text-green-200 mt-1">Active ton node pour soutenir le réseau et gagner des rewards !</span>
           </DashboardButton>
         )}
         
