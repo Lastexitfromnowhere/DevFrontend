@@ -1,5 +1,5 @@
-// src/components/dht/DHTNodes.tsx
 import React, { useEffect, useState } from 'react';
+// src/components/dht/DHTNodes.tsx
 import { useDHT } from '@/hooks/useDHT';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/Card';
@@ -81,7 +81,7 @@ export default function DHTNodes() {
     if (!isAuthenticated || !autoRefresh) return;
 
     const interval = setInterval(() => {
-      fetchNodes(false); // Toujours fetch les vrais nœuds
+      fetchNodes(); // Toujours fetch les vrais nœuds
       setLastRefreshed(new Date());
     }, refreshInterval * 1000);
 
@@ -92,7 +92,7 @@ export default function DHTNodes() {
   useEffect(() => {
     if (isAuthenticated) {
       console.log('Chargement des nœuds DHT au démarrage...');
-      fetchNodes(false).then(loadedNodes => {
+      fetchNodes().then(loadedNodes => {
         console.log(`${loadedNodes?.length || 0} nœuds DHT chargés au démarrage`);
       });
       setLastRefreshed(new Date());
@@ -100,7 +100,7 @@ export default function DHTNodes() {
   }, [isAuthenticated, fetchNodes]);
 
   const handleRefresh = () => {
-    fetchNodes(false); // Toujours fetch les vrais nœuds
+    fetchNodes(); // Toujours fetch les vrais nœuds
     setLastRefreshed(new Date());
   };
 

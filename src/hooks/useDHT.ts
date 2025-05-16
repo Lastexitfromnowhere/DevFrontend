@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useWalletContext } from '@/contexts/WalletContext';
 import * as dhtUtils from '@/utils/dhtUtils';
+import { getActiveDHTNodes } from '@/utils/dhtUtils';
 
 interface DHTNode {
   nodeId: string;
@@ -148,60 +149,22 @@ export function useDHT() {
     }
   }, [isAuthenticated]);
 
-  // Fonction pour récupérer la liste des nœuds DHT
-  const fetchNodes = useCallback(async (useDemoNodes: boolean = true) => {
-    if (!isAuthenticated) {
-      console.log('Non authentifié, impossible de récupérer les nœuds DHT');
-      setNodes([]);
-      return [];
-    }
-    
+  // Nouvelle fonction pour fetch les nœuds DHT vivants
+  const fetchNodes = useCallback(async () => {
     setLoading(true);
-    
+    setError(null);
     try {
-      console.log('Récupération des nœuds DHT...', useDemoNodes ? 'avec nœuds de démo si nécessaire' : 'sans nœuds de démo');
-      const data = await dhtUtils.getDHTNodes(useDemoNodes);
-      
-      if (data.success === false && data.error) {
-        throw new Error(data.error);
-      }
-      
-      // Validation des données reçues
-      const sanitizedNodes = Array.isArray(data.nodes) 
-        ? data.nodes.map((node: any) => ({
-            nodeId: node?.nodeId || '',
-            walletAddress: node?.walletAddress || '',
-            publicKey: node?.publicKey || '',
-            ip: node?.ip || '',
-            port: typeof node?.port === 'number' ? node.port : 0,
-            multiaddr: node?.multiaddr || '',
-            isActive: node?.isActive || false,
-            isHost: node?.isHost || false,
-            bandwidth: typeof node?.bandwidth === 'number' ? node.bandwidth : 0,
-            latency: typeof node?.latency === 'number' ? node.latency : 0,
-            uptime: typeof node?.uptime === 'number' ? node.uptime : 0,
-            lastSeen: node?.lastSeen || new Date().toISOString(),
-            createdAt: node?.createdAt || new Date().toISOString()
-          }))
-        : [];
-      
-      if (sanitizedNodes.length === 0) {
-        console.log('Aucun nœud DHT disponible');
-        setNodes([]);
-        return [];
-      }
-      
-      console.log(`${sanitizedNodes.length} nœuds DHT récupérés`);
-      setNodes(sanitizedNodes);
-      return sanitizedNodes;
+      const nodes = await getActiveDHTNodes();
+      setNodes(nodes);
+      setLoading(false);
+      return nodes;
     } catch (err) {
-      console.error('Erreur lors de la récupération des nœuds DHT:', err);
+      setError('Erreur lors de la récupération des nœuds DHT actifs');
+      setLoading(false);
       setNodes([]);
       return [];
-    } finally {
-      setLoading(false);
     }
-  }, [isAuthenticated]);
+  }, []);
 
   // Fonction pour récupérer la liste des nœuds WireGuard via DHT
   const fetchWireGuardNodes = useCallback(async () => {

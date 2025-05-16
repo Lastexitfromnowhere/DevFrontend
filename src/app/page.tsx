@@ -3,7 +3,9 @@
 // src/app/page.tsx
 // Trigger deployment - 2025-03-22
 import React, { useState } from 'react';
-import { Terminal, Shield, Target, Network } from 'lucide-react';
+import { Terminal, Shield, Target, Network, Loader2, RefreshCw, Clock } from 'lucide-react';
+// Assure-toi que lucide-react est bien installé : npm install lucide-react
+// Si tu utilises TypeScript, installe aussi les types : npm install --save-dev @types/react
 import { useWalletContext } from '@/contexts/WalletContext';
 
 // Components Imports

@@ -418,7 +418,24 @@ export const getDHTStatusByWallet = async (walletAddress, deviceIdParam) => {
 };
 
 // Fonction pour obtenir la liste des nœuds DHT
+// Ancienne fonction, à remplacer côté front par getActiveDHTNodes pour la vraie liste live
 export const getDHTNodes = async (useDemoNodes = true) => {
+  return [];
+};
+
+// Nouvelle fonction pour récupérer les nœuds DHT vivants
+export const getActiveDHTNodes = async () => {
+  try {
+    const response = await dhtAxios.get('/api/dht/active-nodes');
+    if (response.data && Array.isArray(response.data.nodes)) {
+      return response.data.nodes;
+    }
+    return [];
+  } catch (error) {
+    console.error('Erreur récupération active DHT nodes:', error);
+    return [];
+  }
+};
   try {
     const walletAddress = authService.getWalletAddress();
     if (!walletAddress) {
