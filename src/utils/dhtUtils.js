@@ -436,12 +436,6 @@ export const getActiveDHTNodes = async () => {
     return [];
   }
 };
-  try {
-    const walletAddress = authService.getWalletAddress();
-    if (!walletAddress) {
-      throw new Error('Adresse de wallet non disponible');
-    }
-    
     // Récupérer l'ID de l'appareil
     const deviceId = getDeviceId();
     
