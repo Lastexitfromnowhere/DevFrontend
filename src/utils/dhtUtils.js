@@ -436,43 +436,6 @@ export const getActiveDHTNodes = async () => {
     return [];
   }
 };
-    // Récupérer l'ID de l'appareil
-    const deviceId = getDeviceId();
-    
-    // Vérifier que le token est valide et correspond à l'adresse du wallet
-    await authService.refreshTokenIfNeeded();
-    
-    // Utiliser l'adresse du wallet stockée dans le token JWT pour éviter les erreurs 403
-    const tokenWalletAddress = authService.getWalletAddressFromToken();
-    
-    // Si les adresses ne correspondent pas, utiliser celle du token pour éviter l'erreur 403
-    if (tokenWalletAddress && tokenWalletAddress !== walletAddress) {
-      console.warn(`L'adresse fournie (${walletAddress}) ne correspond pas à celle du token (${tokenWalletAddress}). Utilisation de l'adresse du token.`);
-      walletAddress = tokenWalletAddress;
-    }
-    
-    const headers = await getAuthHeaders();
-    console.log('Entêtes d\'authentification pour getDHTNodes:', headers);
-    
-    // Essayer d'abord de démarrer le nœud pour voir s'il est déjà actif
-    try {
-      const response = await dhtAxios.get(`${DHT_API_BASE}/nodes`, {
-        headers,
-        params: { 
-          walletAddress,
-          deviceId,
-          useDemoNodes // Ajouter le paramètre useDemoNodes
-        }
-      });
-      
-      console.log('Réponse de l\'API pour les nœuds DHT (endpoint /nodes):', response.status, response.data);
-      
-      // Vérifier si la réponse contient des nœuds
-      if (response.data && Array.isArray(response.data.nodes)) {
-        console.log(`${response.data.nodes.length} nœuds DHT récupérés depuis l'API (endpoint /nodes)`);
-        
-        // Si la réponse contient des nœuds mais que le tableau est vide, on le signale clairement
-        if (response.data.nodes.length === 0) {
 
 // Fonction pour récupérer la liste des nœuds WireGuard
 export const getWireGuardNodes = async () => {
