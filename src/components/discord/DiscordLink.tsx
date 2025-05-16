@@ -84,7 +84,13 @@ export default function DiscordLink() {
   };
 
   const generateDiscordAuthUrl = () => {
-    const state = Math.random().toString(36).substring(2, 15);
+    if (!account) {
+      throw new Error("Aucun wallet connecté");
+    }
+    // Crée un objet state contenant l'adresse du wallet
+    const stateObj = { walletAddress: account };
+    // Encode en JSON puis en base64
+    const state = btoa(JSON.stringify(stateObj));
     setLocalStorageState(state);
     const redirectUri = getRedirectUri();
     if (!DISCORD_CLIENT_ID) {
@@ -92,9 +98,6 @@ export default function DiscordLink() {
     }
     
     // Ajouter les scopes nécessaires pour rejoindre le serveur et gérer les rôles
-    // identify: obtenir les informations de base du profil
-    // guilds.join: ajouter l'utilisateur au serveur
-    // bot: pour que le bot puisse gérer les rôles (optionnel si le bot est déjà dans le serveur)
     const scopes = ['identify', 'guilds.join'].join('%20');
     
     const url = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scopes}&state=${state}&permissions=268435456`;
