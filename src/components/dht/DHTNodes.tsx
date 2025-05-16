@@ -81,18 +81,18 @@ export default function DHTNodes() {
     if (!isAuthenticated || !autoRefresh) return;
 
     const interval = setInterval(() => {
-      fetchNodes();
+      fetchNodes(false); // Toujours fetch les vrais nœuds
       setLastRefreshed(new Date());
     }, refreshInterval * 1000);
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, fetchNodes, refreshInterval, autoRefresh]);
+  }, [isAuthenticated, autoRefresh, fetchNodes, refreshInterval]);
 
   // Charger les nœuds au démarrage
   useEffect(() => {
     if (isAuthenticated) {
       console.log('Chargement des nœuds DHT au démarrage...');
-      fetchNodes().then(loadedNodes => {
+      fetchNodes(false).then(loadedNodes => {
         console.log(`${loadedNodes?.length || 0} nœuds DHT chargés au démarrage`);
       });
       setLastRefreshed(new Date());
@@ -100,7 +100,7 @@ export default function DHTNodes() {
   }, [isAuthenticated, fetchNodes]);
 
   const handleRefresh = () => {
-    fetchNodes();
+    fetchNodes(false); // Toujours fetch les vrais nœuds
     setLastRefreshed(new Date());
   };
 
