@@ -79,76 +79,71 @@ export default function RSSFeed() {
   const visibleNews = expanded ? news : news.slice(0, 2);
 
   return (
-    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
-            <NewspaperIcon className="text-blue-400" size={20} />
-          </div>
-          <h2 className="text-xl font-semibold text-white">Discord News</h2>
-        </div>
-        {isLoading && <Spinner size="sm" />}
-      </div>
-
-      {error && (
-        <div className="text-center p-3 mb-4 bg-red-500/20 backdrop-blur-sm rounded-lg border border-red-700/30">
-          <div className="flex items-center justify-center space-x-2">
-            <AlertCircle className="text-red-400" size={16} />
-            <p className="text-red-300 text-sm">{error}</p>
-          </div>
+    <div className="bg-black/50 rounded-xl p-4">
+      <h3 className="text-lg font-bold mb-4 text-blue-300 flex items-center gap-2">
+        <span className="inline-block align-middle">
+          <svg width="20" height="20" fill="currentColor" className="text-indigo-400"><path d="M17.707 4.293a1 1 0 0 0-1.414 0l-1.086 1.086A8.004 8.004 0 0 0 10 4c-1.229 0-2.415.246-3.5.707L5.414 4.293a1 1 0 1 0-1.414 1.414l1.086 1.086A8.004 8.004 0 0 0 4 10c0 1.229.246 2.415.707 3.5l-1.086 1.086a1 1 0 0 0 1.414 1.414l1.086-1.086A8.004 8.004 0 0 0 10 16c1.229 0 2.415-.246 3.5-.707l1.086 1.086a1 1 0 0 0 1.414-1.414l-1.086-1.086A8.004 8.004 0 0 0 16 10c0-1.229-.246-2.415-.707-3.5l1.086-1.086a1 1 0 0 0 0-1.414z"/></svg>
+        </span>
+        Latest Discord News
+      </h3>
+      {isLoading ? (
+        <div className="text-gray-400">Loading...</div>
+      ) : error ? (
+        <div className="text-red-400">{error}</div>
+      ) : (
+        <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+          {visibleNews.map((item: DiscordNewsItem, idx: number) => (
+            <div
+              key={item.id || idx}
+              className="bg-black/70 rounded-xl shadow-lg p-4 flex items-start gap-3 hover:bg-blue-900/30 transition-colors duration-200"
+            >
+              <span className="mt-1 text-indigo-400">
+                {/* Discord icon */}
+                <svg width="28" height="28" fill="currentColor" viewBox="0 0 24 24"><path d="M20.317 4.3698a19.7913 19.7913 0 0 0-4.8851-1.5152.0741.0741 0 0 0-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2762-3.68-.2762-5.4868 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 0 0-.0785-.0371c-1.4712.2492-3.251.8227-4.8852 1.5152a.0699.0699 0 0 0-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 0 0 .0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 0 0 .0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 0 0-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 0 1-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 0 1 .0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 0 1 .0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 0 1-.0066.1276c-.598.3428-1.2205.6447-1.8733.8923a.0766.0766 0 0 0-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 0 0 .0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 0 0 .0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6601a.061.061 0 0 0-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1826 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189Z"/></svg>
+              </span>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-blue-200 mb-1 truncate">
+                  {getMessageTitle(item.content)}
+                </div>
+                <div className="text-sm text-gray-300 line-clamp-3 whitespace-pre-line">
+                  {item.content}
+                </div>
+                {item.attachments && item.attachments.length > 0 && (
+                  <div className="flex space-x-2">
+                    {item.attachments.map((attachment: DiscordAttachment, index: number) => (
+                      <a
+                        key={index}
+                        href={attachment.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-blue-400 underline mt-2 inline-block"
+                      >
+                        {attachment.contentType?.includes("image")
+                          ? "View image"
+                          : "Download attachment"}
+                        <ExternalLink className="ml-1 w-3 h-3" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          ))}
+          {news.length === 0 && (
+            <div className="text-gray-400">No news available.</div>
+          )}
         </div>
       )}
-
-      <div className="space-y-4">
-        {visibleNews.map((item) => (
-          <div
-            key={item.id}
-            className="p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg transition-all duration-300 hover:bg-black/40"
+      {news.length > 2 && (
+        <div className="flex justify-center">
+          <button
+            className="mt-2 px-4 py-1 rounded bg-blue-500/30 text-blue-200 hover:bg-blue-500/50 text-xs font-medium transition"
+            onClick={() => setExpanded((e) => !e)}
           >
-            <div className="flex justify-between items-start">
-              <h3 className="font-medium text-white">{getMessageTitle(item.content)}</h3>
-              <span className="text-xs text-gray-400">{formatDate(item.date)}</span>
-            </div>
-            <p className="text-sm text-gray-300 mt-2 whitespace-pre-line">{item.content}</p>
-            <div className="flex justify-between items-center mt-3">
-              <span className="text-xs text-blue-400">By {item.author}</span>
-              {item.attachments && item.attachments.length > 0 && (
-                <div className="flex space-x-2">
-                  {item.attachments.map((attachment, index) => (
-                    <a
-                      key={index}
-                      href={attachment.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-blue-400 hover:text-blue-300 text-xs"
-                    >
-                      {attachment.contentType?.includes("image")
-                        ? "View image"
-                        : "Download attachment"}
-                      <ExternalLink className="ml-1 w-3 h-3" />
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-        {news.length > 2 && (
-          <div className="flex justify-center">
-            <button
-              className="mt-2 px-4 py-1 rounded bg-blue-500/30 text-blue-200 hover:bg-blue-500/50 text-xs font-medium transition"
-              onClick={() => setExpanded((e) => !e)}
-            >
-              {expanded ? "Voir moins" : `Voir plus (${news.length - 2})`}
-            </button>
-          </div>
-        )}
-        {news.length === 0 && !isLoading && !error && (
-          <div className="text-center py-6 text-gray-400">
-            No updates available at the moment
-          </div>
-        )}
-      </div>
-    </Card>
+            {expanded ? "Voir moins" : `Voir plus (${news.length - 2})`}
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
