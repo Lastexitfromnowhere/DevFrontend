@@ -143,11 +143,8 @@ export default function DiscordLink() {
         return;
       }
       
-      const redirectUri = getRedirectUri();
-      
-      const response = await axios.post<DiscordLinkResponse>(`${DISCORD_API_BASE}/link`, {
-        code,
-        redirectUri: decodeURIComponent(redirectUri)
+      const response = await axios.post<DiscordLinkResponse>(`${DISCORD_API_BASE}/complete-link`, {
+        code
       }, {
         headers: {
           Authorization: `Bearer ${token}`
