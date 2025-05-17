@@ -17,7 +17,7 @@ const DISCORD_INVITE_LINK = 'https://discord.gg/tW3ESBHQ';
 
 const getRedirectUri = () => {
   // Revenir à l'ancienne URL de callback Discord utilisée précédemment
-  return encodeURIComponent('http://lastexitvpn.duckdns.org/discord/callback');
+  return encodeURIComponent('https://lastparadox.xyz/discord/callback');
 };
 
 const setLocalStorageState = (state: string) => {
