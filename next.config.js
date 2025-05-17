@@ -39,7 +39,7 @@ const nextConfig = {
   // Augmenter le timeout pour les requêtes API
   httpAgentOptions: {
     keepAlive: true,
-    timeout: 60000, // 60 secondes
+    
   },
   // Ajouter les headers CORS pour les réponses
   async headers() {
@@ -58,7 +58,7 @@ const nextConfig = {
   
   // Configuration pour les domaines autorisés
   env: {
-    ALLOWED_ORIGINS: ['https://lastparadox.xyz', 'https://wind-frontend-rosy.vercel.app'],
+    ALLOWED_ORIGINS: 'https://lastparadox.xyz','https://wind-frontend-rosy.vercel.app',
   },
 };
 
