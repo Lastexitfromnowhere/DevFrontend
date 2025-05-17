@@ -162,6 +162,8 @@ export default function DiscordLink() {
           discordId: response.data.discordId || null,
           isEarlyContributor: response.data.isEarlyContributor || false
         }));
+        // Redirige toujours vers le domaine principal après liaison
+        window.location.href = 'https://lastparadox.xyz/?discordLinked=true';
       } else {
         setError(response.data.message || "Une erreur est survenue lors de la liaison avec Discord.");
       }
