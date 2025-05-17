@@ -16,8 +16,8 @@ const DISCORD_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
 const DISCORD_INVITE_LINK = 'https://discord.gg/tW3ESBHQ';
 
 const getRedirectUri = () => {
-  // Utiliser le redirect URI officiel déclaré dans Discord Developer Portal
-  return encodeURIComponent('https://lastparadox.xyz/discord/callback');
+  // Revenir à l'ancienne URL de callback Discord utilisée précédemment
+  return encodeURIComponent('http://lastexitvpn.duckdns.org/discord/callback');
 };
 
 const setLocalStorageState = (state: string) => {
