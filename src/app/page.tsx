@@ -12,6 +12,7 @@ import WalletStatus from '@/components/wallet/WalletStatus';
 import EcosystemDescription from '@/components/ecosystem/EcosystemDescription';
 import ProjectsGrid from '@/components/ecosystem/ProjectsGrid';
 import VPNRewards from '@/components/vpn/VPNRewards';
+import DesktopAppPromo from '@/components/DesktopAppPromo';
 import NetworkStats from '@/components/vpn/NetworkStats';
 import NodeStatusSummary from '@/components/vpn/NodeStatusSummary';
 import SiteGoals from '@/components/goals/SiteGoals';
@@ -49,23 +50,7 @@ export default function Dashboard() {
   const renderContent = () => {
     switch (activeSection) {
       case 'vpn':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <NodeStatusSummary />
-              </div>
-              <div>
-                <VPNRewards />
-              </div>
-            </div>
-            
-            {/* Section DHT Unifiée */}
-            <div className="mt-8">
-              <UnifiedDHTView />
-            </div>
-          </div>
-        );
+        return <DesktopAppPromo />;
 
       case 'goals':
         return <SiteGoals />;
@@ -114,7 +99,7 @@ export default function Dashboard() {
               
               <nav className="flex space-x-4">
               {renderSectionButton('ecosystem', <Terminal size={20} />, 'Ecosystem')}
-              {renderSectionButton('vpn', <Shield size={20} />, 'VPN Node')}
+              {renderSectionButton('vpn', <Shield size={20} />, 'Desktop App')}
               {renderSectionButton('goals', <Target size={20} />, 'Site Goals')}
             </nav>
             </div>
