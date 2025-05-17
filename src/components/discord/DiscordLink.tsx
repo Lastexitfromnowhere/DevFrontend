@@ -57,6 +57,14 @@ interface DiscordLinkResponse {
 }
 
 export default function DiscordLink() {
+  // Ajout : détection du code d'auth Discord dans l'URL après redirection
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      exchangeCodeForToken(code);
+    }
+  }, []);
   const { isConnected, account } = useWalletContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
