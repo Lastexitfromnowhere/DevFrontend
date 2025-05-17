@@ -58,7 +58,7 @@ const nextConfig = {
   
   // Configuration pour les domaines autorisés
   env: {
-    ALLOWED_ORIGINS: 'https://lastparadox.xyz','https://wind-frontend-rosy.vercel.app',
+    ALLOWED_ORIGINS: 'https://lastparadox.xyz,https://wind-frontend-rosy.vercel.app',
   },
 };
 
