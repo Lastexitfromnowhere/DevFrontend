@@ -26,7 +26,7 @@ const steps: StepProps[] = [
     title: "1. Download the App",
     children: (
       <>
-        Download the Wind Node App for Windows (Mac & Linux coming soon). The app lets you launch your WireGuard node in one click.
+        Download the Wind Node App for Windows <span className="text-xs text-gray-400">(Mac & Linux coming soon)</span>. The app lets you launch your WireGuard node in one click.
         <br /><br />
         <a href="#" className="inline-block text-blue-400 hover:underline">
           👉 Download for Windows (.exe)

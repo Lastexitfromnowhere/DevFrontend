@@ -14,6 +14,7 @@ import WalletStatus from '@/components/wallet/WalletStatus';
 import EcosystemDescription from '@/components/ecosystem/EcosystemDescription';
 import ProjectsGrid from '@/components/ecosystem/ProjectsGrid';
 import VPNRewards from '@/components/vpn/VPNRewards';
+import DesktopAppPromo from '@/components/DesktopAppPromo';
 import NetworkStats from '@/components/vpn/NetworkStats';
 import NodeStatusSummary from '@/components/vpn/NodeStatusSummary';
 import SiteGoals from '@/components/goals/SiteGoals';
@@ -64,7 +65,7 @@ export default function Dashboard() {
             
             {/* Section DHT Unifiée */}
             <div className="mt-8">
-              <DHTNodes />
+              <UnifiedDHTView />
             </div>
           </div>
         );
@@ -116,7 +117,7 @@ export default function Dashboard() {
               
               <nav className="flex space-x-4">
               {renderSectionButton('ecosystem', <Terminal size={20} />, 'Ecosystem')}
-              {renderSectionButton('vpn', <Shield size={20} />, 'VPN Node')}
+              {renderSectionButton('vpn', <Shield size={20} />, 'Desktop App')}
               {renderSectionButton('goals', <Target size={20} />, 'Site Goals')}
             </nav>
             </div>

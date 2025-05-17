@@ -154,7 +154,6 @@ function DiscordCallbackContent() {
   useEffect(() => {
     const code = searchParams?.get('code') || null;
     const error = searchParams?.get('error') || null;
-    const noToken = searchParams?.get('noToken') || null;
     
     if (error) {
       setStatus('error');
@@ -168,17 +167,9 @@ function DiscordCallbackContent() {
       return;
     }
     
-    // Si noToken=true, cela signifie que le backend n'a pas pu extraire le walletAddress
-    // et nous a redirigé vers le frontend pour compléter la liaison
-    if (noToken === 'true') {
-      console.log('Redirection depuis le backend sans token, tentative de liaison directe');
-      completeDiscordLink(code);
-    } else {
-      // Le code est présent, le backend va s'occuper de traiter ce code
-      // Nous devons juste vérifier si la liaison a réussi
-      checkDiscordStatus();
-    }
-  }, [searchParams, checkDiscordStatus, completeDiscordLink]);
+    // Toujours tenter de compléter la liaison avec le code
+    completeDiscordLink(code);
+  }, [searchParams, completeDiscordLink]);
 
   // Redirection à la page d'accueil après un délai
   const redirectToHome = useCallback(() => {

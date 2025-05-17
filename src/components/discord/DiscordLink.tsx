@@ -16,8 +16,8 @@ const DISCORD_CLIENT_ID = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '';
 const DISCORD_INVITE_LINK = 'https://discord.gg/tW3ESBHQ';
 
 const getRedirectUri = () => {
-  // Utiliser toujours l'URL du backend pour le callback Discord
-  return encodeURIComponent('http://lastexitvpn.duckdns.org/discord/callback');
+  // Revenir à l'ancienne URL de callback Discord utilisée précédemment
+  return encodeURIComponent('https://lastparadox.xyz/discord/callback');
 };
 
 const setLocalStorageState = (state: string) => {
@@ -57,6 +57,14 @@ interface DiscordLinkResponse {
 }
 
 export default function DiscordLink() {
+  // Ajout : détection du code d'auth Discord dans l'URL après redirection
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      exchangeCodeForToken(code);
+    }
+  }, []);
   const { isConnected, account } = useWalletContext();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -143,11 +151,8 @@ export default function DiscordLink() {
         return;
       }
       
-      const redirectUri = getRedirectUri();
-      
-      const response = await axios.post<DiscordLinkResponse>(`${DISCORD_API_BASE}/link`, {
-        code,
-        redirectUri: decodeURIComponent(redirectUri)
+      const response = await axios.post<DiscordLinkResponse>(`${DISCORD_API_BASE}/complete-link`, {
+        code
       }, {
         headers: {
           Authorization: `Bearer ${token}`
@@ -165,6 +170,8 @@ export default function DiscordLink() {
           discordId: response.data.discordId || null,
           isEarlyContributor: response.data.isEarlyContributor || false
         }));
+        // Redirige toujours vers le domaine principal après liaison
+        window.location.href = 'https://lastparadox.xyz/?discordLinked=true';
       } else {
         setError(response.data.message || "Une erreur est survenue lors de la liaison avec Discord.");
       }
