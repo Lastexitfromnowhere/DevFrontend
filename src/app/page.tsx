@@ -75,7 +75,7 @@ export default function Dashboard() {
                 <WalletStatus />
                 {isConnected && <DailyRewards />}
                 {isConnected && <DiscordLink />}
-                {isConnected && <NodeStatusSummary />}
+  
               </div>
             </div>
           </div>
