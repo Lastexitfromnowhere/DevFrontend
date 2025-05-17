@@ -52,23 +52,7 @@ export default function Dashboard() {
   const renderContent = () => {
     switch (activeSection) {
       case 'vpn':
-        return (
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              <div className="lg:col-span-2">
-                <NodeStatusSummary />
-              </div>
-              <div>
-                <VPNRewards />
-              </div>
-            </div>
-            
-            {/* Section DHT Unifiée */}
-            <div className="mt-8">
-              <UnifiedDHTView />
-            </div>
-          </div>
-        );
+        return <DesktopAppPromo />;
 
       case 'goals':
         return <SiteGoals />;
