@@ -33,6 +33,13 @@ export default function Dashboard() {
   const { isConnected, isAuthReady } = useWalletContext();
   const [showDisclaimer, setShowDisclaimer] = useState(true);
 
+  // Masquer le disclaimer dès que le wallet est connecté
+  React.useEffect(() => {
+    if (isConnected) {
+      setShowDisclaimer(false);
+    }
+  }, [isConnected]);
+
   // Masquer le disclaimer dès que le wallet est connecté, le réafficher à la déconnexion
   React.useEffect(() => {
     if (isConnected) {

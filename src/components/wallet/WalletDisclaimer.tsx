@@ -9,7 +9,16 @@ interface WalletDisclaimerProps {
   onDismiss: () => void;
 }
 
+import { useWalletContext } from '@/contexts/WalletContext';
+
 export default function WalletDisclaimer({ onDismiss }: WalletDisclaimerProps) {
+  const { isConnected } = useWalletContext();
+  React.useEffect(() => {
+    if (isConnected) {
+      onDismiss();
+    }
+  }, [isConnected, onDismiss]);
+
   return (
     <Modal 
       isOpen={true} 
