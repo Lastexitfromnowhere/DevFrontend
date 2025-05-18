@@ -31,7 +31,7 @@ const IPFS_CID = 'QmeZqms4zJXz91uNetmEKmxeG2fBQezGKz4egon5kiiai2';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
-  const { isConnected, isAuthReady } = useWalletContext();
+  const { isConnected, isAuthReady, connectWallet } = useWalletContext();
   const [showDisclaimer, setShowDisclaimer] = useState(true);
 
   // Masquer le disclaimer dès que le wallet est connecté
@@ -128,9 +128,20 @@ export default function Dashboard() {
             title="Securing your session…"
             className="text-center"
           >
-            <Loader2 className="animate-spin text-blue-400 mx-auto mb-4" size={48} />
-            <div className="text-lg font-semibold text-blue-200 mb-2">Securing your session…</div>
-            <div className="text-sm text-gray-400">Generating or validating your authentication token…</div>
+            {!isConnected ? (
+              <button
+                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all"
+                onClick={connectWallet}
+              >
+                Connect wallet
+              </button>
+            ) : (
+              <>
+                <Loader2 className="animate-spin text-blue-400 mx-auto mb-4" size={48} />
+                <div className="text-lg font-semibold text-blue-200 mb-2">Securing your session…</div>
+                <div className="text-sm text-gray-400">Generating or validating your authentication token…</div>
+              </>
+            )}
           </Modal>
           {renderContent()}
         </main>
