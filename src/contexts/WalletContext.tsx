@@ -99,62 +99,54 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const generateAuthToken = async () => {
       setIsAuthReady(false);
-      if (connected && publicKey) {
+      if (connected && publicKey && window?.solana) {
         const walletAddress = publicKey.toBase58();
         try {
-          console.log('🔑 Tentative de génération de token pour le wallet:', walletAddress);
-          
-          // Vérifier si le wallet a des comptes
-          if (!publicKey) {
-            console.error('⚠️ ERREUR: Pas de clé publique disponible dans le wallet');
+          // Étape 1 : demander à l'utilisateur de signer un message
+          const message = `Sign this message to authenticate: ${Date.now()}`;
+          const encodedMessage = new TextEncoder().encode(message);
+          let signature;
+          try {
+            signature = await window.solana.signMessage(encodedMessage, 'utf8');
+           // Si la signature est un objet (Phantom), récupérer le buffer
+           if (signature && signature.signature) {
+             signature = signature.signature;
+           }
+          } catch (signError) {
+            console.error('❌ Signature refusée ou erreur lors de la signature :', signError);
+            setIsAuthReady(false);
             return;
           }
-          
+           if (!signature) {
+             console.error('❌ Signature manquante. Authentification annulée.');
+             setIsAuthReady(false);
+             disconnectWallet();
+             return;
+           }
+          // Étape 2 : vérifier si le token existe déjà et est valide
           const storedAddress = authService.getWalletAddress();
-          console.log('📝 Adresse stockée précédemment:', storedAddress);
-          console.log('📝 Token expiré?', authService.isTokenExpired() ? 'Oui' : 'Non');
-                    // Vérifier si nous avons déjà un token valide pour cette adresse
-           if (storedAddress !== walletAddress || authService.isTokenExpired()) {
-             console.log('🔄 Génération d\'un nouveau token...');
-             // Générer un nouveau token pour cette adresse
-             const { token, expiresAt } = await authService.generateToken(walletAddress);
+          if (storedAddress !== walletAddress || authService.isTokenExpired()) {
+            // Générer un nouveau token côté backend (ou local) avec la signature
+            const { token, expiresAt } = await authService.generateToken(walletAddress, signature, message);
+           if (token && expiresAt) {
              authService.saveToken(token, expiresAt, walletAddress);
-             console.log('✅ Nouveau token généré et enregistré');
-             console.log('📝 Détails du token:', {
-               tokenLength: token ? token.length : 0,
-               expiresAt: expiresAt ? new Date(expiresAt).toLocaleString() : 'Non spécifié'
-             });
              setIsAuthReady(true);
            } else {
-             console.log('✅ Utilisation du token existant valide');
-             // Vérifier que le token est bien présent
-             const currentToken = authService.getToken();
-             if (!currentToken) {
-               console.warn('⚠️ Token manquant malgré adresse valide, génération d\'un nouveau token...');
-               const { token, expiresAt } = await authService.generateToken(walletAddress);
-               authService.saveToken(token, expiresAt, walletAddress);
-               console.log('✅ Nouveau token généré et enregistré');
-               setIsAuthReady(true);
-             } else {
-               // Token existant et valide trouvé
-               setIsAuthReady(true);
-             }
+             setIsAuthReady(false);
+             disconnectWallet();
            }
-        } catch (error: any) {
-          console.error('❌ Erreur lors de la génération du token d\'authentification:', error);
-          console.error('Détails de l\'erreur:', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status
-          });
+          } else {
+            // Token existant et valide trouvé
+            setIsAuthReady(true);
+          }
+        } catch (error) {
+          console.error('❌ Erreur lors de l\'authentification par signature :', error);
+          setIsAuthReady(false);
         }
-        setIsAuthReady(true);
       } else {
         setIsAuthReady(false);
-        console.log('⚠️ Wallet non connecté ou clé publique non disponible');
       }
     };
-
     generateAuthToken();
   }, [connected, publicKey]);
 
