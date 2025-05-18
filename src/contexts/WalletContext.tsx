@@ -127,7 +127,8 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
           const storedAddress = authService.getWalletAddress();
           if (storedAddress !== walletAddress || authService.isTokenExpired()) {
             // Générer un nouveau token côté backend (ou local) avec la signature
-            const { token, expiresAt } = await authService.generateToken(walletAddress, signature, message);
+            // TODO: Passer la signature et le message si l'API backend évolue
+            const { token, expiresAt } = await authService.generateToken(walletAddress);
            if (token && expiresAt) {
              authService.saveToken(token, expiresAt, walletAddress);
              setIsAuthReady(true);
