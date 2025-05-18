@@ -4,6 +4,7 @@
 // Trigger deployment - 2025-03-22
 import React, { useState } from 'react';
 import { Terminal, Shield, Target, Network, Loader2, RefreshCw, Clock } from 'lucide-react';
+import { Modal } from '@/components/ui/Modal';
 // Assure-toi que lucide-react est bien installé : npm install lucide-react
 // Si tu utilises TypeScript, installe aussi les types : npm install --save-dev @types/react
 import { useWalletContext } from '@/contexts/WalletContext';
@@ -90,8 +91,8 @@ export default function Dashboard() {
               {/* Sidebar - 1 colonne */}
               <div className="space-y-6">
                 <WalletStatus />
-                {isConnected && <DailyRewards />}
-                {isConnected && <DiscordLink />}
+                {isConnected && isAuthReady && <DailyRewards />}
+                {isConnected && isAuthReady && <DiscordLink />}
   
               </div>
             </div>
@@ -124,13 +125,16 @@ export default function Dashboard() {
           {!isConnected && showDisclaimer && (
             <WalletDisclaimer onDismiss={() => setShowDisclaimer(false)} />
           )}
-          {isConnected && !isAuthReady && (
-            <div className="flex flex-col items-center justify-center gap-4 p-8 rounded-2xl bg-black/40 border border-white/10 shadow-xl animate-fade-in">
-              <Loader2 className="animate-spin text-blue-400" size={48} />
-              <div className="text-lg font-semibold text-blue-200">Securing your session…</div>
-              <div className="text-sm text-gray-400">Generating or validating your authentication token…</div>
-            </div>
-          )}
+          <Modal
+            isOpen={isConnected && !isAuthReady}
+            onClose={() => {}}
+            title="Securing your session…"
+            className="text-center"
+          >
+            <Loader2 className="animate-spin text-blue-400 mx-auto mb-4" size={48} />
+            <div className="text-lg font-semibold text-blue-200 mb-2">Securing your session…</div>
+            <div className="text-sm text-gray-400">Generating or validating your authentication token…</div>
+          </Modal>
           {renderContent()}
         </main>
 
