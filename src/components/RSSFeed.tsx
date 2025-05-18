@@ -79,7 +79,18 @@ export default function RSSFeed() {
   const visibleNews = expanded ? news : news.slice(0, 3);
 
   return (
-    <div className="bg-black/50 rounded-xl p-8 min-h-[160px] flex flex-col justify-center">
+    <div className="relative rounded-2xl overflow-hidden min-h-[160px]">
+      <div
+        className="absolute inset-0 w-full h-full z-0"
+        style={{
+          backgroundImage: "url('/fox1.png')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          opacity: 0.65,
+          filter: 'blur(2px)'
+        }}
+      />
+      <div className="relative bg-black/40 backdrop-blur-md bg-opacity-60 border border-white/20 shadow-xl rounded-2xl p-8 min-h-[160px] flex flex-col justify-center" style={{boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.18)'}}>
       <h3 className="text-lg font-bold mb-4 text-blue-300 flex items-center gap-2">
         <span className="inline-block align-middle">
           <svg width="20" height="20" fill="currentColor" className="text-indigo-400"><path d="M17.707 4.293a1 1 0 0 0-1.414 0l-1.086 1.086A8.004 8.004 0 0 0 10 4c-1.229 0-2.415.246-3.5.707L5.414 4.293a1 1 0 1 0-1.414 1.414l1.086 1.086A8.004 8.004 0 0 0 4 10c0 1.229.246 2.415.707 3.5l-1.086 1.086a1 1 0 0 0 1.414 1.414l1.086-1.086A8.004 8.004 0 0 0 10 16c1.229 0 2.415-.246 3.5-.707l1.086 1.086a1 1 0 0 0 1.414-1.414l-1.086-1.086A8.004 8.004 0 0 0 16 10c0-1.229-.246-2.415-.707-3.5l1.086-1.086a1 1 0 0 0 0-1.414z"/></svg>
@@ -156,6 +167,7 @@ export default function RSSFeed() {
           </div>
         </>
       )}
+      </div>
     </div>
   );
 }
