@@ -118,16 +118,15 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <main className="space-y-6">
-          {isConnected && !isAuthReady ? (
+          {!isConnected && showDisclaimer && (
+            <WalletDisclaimer onDismiss={() => setShowDisclaimer(false)} />
+          )}
+          {isConnected && !isAuthReady && (
             <div className="flex flex-col items-center justify-center gap-4 p-8 rounded-2xl bg-black/40 border border-white/10 shadow-xl animate-fade-in">
               <Loader2 className="animate-spin text-blue-400" size={48} />
               <div className="text-lg font-semibold text-blue-200">Securing your session…</div>
               <div className="text-sm text-gray-400">Generating or validating your authentication token…</div>
             </div>
-          ) : (
-            showDisclaimer && !isConnected && (
-              <WalletDisclaimer onDismiss={() => setShowDisclaimer(false)} />
-            )
           )}
           {renderContent()}
         </main>
