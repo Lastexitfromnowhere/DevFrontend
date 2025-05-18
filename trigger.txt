@@ -1,0 +1,2 @@
+Ce fichier est créé pour déclencher un nouveau déploiement sur Vercel.
+Timestamp: 2025-05-18T20:22:00+02:00
