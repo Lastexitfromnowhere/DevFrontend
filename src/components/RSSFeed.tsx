@@ -79,7 +79,7 @@ export default function RSSFeed() {
   const visibleNews = expanded ? news : news.slice(0, 3);
 
   return (
-    <div className="bg-black/50 rounded-xl p-4">
+    <div className="bg-black/50 rounded-xl p-8 min-h-[160px] flex flex-col justify-center">
       <h3 className="text-lg font-bold mb-4 text-blue-300 flex items-center gap-2">
         <span className="inline-block align-middle">
           <svg width="20" height="20" fill="currentColor" className="text-indigo-400"><path d="M17.707 4.293a1 1 0 0 0-1.414 0l-1.086 1.086A8.004 8.004 0 0 0 10 4c-1.229 0-2.415.246-3.5.707L5.414 4.293a1 1 0 1 0-1.414 1.414l1.086 1.086A8.004 8.004 0 0 0 4 10c0 1.229.246 2.415.707 3.5l-1.086 1.086a1 1 0 0 0 1.414 1.414l1.086-1.086A8.004 8.004 0 0 0 10 16c1.229 0 2.415-.246 3.5-.707l1.086 1.086a1 1 0 0 0 1.414-1.414l-1.086-1.086A8.004 8.004 0 0 0 16 10c0-1.229-.246-2.415-.707-3.5l1.086-1.086a1 1 0 0 0 0-1.414z"/></svg>
@@ -92,7 +92,7 @@ export default function RSSFeed() {
         <div className="text-red-400">{error}</div>
       ) : (
         <>
-          <div className="space-y-6 animate-fade-in-down">
+          <div className="space-y-6 animate-fade-in-down flex-1">
             {visibleNews.map((item: DiscordNewsItem, idx: number) => (
               <div
                 key={item.id || idx}
@@ -144,15 +144,17 @@ export default function RSSFeed() {
         </>
       )}
       {news.length === 0 && (
-        <div className="text-gray-400">No news available.</div>
-        <div className="flex justify-center">
-          <button
-            className="mt-2 px-4 py-1 rounded bg-blue-500/30 text-blue-200 hover:bg-blue-500/50 text-xs font-medium transition"
-            onClick={() => setExpanded((e) => !e)}
-          >
-            {expanded ? "Voir moins" : `Voir plus (${news.length - 2})`}
-          </button>
-        </div>
+        <>
+          <div className="text-gray-400">No news available.</div>
+          <div className="flex justify-center">
+            <button
+              className="mt-2 px-4 py-1 rounded bg-blue-500/30 text-blue-200 hover:bg-blue-500/50 text-xs font-medium transition"
+              onClick={() => setExpanded((e) => !e)}
+            >
+              {expanded ? "Voir moins" : `Voir plus (${news.length - 2})`}
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
