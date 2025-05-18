@@ -91,7 +91,7 @@ export default function RSSFeed() {
       ) : error ? (
         <div className="text-red-400">{error}</div>
       ) : (
-        <div className="space-y-4 max-h-64 overflow-y-auto pr-2">
+        <div className="space-y-6 animate-fade-in-down">
           {visibleNews.map((item: DiscordNewsItem, idx: number) => (
             <div
               key={item.id || idx}

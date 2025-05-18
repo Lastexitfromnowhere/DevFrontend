@@ -17,7 +17,7 @@ const learningResources: LearningResource[] = [
     level: "Beginner",
     type: "eBook",
     duration: "2-3 hours",
-    link: "#"
+    link: "https://research.com/tutorials/what-is-blockchain-technology"
   },
   {
     icon: Video,
@@ -26,9 +26,17 @@ const learningResources: LearningResource[] = [
     level: "Intermediate",
     type: "Video Course",
     duration: "10-12 hours",
-    link: "#"
+    link: "https://www.youtube.com/watch?v=kqaxKuxC9lo"
   },
-  // ... autres ressources
+  {
+    icon: Book,
+    title: "Ethereum Smart Contracts",
+    description: "Step-by-step guide to writing and deploying Ethereum smart contracts.",
+    level: "Advanced",
+    type: "eBook",
+    duration: "4-5 hours",
+    link: "https://ethereum.org/en/developers/tutorials/"
+  },
 ];
 
 export default function LearningHub({ onClose }: { onClose: () => void }) {
@@ -40,7 +48,7 @@ export default function LearningHub({ onClose }: { onClose: () => void }) {
       className="max-w-4xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow"
     >
       <div className="space-y-6 animate-fade-in-down">
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 gap-6">
           {learningResources.map((resource, index) => {
             const ResourceIcon = resource.icon;
             return (
