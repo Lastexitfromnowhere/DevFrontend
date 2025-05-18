@@ -83,7 +83,7 @@ export default function RSSFeed() {
       <div
         className="absolute inset-0 w-full h-full z-0"
         style={{
-          backgroundImage: "url('/fox1.png')",
+          backgroundImage: "url('/fox3.png')",
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.85,
