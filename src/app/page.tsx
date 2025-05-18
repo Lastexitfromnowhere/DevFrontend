@@ -30,7 +30,17 @@ const IPFS_CID = 'QmeZqms4zJXz91uNetmEKmxeG2fBQezGKz4egon5kiiai2';
 
 export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
-  const { isConnected } = useWalletContext();
+  const { isConnected, isAuthReady } = useWalletContext();
+  const [showDisclaimer, setShowDisclaimer] = useState(true);
+
+  // Masquer le disclaimer dès que le wallet est connecté, le réafficher à la déconnexion
+  React.useEffect(() => {
+    if (isConnected) {
+      setShowDisclaimer(false);
+    } else {
+      setShowDisclaimer(true);
+    }
+  }, [isConnected]);
 
   const renderSectionButton = (id: string, icon: React.ReactNode, label: string) => (
     <button
@@ -89,13 +99,11 @@ export default function Dashboard() {
         {/* Navigation Header */}
         <header className="bg-black/40 backdrop-blur-md border border-gray-700/30 rounded-lg p-4 mb-6 shadow-lg">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex flex-col items-start">
-              <div className="flex items-center space-x-2 mb-2">
-                <Terminal size={24} className="text-blue-400" />
-                <h1 className="text-xl font-bold text-white">Dashboard</h1>
-              </div>
-            </div>
-            
+            <div className="flex flex-col items-center justify-center gap-4 p-8 rounded-2xl bg-black/40 border border-white/10 shadow-xl animate-fade-in">
+          <Loader2 className="animate-spin text-blue-400" size={48} />
+          <div className="text-lg font-semibold text-blue-200">Securing your session…</div>
+          <div className="text-sm text-gray-400">Generating or validating your authentication token…</div>
+        </div>    
             <div className="flex items-center space-x-4">
               <HeaderDiscordButton />
               
@@ -110,8 +118,8 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <main className="space-y-6">
-          {!isConnected && (
-            <WalletDisclaimer onDismiss={() => {}} />
+          {showDisclaimer && !isConnected && (
+            <WalletDisclaimer onDismiss={() => setShowDisclaimer(false)} />
           )}
           {renderContent()}
         </main>

@@ -28,6 +28,7 @@ const getNetwork = () => {
 // Interface du contexte de portefeuille
 interface WalletContextType {
   isConnected: boolean;
+  isAuthReady: boolean;
   account: string | null;
   publicKey: string | null;
   chain: string;
@@ -38,6 +39,7 @@ interface WalletContextType {
 // Création du contexte
 const WalletContext = createContext<WalletContextType>({
   isConnected: false,
+  isAuthReady: false,
   account: null,
   publicKey: null,
   chain: 'Solana',
@@ -77,6 +79,8 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
     disconnect 
   } = useWallet();
 
+  const [isAuthReady, setIsAuthReady] = useState(false);
+
   // Méthode pour connecter le portefeuille
   const connectWallet = () => {
     // Le WalletMultiButton gère la connexion
@@ -94,6 +98,7 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
   // Générer automatiquement un token JWT lorsque le wallet est connecté
   useEffect(() => {
     const generateAuthToken = async () => {
+      setIsAuthReady(false);
       if (connected && publicKey) {
         const walletAddress = publicKey.toBase58();
         try {
@@ -139,7 +144,9 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
             status: error.response?.status
           });
         }
+        setIsAuthReady(true);
       } else {
+        setIsAuthReady(false);
         console.log('⚠️ Wallet non connecté ou clé publique non disponible');
       }
     };
@@ -150,6 +157,7 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
   // Valeur du contexte
   const contextValue = {
     isConnected: connected,
+    isAuthReady,
     account: publicKey ? publicKey.toBase58() : null,
     publicKey: publicKey ? publicKey.toBase58() : null,
     chain: 'Solana',
