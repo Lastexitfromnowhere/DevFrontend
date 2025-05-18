@@ -6,9 +6,10 @@ import { TerminalButton } from '@/components/ui/terminal';
 import { Users, LogOut } from 'lucide-react';
 
 export default function WalletStatus() {
-  const { isConnected, account, chain, disconnectWallet } = useWalletContext();
+  const { isConnected, isAuthReady, account, chain, disconnectWallet } = useWalletContext();
 
-  if (!isConnected || !account) return null;
+  // N'affiche le statut que si la session est sécurisée (signature OK)
+  if (!isConnected || !isAuthReady || !account) return null;
 
   return (
     <Card variant="terminal" className="space-y-4">

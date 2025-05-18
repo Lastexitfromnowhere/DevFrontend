@@ -106,11 +106,7 @@ export default function Dashboard() {
         {/* Navigation Header */}
         <header className="bg-black/40 backdrop-blur-md border border-gray-700/30 rounded-lg p-4 mb-6 shadow-lg">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <div className="flex flex-col items-center justify-center gap-4 p-8 rounded-2xl bg-black/40 border border-white/10 shadow-xl animate-fade-in">
-          <Loader2 className="animate-spin text-blue-400" size={48} />
-          <div className="text-lg font-semibold text-blue-200">Securing your session…</div>
-          <div className="text-sm text-gray-400">Generating or validating your authentication token…</div>
-        </div>    
+
             <div className="flex items-center space-x-4">
               <HeaderDiscordButton />
               
