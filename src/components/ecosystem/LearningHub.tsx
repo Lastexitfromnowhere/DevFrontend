@@ -49,7 +49,7 @@ export default function LearningHub({ onClose }: { onClose: () => void }) {
     >
       <div className="space-y-6 animate-fade-in-down">
         <div className="grid md:grid-cols-2 gap-6">
-          {learningResources.map((resource, index) => {
+          {learningResources.slice(0, 3).map((resource, index) => {
             const ResourceIcon = resource.icon;
             return (
               <Card
