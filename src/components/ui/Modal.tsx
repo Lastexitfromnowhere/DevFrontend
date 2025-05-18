@@ -34,16 +34,16 @@ export function Modal({
   // Using createPortal with client-side verification
   return isMounted ? createPortal(
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md"
       onClick={onClose}
     >
       <div 
-        className={`relative bg-[#111] border border-green-800 rounded-lg p-6 max-w-md w-full ${className}`}
+        className={`relative bg-black/40 backdrop-blur-md border border-white/20 rounded-lg p-6 max-w-md w-full ${className}`}
         onClick={(e) => e.stopPropagation()}
       >
         <button 
           onClick={onClose} 
-          className="absolute top-4 right-4 text-green-400 hover:text-green-200 transition-colors"
+          className="absolute top-4 right-4 text-white hover:text-blue-300 transition-colors"
         >
           <X size={24} />
         </button>

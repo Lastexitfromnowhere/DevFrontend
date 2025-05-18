@@ -24,26 +24,26 @@ export default function WalletDisclaimer({ onDismiss }: WalletDisclaimerProps) {
           </h2>
         </div>
 
-        <div className="bg-gray-950 border border-gray-800 rounded p-4 space-y-3">
+        <div className="bg-black/30 backdrop-blur-md border border-white/20 rounded-xl p-4 space-y-3 shadow-lg">
           <div className="flex items-start space-x-3">
-            <p className="text-sm text-gray-300">
-              # Create a dedicated wallet for this platform
+            <p className="text-sm text-blue-200">
+              # Utilise un wallet dédié pour cette plateforme
             </p>
           </div>
           <div className="flex items-start space-x-3">
-            <p className="text-sm text-gray-300">
-              # Keep experimental interactions isolated
+            <p className="text-sm text-blue-200">
+              # Garde tes interactions expérimentales isolées
             </p>
           </div>
         </div>
 
         <WalletMultiButton 
-          className="w-full bg-gray-600 text-gray py-2 rounded 
-                     hover:bg-gray-700 transition-colors flex 
-                     items-center justify-center"
+          className="w-full bg-blue-800/80 text-blue-100 py-2 rounded-xl 
+                     hover:bg-blue-700 transition-colors flex 
+                     items-center justify-center font-semibold shadow-md"
         >
           <Terminal className="w-4 h-4 mr-2" />
-          $ connect_wallet
+          $ Connect Wallet
         </WalletMultiButton>
       </div>
     </Modal>

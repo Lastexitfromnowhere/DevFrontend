@@ -87,10 +87,10 @@ export default function RSSFeed() {
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.85,
-          filter: 'blur(1px)'
+          filter: 'blur(0.5px)'
         }}
       />
-      <div className="relative bg-black/20 backdrop-blur-sm bg-opacity-30 border border-white/20 shadow-xl rounded-2xl p-8 min-h-[160px] flex flex-col justify-center" style={{boxShadow: '0 8px 32px 0 rgba(80, 82, 104, 0.18)'}}>
+      <div className="relative bg-black/20 backdrop-blur-none bg-opacity-30 border border-white/20 shadow-xl rounded-2xl p-8 min-h-[160px] flex flex-col justify-center" style={{boxShadow: '0 8px 32px 0 rgba(80, 82, 104, 0.18)'}}>
       <h3 className="text-lg font-bold mb-4 text-blue-300 flex items-center gap-2">
         <span className="inline-block align-middle">
           <svg width="20" height="20" fill="currentColor" className="text-indigo-400"><path d="M17.707 4.293a1 1 0 0 0-1.414 0l-1.086 1.086A8.004 8.004 0 0 0 10 4c-1.229 0-2.415.246-3.5.707L5.414 4.293a1 1 0 1 0-1.414 1.414l1.086 1.086A8.004 8.004 0 0 0 4 10c0 1.229.246 2.415.707 3.5l-1.086 1.086a1 1 0 0 0 1.414 1.414l1.086-1.086A8.004 8.004 0 0 0 10 16c1.229 0 2.415-.246 3.5-.707l1.086 1.086a1 1 0 0 0 1.414-1.414l-1.086-1.086A8.004 8.004 0 0 0 16 10c0-1.229-.246-2.415-.707-3.5l1.086-1.086a1 1 0 0 0 0-1.414z"/></svg>
@@ -107,7 +107,7 @@ export default function RSSFeed() {
             {visibleNews.map((item: DiscordNewsItem, idx: number) => (
               <div
                 key={item.id || idx}
-                className="group bg-blue-900/30 rounded-xl shadow-lg p-4 flex items-start gap-3 transition-colors duration-200"
+                className="group bg-gray-800/40 rounded-xl shadow-lg p-4 flex items-start gap-3 transition-colors duration-200"
               >
                 <span className="mt-1 text-indigo-400">
                   {/* Discord icon */}
