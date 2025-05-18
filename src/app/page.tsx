@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { Terminal, Shield, Target, Network, Loader2, RefreshCw, Clock } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 // Assure-toi que lucide-react est bien installé : npm install lucide-react
 // Si tu utilises TypeScript, installe aussi les types : npm install --save-dev @types/react
 import { useWalletContext } from '@/contexts/WalletContext';
@@ -129,12 +130,7 @@ export default function Dashboard() {
             className="text-center"
           >
             {!isConnected ? (
-              <button
-                className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all"
-                onClick={connectWallet}
-              >
-                Connect wallet
-              </button>
+              <WalletMultiButton className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all" />
             ) : (
               <>
                 <Loader2 className="animate-spin text-blue-400 mx-auto mb-4" size={48} />
