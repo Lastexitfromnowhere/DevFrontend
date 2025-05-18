@@ -125,7 +125,7 @@ export default function RSSFeed() {
                     </div>
                   )}
                   <div className="mt-2 text-xs text-gray-400">
-                    {formatDate(item.timestamp)}
+                    {formatDate(item.date)}
                   </div>
                 </div>
               </div>
