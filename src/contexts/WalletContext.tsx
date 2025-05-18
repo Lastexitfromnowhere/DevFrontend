@@ -113,29 +113,33 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
           const storedAddress = authService.getWalletAddress();
           console.log('📝 Adresse stockée précédemment:', storedAddress);
           console.log('📝 Token expiré?', authService.isTokenExpired() ? 'Oui' : 'Non');
-          
-          // Vérifier si nous avons déjà un token valide pour cette adresse
-          if (storedAddress !== walletAddress || authService.isTokenExpired()) {
-            console.log('🔄 Génération d\'un nouveau token...');
-            // Générer un nouveau token pour cette adresse
-            const { token, expiresAt } = await authService.generateToken(walletAddress);
-            authService.saveToken(token, expiresAt, walletAddress);
-            console.log('✅ Nouveau token généré et enregistré');
-            console.log('📝 Détails du token:', {
-              tokenLength: token ? token.length : 0,
-              expiresAt: expiresAt ? new Date(expiresAt).toLocaleString() : 'Non spécifié'
-            });
-          } else {
-            console.log('✅ Utilisation du token existant valide');
-            // Vérifier que le token est bien présent
-            const currentToken = authService.getToken();
-            if (!currentToken) {
-              console.warn('⚠️ Token manquant malgré adresse valide, génération d\'un nouveau token...');
-              const { token, expiresAt } = await authService.generateToken(walletAddress);
-              authService.saveToken(token, expiresAt, walletAddress);
-              console.log('✅ Nouveau token généré et enregistré');
-            }
-          }
+                    // Vérifier si nous avons déjà un token valide pour cette adresse
+           if (storedAddress !== walletAddress || authService.isTokenExpired()) {
+             console.log('🔄 Génération d\'un nouveau token...');
+             // Générer un nouveau token pour cette adresse
+             const { token, expiresAt } = await authService.generateToken(walletAddress);
+             authService.saveToken(token, expiresAt, walletAddress);
+             console.log('✅ Nouveau token généré et enregistré');
+             console.log('📝 Détails du token:', {
+               tokenLength: token ? token.length : 0,
+               expiresAt: expiresAt ? new Date(expiresAt).toLocaleString() : 'Non spécifié'
+             });
+             setIsAuthReady(true);
+           } else {
+             console.log('✅ Utilisation du token existant valide');
+             // Vérifier que le token est bien présent
+             const currentToken = authService.getToken();
+             if (!currentToken) {
+               console.warn('⚠️ Token manquant malgré adresse valide, génération d\'un nouveau token...');
+               const { token, expiresAt } = await authService.generateToken(walletAddress);
+               authService.saveToken(token, expiresAt, walletAddress);
+               console.log('✅ Nouveau token généré et enregistré');
+               setIsAuthReady(true);
+             } else {
+               // Token existant et valide trouvé
+               setIsAuthReady(true);
+             }
+           }
         } catch (error: any) {
           console.error('❌ Erreur lors de la génération du token d\'authentification:', error);
           console.error('Détails de l\'erreur:', {
