@@ -75,8 +75,8 @@ export default function RSSFeed() {
 
   // Expansion/collapse state
   const [expanded, setExpanded] = useState(false);
-  // Affiche les 2 derniers posts si non expandé, sinon tout
-  const visibleNews = expanded ? news : news.slice(0, 2);
+  // Affiche les 3 derniers posts si non expandé, sinon tout
+  const visibleNews = expanded ? news : news.slice(0, 3);
 
   return (
     <div className="bg-black/50 rounded-xl p-4">
@@ -95,7 +95,7 @@ export default function RSSFeed() {
           {visibleNews.map((item: DiscordNewsItem, idx: number) => (
             <div
               key={item.id || idx}
-              className="bg-black/70 rounded-xl shadow-lg p-4 flex items-start gap-3 hover:bg-blue-900/30 transition-colors duration-200"
+              className="group bg-black/70 rounded-xl shadow-lg p-4 flex items-start gap-3 hover:bg-blue-900/30 transition-colors duration-200"
             >
               <span className="mt-1 text-indigo-400">
                 {/* Discord icon */}
@@ -105,7 +105,7 @@ export default function RSSFeed() {
                 <div className="font-semibold text-blue-200 mb-1 truncate">
                   {getMessageTitle(item.content)}
                 </div>
-                <div className="text-sm text-gray-300 line-clamp-3 whitespace-pre-line">
+                <div className="text-sm text-gray-300 line-clamp-3 whitespace-pre-line group-hover:line-clamp-none">
                   {item.content}
                 </div>
                 {item.attachments && item.attachments.length > 0 && (
