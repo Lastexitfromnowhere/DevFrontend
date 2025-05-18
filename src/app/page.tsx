@@ -122,11 +122,8 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <main className="space-y-6">
-          {!isConnected && showDisclaimer && (
-            <WalletDisclaimer onDismiss={() => setShowDisclaimer(false)} />
-          )}
           <Modal
-            isOpen={isConnected && !isAuthReady}
+            isOpen={!isAuthReady}
             onClose={() => {}}
             title="Securing your session…"
             className="text-center"
