@@ -5,10 +5,17 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-body, html {
+/* Styles spécifiques à la page de login uniquement */
+.login-page body, .login-page html {
   height: 100%;
   width: 100%;
   overflow: hidden;
+}
+
+/* Styles globaux qui n'affectent pas le défilement */
+body, html {
+  height: 100%;
+  width: 100%;
 }
 
 .app {

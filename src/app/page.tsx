@@ -38,10 +38,28 @@ export default function Dashboard() {
   const router = useRouter();
   
   // Rediriger vers la page de login si l'utilisateur n'est pas connecté
+  // Utiliser useEffect avec un drapeau pour éviter les redirections multiples
   useEffect(() => {
-    if (!isConnected) {
+    // Vérifier si nous sommes déjà en train de rediriger
+    const isRedirecting = sessionStorage.getItem('isRedirecting');
+    if (isRedirecting === 'true') return;
+    
+    // Vérifier si l'utilisateur est connecté via wallet ou via Google
+    const isLoggedIn = isConnected || localStorage.getItem('jwt_token');
+    
+    if (!isLoggedIn) {
       console.log('Utilisateur non connecté, redirection vers /login');
+      sessionStorage.setItem('isRedirecting', 'true');
       router.push('/login');
+    } else {
+      console.log('Utilisateur connecté, affichage du dashboard');
+      // S'assurer que les états de connexion sont synchronisés
+      if (!isConnected && localStorage.getItem('jwt_token')) {
+        localStorage.setItem('isConnected', 'true');
+        localStorage.setItem('isAuthReady', 'true');
+      }
+      // Réinitialiser le drapeau de redirection
+      sessionStorage.removeItem('isRedirecting');
     }
   }, [isConnected, router]);
   
@@ -60,16 +78,12 @@ export default function Dashboard() {
     };
   }, [router]);
 
-  // Masquer le disclaimer dès que le wallet est connecté
-  React.useEffect(() => {
-    if (isConnected) {
-      setShowDisclaimer(false);
-    }
-  }, [isConnected]);
-
   // Masquer le disclaimer dès que le wallet est connecté, le réafficher à la déconnexion
   React.useEffect(() => {
-    if (isConnected) {
+    // Vérifier si l'utilisateur est connecté via wallet ou via Google
+    const isLoggedIn = isConnected || localStorage.getItem('jwt_token');
+    
+    if (isLoggedIn) {
       setShowDisclaimer(false);
     } else {
       setShowDisclaimer(true);
@@ -128,7 +142,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white p-4">
+    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white p-4 overflow-auto">
       <div className="max-w-7xl mx-auto">
         {/* Navigation Header */}
         <header className="bg-black/40 backdrop-blur-md border border-gray-700/30 rounded-lg p-4 mb-6 shadow-lg">

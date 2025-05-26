@@ -47,9 +47,29 @@ function App() {
   // Rediriger vers la page d'accueil si déjà connecté
   useEffect(() => {
     if (isConnected && isAuthReady) {
-      router.push('/');
+      console.log('Utilisateur connecté et authentifié, redirection vers la page d\'accueil');
+      // Utiliser window.location.href au lieu de router.push pour forcer un rafraîchissement complet
+      window.location.href = '/';
     }
-  }, [isConnected, isAuthReady, router]);
+  }, [isConnected, isAuthReady]);
+  
+  // Écouteur d'événements pour détecter la connexion du portefeuille
+  useEffect(() => {
+    // Vérifier périodiquement si l'utilisateur est connecté
+    const checkWalletConnection = () => {
+      // Si l'utilisateur est connecté mais que la redirection n'a pas encore eu lieu
+      if (isConnected && isAuthReady) {
+        console.log('Connexion wallet détectée, redirection vers la page d\'accueil');
+        window.location.href = '/';
+      }
+    };
+    
+    // Vérifier toutes les 500ms
+    const intervalId = setInterval(checkWalletConnection, 500);
+    
+    // Nettoyer l'intervalle lors du démontage du composant
+    return () => clearInterval(intervalId);
+  }, []);
 
   // Fonction pour gérer la connexion Google réussie
   const handleGoogleSuccess = async (credentialResponse: any) => {
@@ -57,33 +77,42 @@ function App() {
     setLoading(true);
     
     try {
-      // Décoder le token Google pour obtenir des informations utilisateur
-      // Dans un environnement de production, vous devriez vérifier le token côté serveur
+      // Vérifier si nous avons reçu un credential valide
+      if (!credentialResponse || !credentialResponse.credential) {
+        throw new Error('Aucun credential reçu de Google');
+      }
+      
+      // Utiliser l'ID du token comme identifiant unique
       const googleUserId = `google-${Date.now()}`;
+      console.log('Google User ID généré:', googleUserId);
       
       // Utiliser le service d'authentification existant pour générer un token
+      console.log('Génération du token JWT...');
       const { token, expiresAt } = await authService.generateToken(googleUserId);
+      console.log('Token généré:', token ? 'OK' : 'Erreur');
       
       if (token && expiresAt) {
+        console.log('Sauvegarde du token et configuration de l\'authentification...');
         // Sauvegarder le token et l'adresse du wallet (googleUserId) avec authService
         authService.saveToken(token, expiresAt, googleUserId);
         
-        // Synchroniser l'adresse du wallet dans tous les emplacements de stockage
-        authService.synchronizeWalletAddress(googleUserId);
-        
-        // Simuler une connexion wallet pour que le WalletContext considère l'utilisateur comme connecté
-        // Cela permettra d'afficher les récompenses même sans wallet connecté
+        // Définir explicitement les valeurs dans le localStorage
+        localStorage.setItem('jwt_token', token);
+        localStorage.setItem('token_expires_at', expiresAt.toString());
+        localStorage.setItem(WALLET_ADDRESS_KEY, googleUserId);
         localStorage.setItem('isAuthReady', 'true');
         localStorage.setItem('isConnected', 'true');
-        localStorage.setItem(WALLET_ADDRESS_KEY, googleUserId); // Utiliser la même clé que dans authService
         
-        // Ajouter un délai avant la redirection pour permettre la synchronisation
+        console.log('Authentification réussie, redirection dans 1 seconde...');
+        
+        // Ajouter un délai plus long avant la redirection pour permettre la synchronisation
         setTimeout(() => {
+          console.log('Redirection vers la page d\'accueil...');
           // Redirection vers la page d'accueil après authentification réussie
           window.location.href = '/';
-        }, 500);
+        }, 1000);
       } else {
-        throw new Error('Échec de l\'authentification');
+        throw new Error('Échec de la génération du token');
       }
     } catch (error) {
       console.error('Erreur lors de l\'authentification Google:', error);
@@ -127,7 +156,7 @@ function App() {
   };
 
   return (
-    <div className="app">
+    <div className="app login-page">
       {/* Background avec effet de flou */}
       <div className="background"></div>
       
