@@ -6,6 +6,8 @@ import { AccountBalanceWallet } from '@mui/icons-material';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { authService } from '@/services/authService';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
 function App() {
   const [loading, setLoading] = React.useState(false);
@@ -52,23 +54,21 @@ function App() {
     setLoading(true);
     
     try {
-      // Envoyer le token ID à votre backend pour validation
-      const response = await axios.post('/api/auth/google', {
-        credential: credentialResponse.credential
-      });
+      // Générer un ID unique basé sur les informations Google
+      // Dans un environnement de production, vous devriez décoder et vérifier le token Google
+      const googleUserId = `google-${Date.now()}`;
       
-      // Typage de la réponse
-      const data = response.data as { success: boolean; token?: string; user?: any };
+      // Utiliser le service d'authentification existant pour générer un token
+      const { token, expiresAt } = await authService.generateToken(googleUserId);
       
-      if (data.success && data.token) {
-        // Sauvegarder le token dans un cookie ou localStorage
-        document.cookie = `auth_token=${data.token}; path=/; max-age=86400`;
+      if (token && expiresAt) {
+        // Sauvegarder le token avec authService
+        authService.saveToken(token, expiresAt, googleUserId);
         
         // Simuler une connexion wallet pour que le WalletContext considère l'utilisateur comme connecté
         // Cela permettra d'afficher les récompenses même sans wallet connecté
         localStorage.setItem('isAuthReady', 'true');
         localStorage.setItem('isConnected', 'true');
-        localStorage.setItem('walletAddress', data.user?.googleId || 'google-user');
         
         // Redirection vers la page d'accueil après authentification réussie
         window.location.href = '/';
@@ -93,8 +93,20 @@ function App() {
     setLoading(true);
     
     try {
-      // Utiliser la fonction connectWallet du contexte
-      connectWallet();
+      // Ouvrir le sélecteur de portefeuille en utilisant le bouton WalletMultiButton
+      // Nous créons un événement personnalisé pour simuler un clic sur le bouton WalletMultiButton
+      const walletButtons = document.getElementsByClassName('wallet-adapter-button');
+      
+      if (walletButtons && walletButtons.length > 0) {
+        // Simuler un clic sur le premier bouton de portefeuille trouvé
+        (walletButtons[0] as HTMLElement).click();
+      } else {
+        // Si le bouton n'est pas trouvé, essayer d'utiliser la fonction connectWallet du contexte
+        connectWallet();
+      }
+      
+      // Désactiver le chargement car le sélecteur de portefeuille gère son propre état
+      setLoading(false);
       
       // La redirection sera gérée par l'effet qui surveille isConnected et isAuthReady
     } catch (error) {
@@ -126,7 +138,7 @@ function App() {
             Sign in to access your dashboard
           </Typography>
           
-          {/* Bouton de connexion wallet (non configuré) */}
+          {/* Bouton de connexion wallet */}
           <Button 
             variant="contained"
             className="login-button wallet-button"
@@ -144,6 +156,11 @@ function App() {
           >
             {loading ? <CircularProgress size={24} color="inherit" /> : 'Connect with Wallet'}
           </Button>
+          
+          {/* WalletMultiButton caché pour permettre l'ouverture du sélecteur de portefeuille */}
+          <div style={{ position: 'absolute', visibility: 'hidden' }}>
+            <WalletMultiButton className="wallet-adapter-button" />
+          </div>
           
           {/* Séparateur */}
           <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', margin: '20px 0' }}>
