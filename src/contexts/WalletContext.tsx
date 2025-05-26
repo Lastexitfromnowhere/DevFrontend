@@ -148,6 +148,14 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
             authService.saveToken(token, expiresAt, walletAddress);
             setIsAuthReady(true);
             console.log('Authentification réussie avec un nouveau token');
+            
+            // Rediriger vers la page d'accueil après authentification réussie
+            if (typeof window !== 'undefined') {
+              // Ajouter un délai pour permettre la mise à jour de l'état
+              setTimeout(() => {
+                window.location.href = '/';
+              }, 500);
+            }
           } else {
             console.warn('Impossible de générer un token, mais on continue quand même');
             setIsAuthReady(true); // On continue quand même
@@ -156,6 +164,14 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
           // Token existant et valide trouvé
           console.log('Token existant valide trouvé');
           setIsAuthReady(true);
+          
+          // Rediriger vers la page d'accueil si nous sommes sur la page de login
+          if (typeof window !== 'undefined' && window.location.pathname.includes('/login')) {
+            // Ajouter un délai pour permettre la mise à jour de l'état
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 500);
+          }
         }
       } catch (error) {
         console.error('Erreur lors de l\'authentification:', error);
