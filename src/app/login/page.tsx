@@ -1,8 +1,9 @@
 "use client";
 
 import React from 'react';
-import App from './App';
+// Importation directe du composant App sans extension
+import AppComponent from '@/app/login/App';
 
 export default function LoginPage() {
-  return <App />;
+  return <AppComponent />;
 }
