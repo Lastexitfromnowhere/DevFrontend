@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import { DashboardButton } from '../ui/DashboardButton';
-import { DashboardBadge } from '../ui/DashboardBadge';
 import { useWalletContext } from '@/contexts/WalletContext';
-import { Award, Clock, AlertTriangle, RefreshCw, Calendar, TrendingUp } from 'lucide-react';
+import { Calendar, TrendingUp } from 'lucide-react';
 import { config } from '@/config/env';
 import axios from 'axios';
 import { Spinner } from '../ui/Spinner';
 import { authService } from '@/services/authService';
+import Image from 'next/image';
 
 // URL de base pour les requêtes dailyClaims
 const DAILY_CLAIMS_API_BASE = `${config.API_BASE_URL}/dailyClaims`;
@@ -210,91 +210,75 @@ export default function DailyClaims() {
   }
 
   return (
-    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6">
-      {/* En-tête avec titre */}
-      <div className="flex justify-center items-center mb-2">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 rounded-full bg-yellow-500/20 backdrop-blur-sm">
-            <Award className="w-5 h-5 text-yellow-400" />
-          </div>
-          <h3 className="text-xl font-semibold text-white">Récompenses quotidiennes</h3>
-        </div>
+    <Card className="relative overflow-hidden backdrop-blur-md bg-black/70 border border-gray-700/50 p-6 rounded-3xl shadow-lg transition-all duration-500 space-y-6 max-w-md mx-auto">
+      {/* Titre */}
+      <div className="text-center">
+        <h3 className="text-3xl font-bold text-[#3DAEFF] tracking-wider">DAILY REWARD</h3>
       </div>
 
       {/* Message d'erreur */}
       {error && (
         <div className="flex items-center bg-red-500/20 text-red-400 border border-red-500/30 p-3 rounded-md backdrop-blur-sm">
-          <AlertTriangle className="w-4 h-4 mr-2" />
           <span>{error}</span>
         </div>
       )}
 
-      {/* Solde actuel */}
-      <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-6 transition-all duration-300">
-        <div className="flex flex-col items-center text-center mb-4">
-          <h4 className="text-gray-300 font-semibold mb-2">Votre solde actuel</h4>
-          <div className="text-4xl font-bold text-white bg-gradient-to-r from-yellow-400 to-amber-600 bg-clip-text text-transparent">
-            {isLoading ? <Spinner size="lg" /> : totalBalance.toFixed(3)}
-          </div>
-          <div className="text-lg font-medium text-gray-400 mt-1">RWRD</div>
-          
-          {rewards.availableRewards > 0 && (
-            <div className="mt-2 text-sm text-gray-300">
-              <span className="text-green-400 font-medium">{rewards.availableRewards.toFixed(3)}</span> RWRD disponibles à réclamer
+      {/* Contenu principal */}
+      <div className="flex">
+        {/* Image du renard */}
+        <div className="flex-shrink-0 relative w-1/2">
+          <Image 
+            src="/image.png" 
+            alt="Fox character" 
+            width={200} 
+            height={300}
+            className="object-contain"
+          />
+        </div>
+
+        {/* Informations de récompense */}
+        <div className="flex-grow flex flex-col justify-center space-y-6">
+          {/* Wallet connecté */}
+          <div>
+            <p className="text-gray-400 text-lg mb-1">Connected wallet</p>
+            <div className="bg-black/30 border border-gray-700/50 rounded-xl px-4 py-2">
+              <p className="text-white font-medium truncate">
+                {isLoading ? <Spinner size="sm" /> : account ? `${account.substring(0, 4)}...${account.substring(account.length - 4)}` : 'Not connected'}
+              </p>
             </div>
-          )}
-        </div>
-        
-        <div className="flex justify-center mt-4">
-          <DashboardButton
-            variant="primary"
-            onClick={claimDailyRewards}
-            loading={isClaiming}
-            disabled={!rewards.canClaim || isClaiming}
-            icon={<Award className="w-4 h-4" />}
-            className="w-full max-w-xs"
-          >
-            {rewards.canClaim ? "Réclamer ma récompense quotidienne" : "Récompense déjà réclamée"}
-          </DashboardButton>
-        </div>
-        
-        {/* Temps avant prochaine réclamation */}
-        <div className="mt-4 flex items-center justify-center text-sm bg-black/20 backdrop-blur-sm p-3 rounded-md">
-          <Clock className="w-4 h-4 mr-2 text-blue-400" />
-          {rewards.canClaim ? (
-            <span className="text-green-400 font-medium">Prêt à réclamer maintenant !</span>
-          ) : (
-            <span className="text-gray-300">Prochaine réclamation dans : <span className="text-blue-400 font-medium">{getTimeRemaining()}</span></span>
-          )}
+          </div>
+
+          {/* Récompenses disponibles */}
+          <div>
+            <p className="text-gray-400 text-lg mb-1">Available</p>
+            <div className="text-[#00FF88] text-5xl font-bold">
+              {isLoading ? <Spinner size="lg" /> : rewards.availableRewards.toFixed(3)} <span className="text-2xl">RWRD</span>
+            </div>
+          </div>
+
+          {/* Bouton de réclamation */}
+          <div>
+            <button
+              onClick={claimDailyRewards}
+              disabled={!rewards.canClaim || isClaiming}
+              className="w-full bg-[#0066CC] hover:bg-[#0055AA] text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-xl"
+            >
+              {isClaiming ? <Spinner size="sm" /> : 'Claim'}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Informations complémentaires */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4 transition-all duration-300 hover:bg-black/40">
-          <div className="flex items-center mb-2">
-            <div className="p-1.5 rounded-full bg-blue-500/20 backdrop-blur-sm mr-2">
-              <Calendar className="text-blue-400 h-4 w-4" />
-            </div>
-            <p className="text-gray-300 text-sm">Dernière réclamation</p>
-          </div>
-          <p className="text-white font-medium text-center mt-1">
-            {rewards.lastClaimDate ? new Date(rewards.lastClaimDate).toLocaleDateString() : 'Jamais'}
-          </p>
+      {/* Footer avec date et taux journalier */}
+      <div className="flex justify-between items-center pt-4 border-t border-gray-700/30 text-gray-400">
+        <div className="flex items-center">
+          <Calendar className="w-4 h-4 mr-2" />
+          <span>{new Date().toLocaleDateString('en-US', { month: '2-digit', day: '2-digit', year: 'numeric' })}</span>
         </div>
-        <div className="backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg p-4 transition-all duration-300 hover:bg-black/40">
-          <div className="flex items-center mb-2">
-            <div className="p-1.5 rounded-full bg-green-500/20 backdrop-blur-sm mr-2">
-              <TrendingUp className="text-green-400 h-4 w-4" />
-            </div>
-            <p className="text-gray-300 text-sm">Taux journalier</p>
-          </div>
-          <p className="text-white font-medium text-center mt-1">+1.000 <span className="text-gray-400">RWRD / jour</span></p>
+        <div className="flex items-center">
+          <TrendingUp className="w-4 h-4 mr-2" />
+          <span>1.000 / day</span>
         </div>
-      </div>
-      
-      <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
-        {`// Connectez-vous quotidiennement pour maximiser vos récompenses`}
       </div>
     </Card>
   );
