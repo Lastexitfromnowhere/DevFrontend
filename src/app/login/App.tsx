@@ -9,6 +9,9 @@ import axios from 'axios';
 import { authService } from '@/services/authService';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 
+// Constantes pour le stockage local (doivent correspondre à celles de authService.js)
+const WALLET_ADDRESS_KEY = 'wallet_address';
+
 function App() {
   const [loading, setLoading] = React.useState(false);
   const { connectWallet, isConnected, isAuthReady } = useWalletContext();
@@ -54,24 +57,31 @@ function App() {
     setLoading(true);
     
     try {
-      // Générer un ID unique basé sur les informations Google
-      // Dans un environnement de production, vous devriez décoder et vérifier le token Google
+      // Décoder le token Google pour obtenir des informations utilisateur
+      // Dans un environnement de production, vous devriez vérifier le token côté serveur
       const googleUserId = `google-${Date.now()}`;
       
       // Utiliser le service d'authentification existant pour générer un token
       const { token, expiresAt } = await authService.generateToken(googleUserId);
       
       if (token && expiresAt) {
-        // Sauvegarder le token avec authService
+        // Sauvegarder le token et l'adresse du wallet (googleUserId) avec authService
         authService.saveToken(token, expiresAt, googleUserId);
+        
+        // Synchroniser l'adresse du wallet dans tous les emplacements de stockage
+        authService.synchronizeWalletAddress(googleUserId);
         
         // Simuler une connexion wallet pour que le WalletContext considère l'utilisateur comme connecté
         // Cela permettra d'afficher les récompenses même sans wallet connecté
         localStorage.setItem('isAuthReady', 'true');
         localStorage.setItem('isConnected', 'true');
+        localStorage.setItem(WALLET_ADDRESS_KEY, googleUserId); // Utiliser la même clé que dans authService
         
-        // Redirection vers la page d'accueil après authentification réussie
-        window.location.href = '/';
+        // Ajouter un délai avant la redirection pour permettre la synchronisation
+        setTimeout(() => {
+          // Redirection vers la page d'accueil après authentification réussie
+          window.location.href = '/';
+        }, 500);
       } else {
         throw new Error('Échec de l\'authentification');
       }
