@@ -123,22 +123,7 @@ export default function Dashboard() {
 
         {/* Main Content */}
         <main className="space-y-6">
-          <Modal
-            isOpen={!isAuthReady}
-            onClose={() => {}}
-            title="Securing your session…"
-            className="text-center"
-          >
-            {!isConnected ? (
-              <WalletMultiButton className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all" />
-            ) : (
-              <>
-                <Loader2 className="animate-spin text-blue-400 mx-auto mb-4" size={48} />
-                <div className="text-lg font-semibold text-blue-200 mb-2">Securing your session…</div>
-                <div className="text-sm text-gray-400">Generating or validating your authentication token…</div>
-              </>
-            )}
-          </Modal>
+          {/* Modal de sécurité supprimée pour éviter la demande de signature à chaque rafraîchissement */}
           {renderContent()}
         </main>
 
