@@ -2,7 +2,8 @@
 
 // src/app/page.tsx
 // Trigger deployment - 2025-03-22
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Terminal, Shield, Target, Network, Loader2, RefreshCw, Clock } from 'lucide-react';
 import { Modal } from '@/components/ui/Modal';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
@@ -34,6 +35,30 @@ export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
   const { isConnected, isAuthReady, connectWallet } = useWalletContext();
   const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const router = useRouter();
+  
+  // Rediriger vers la page de login si l'utilisateur n'est pas connecté
+  useEffect(() => {
+    if (!isConnected) {
+      console.log('Utilisateur non connecté, redirection vers /login');
+      router.push('/login');
+    }
+  }, [isConnected, router]);
+  
+  // Effet pour gérer la déconnexion manuelle
+  useEffect(() => {
+    const handleDisconnect = () => {
+      console.log('Déconnexion détectée, redirection vers /login');
+      router.push('/login');
+    };
+    
+    // Écouter l'événement de déconnexion
+    window.addEventListener('wallet-disconnect', handleDisconnect);
+    
+    return () => {
+      window.removeEventListener('wallet-disconnect', handleDisconnect);
+    };
+  }, [router]);
 
   // Masquer le disclaimer dès que le wallet est connecté
   React.useEffect(() => {

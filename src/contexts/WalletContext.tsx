@@ -80,6 +80,9 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
   } = useWallet();
 
   const [isAuthReady, setIsAuthReady] = useState(false);
+  
+  // Pour la redirection après déconnexion
+  const router = typeof window !== 'undefined' ? require('next/navigation').useRouter() : null;
 
   // Méthode pour connecter le portefeuille
   const connectWallet = () => {
@@ -92,40 +95,58 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
       disconnect();
       // Déconnexion du service d'authentification
       authService.logout();
+      setIsAuthReady(false);
+      
+      // Émettre un événement personnalisé pour informer l'application de la déconnexion
+      if (typeof window !== 'undefined') {
+        // Créer et dispatcher un événement personnalisé
+        const disconnectEvent = new Event('wallet-disconnect');
+        window.dispatchEvent(disconnectEvent);
+        
+        // Rediriger vers la page de login
+        if (router) {
+          router.push('/login');
+        } else {
+          window.location.href = '/login';
+        }
+      }
     }
   };
 
   // Authentification simplifiée sans demande de signature à chaque rafraîchissement
   useEffect(() => {
     const handleAuthentication = async () => {
-      if (connected && publicKey) {
-        const walletAddress = publicKey.toBase58();
-        try {
-          // Vérifier si le token existe déjà et est valide
-          const storedAddress = authService.getWalletAddress();
+      // Si l'utilisateur n'est pas connecté, on réinitialise l'état d'authentification
+      if (!connected || !publicKey) {
+        setIsAuthReady(false);
+        return;
+      }
+      
+      const walletAddress = publicKey.toBase58();
+      try {
+        // Vérifier si le token existe déjà et est valide
+        const storedAddress = authService.getWalletAddress();
+        
+        if (storedAddress !== walletAddress || authService.isTokenExpired()) {
+          // Générer un nouveau token sans demander de signature
+          const { token, expiresAt } = await authService.generateToken(walletAddress);
           
-          if (storedAddress !== walletAddress || authService.isTokenExpired()) {
-            // Générer un nouveau token sans demander de signature
-            const { token, expiresAt } = await authService.generateToken(walletAddress);
-            
-            if (token && expiresAt) {
-              authService.saveToken(token, expiresAt, walletAddress);
-              setIsAuthReady(true);
-            } else {
-              console.warn('Impossible de générer un token, mais on continue quand même');
-              setIsAuthReady(true); // On continue quand même
-            }
-          } else {
-            // Token existant et valide trouvé
+          if (token && expiresAt) {
+            authService.saveToken(token, expiresAt, walletAddress);
             setIsAuthReady(true);
+            console.log('Authentification réussie avec un nouveau token');
+          } else {
+            console.warn('Impossible de générer un token, mais on continue quand même');
+            setIsAuthReady(true); // On continue quand même
           }
-        } catch (error) {
-          console.error('Erreur lors de l\'authentification:', error);
-          // On définit quand même isAuthReady à true pour éviter le blocage
+        } else {
+          // Token existant et valide trouvé
+          console.log('Token existant valide trouvé');
           setIsAuthReady(true);
         }
-      } else {
-        // Même si non connecté, on considère que l'authentification est prête
+      } catch (error) {
+        console.error('Erreur lors de l\'authentification:', error);
+        // On définit quand même isAuthReady à true pour éviter le blocage
         setIsAuthReady(true);
       }
     };
