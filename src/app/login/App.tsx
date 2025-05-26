@@ -8,9 +8,11 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { authService } from '@/services/authService';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { googleWalletService } from '@/services/googleWalletService';
 
 // Constantes pour le stockage local (doivent correspondre à celles de authService.js)
 const WALLET_ADDRESS_KEY = 'wallet_address';
+const GOOGLE_USER_ID_KEY = 'google_user_id';
 
 function App() {
   const [loading, setLoading] = React.useState(false);
@@ -83,25 +85,37 @@ function App() {
       }
       
       // Utiliser l'ID du token comme identifiant unique
+      // Dans une implémentation réelle, nous décoderions le JWT pour obtenir l'ID utilisateur Google
       const googleUserId = `google-${Date.now()}`;
       console.log('Google User ID généré:', googleUserId);
       
+      // Stocker l'ID Google pour référence future
+      localStorage.setItem(GOOGLE_USER_ID_KEY, googleUserId);
+      
+      // Générer un portefeuille Solana pour l'utilisateur Google
+      const googleWallet = googleWalletService.getOrCreateGoogleWallet(googleUserId);
+      console.log('Portefeuille Solana généré pour l\'utilisateur Google:', googleWallet?.publicKey);
+      
+      // Utiliser l'adresse du portefeuille généré comme identifiant pour l'authentification
+      const walletAddress = googleWallet?.publicKey || googleUserId;
+      
       // Utiliser le service d'authentification existant pour générer un token
-      console.log('Génération du token JWT...');
-      const { token, expiresAt } = await authService.generateToken(googleUserId);
+      console.log('Génération du token JWT avec l\'adresse du portefeuille:', walletAddress);
+      const { token, expiresAt } = await authService.generateToken(walletAddress);
       console.log('Token généré:', token ? 'OK' : 'Erreur');
       
       if (token && expiresAt) {
         console.log('Sauvegarde du token et configuration de l\'authentification...');
-        // Sauvegarder le token et l'adresse du wallet (googleUserId) avec authService
-        authService.saveToken(token, expiresAt, googleUserId);
+        // Sauvegarder le token et l'adresse du wallet avec authService
+        authService.saveToken(token, expiresAt, walletAddress);
         
         // Définir explicitement les valeurs dans le localStorage
         localStorage.setItem('jwt_token', token);
         localStorage.setItem('token_expires_at', expiresAt.toString());
-        localStorage.setItem(WALLET_ADDRESS_KEY, googleUserId);
+        localStorage.setItem(WALLET_ADDRESS_KEY, walletAddress);
         localStorage.setItem('isAuthReady', 'true');
         localStorage.setItem('isConnected', 'true');
+        localStorage.setItem('isGoogleWallet', 'true'); // Indiquer que c'est un portefeuille Google
         
         console.log('Authentification réussie, redirection dans 1 seconde...');
         

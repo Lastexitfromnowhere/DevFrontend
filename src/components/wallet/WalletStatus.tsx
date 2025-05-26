@@ -3,10 +3,10 @@ import React from 'react';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { Card } from '@/components/ui/Card';
 import { TerminalButton } from '@/components/ui/terminal';
-import { Users, LogOut } from 'lucide-react';
+import { Users, LogOut, Mail } from 'lucide-react';
 
 export default function WalletStatus() {
-  const { isConnected, isAuthReady, account, chain, disconnectWallet } = useWalletContext();
+  const { isConnected, isAuthReady, account, chain, disconnectWallet, isGoogleWallet } = useWalletContext();
 
   // N'affiche le statut que si la session est sécurisée (signature OK)
   if (!isConnected || !isAuthReady || !account) return null;
@@ -15,8 +15,14 @@ export default function WalletStatus() {
     <Card variant="terminal" className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <Users className="w-4 h-4 text-gray-400" />
-          <span className="text-gray-300">Wallet Status</span>
+          {isGoogleWallet ? (
+            <Mail className="w-4 h-4 text-blue-400" />
+          ) : (
+            <Users className="w-4 h-4 text-gray-400" />
+          )}
+          <span className="text-gray-300">
+            {isGoogleWallet ? 'Google Wallet' : 'Wallet Status'}
+          </span>
         </div>
         <TerminalButton
           variant="danger"
@@ -39,6 +45,12 @@ export default function WalletStatus() {
           <span className="text-gray-500">network:</span>
           <span className="text-gray-300">{chain}</span>
         </div>
+        {isGoogleWallet && (
+          <div className="flex justify-between items-center">
+            <span className="text-gray-500">type:</span>
+            <span className="text-blue-400">Google Generated</span>
+          </div>
+        )}
       </div>
     </Card>
   );

@@ -14,6 +14,7 @@ import {
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import '@solana/wallet-adapter-react-ui/styles.css';
 import { authService } from '@/services/authService';
+import { googleWalletService } from '@/services/googleWalletService';
 import { ConnectionProvider } from '@solana/wallet-adapter-react';
 import { clusterApiUrl } from '@solana/web3.js';
 
@@ -32,6 +33,7 @@ interface WalletContextType {
   account: string | null;
   publicKey: string | null;
   chain: string;
+  isGoogleWallet: boolean;
   connectWallet: () => void;
   disconnectWallet: () => void;
 }
@@ -43,6 +45,7 @@ const WalletContext = createContext<WalletContextType>({
   account: null,
   publicKey: null,
   chain: 'Solana',
+  isGoogleWallet: false,
   connectWallet: () => {},
   disconnectWallet: () => {}
 });
@@ -86,7 +89,17 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
 
   // Méthode pour connecter le portefeuille
   const connectWallet = () => {
-    // Le WalletMultiButton gère la connexion
+    // Simuler un clic sur le WalletMultiButton pour ouvrir le sélecteur de portefeuille
+    if (typeof window !== 'undefined') {
+      const walletButtons = document.getElementsByClassName('wallet-adapter-button');
+      
+      if (walletButtons && walletButtons.length > 0) {
+        // Simuler un clic sur le premier bouton de portefeuille trouvé
+        (walletButtons[0] as HTMLElement).click();
+      } else {
+        console.warn('Aucun bouton de portefeuille trouvé dans le DOM');
+      }
+    }
   };
 
   // Méthode pour déconnecter le portefeuille
@@ -154,13 +167,26 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
     handleAuthentication();
   }, [connected, publicKey]);
 
+  // Vérifier si l'utilisateur est connecté via Google
+  const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
+  
+  // Récupérer l'adresse du portefeuille Google si nécessaire
+  const getGoogleWalletPublicKey = () => {
+    if (isGoogleWallet) {
+      // Récupérer l'adresse du portefeuille depuis le localStorage
+      return localStorage.getItem('wallet_address');
+    }
+    return null;
+  };
+  
   // Valeur du contexte
   const contextValue = {
-    isConnected: connected,
+    isConnected: connected || isGoogleWallet,
     isAuthReady,
-    account: publicKey ? publicKey.toBase58() : null,
-    publicKey: publicKey ? publicKey.toBase58() : null,
+    account: publicKey ? publicKey.toBase58() : (isGoogleWallet ? getGoogleWalletPublicKey() : null),
+    publicKey: publicKey ? publicKey.toBase58() : (isGoogleWallet ? getGoogleWalletPublicKey() : null),
     chain: 'Solana',
+    isGoogleWallet,
     connectWallet,
     disconnectWallet
   };
