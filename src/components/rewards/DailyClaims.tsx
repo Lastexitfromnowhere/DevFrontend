@@ -252,8 +252,13 @@ export default function DailyClaims() {
           <div>
             <p className="text-gray-400 text-lg mb-1">Available</p>
             <div className="text-[#00FF88] text-5xl font-bold">
-              {isLoading ? <Spinner size="lg" /> : rewards.availableRewards.toFixed(3)} <span className="text-2xl">RWRD</span>
+              {isLoading ? <Spinner size="lg" /> : totalBalance.toFixed(3)} <span className="text-2xl">RWRD</span>
             </div>
+            {rewards.availableRewards > 0 && rewards.availableRewards !== totalBalance && (
+              <div className="text-sm text-gray-300 mt-1">
+                <span className="text-blue-400">{rewards.availableRewards.toFixed(3)}</span> ready to claim
+              </div>
+            )}
           </div>
 
           {/* Bouton de réclamation */}
