@@ -90,7 +90,9 @@ function App() {
       console.log('Google User ID généré:', googleUserId);
       
       // Stocker l'ID Google pour référence future
-      localStorage.setItem(GOOGLE_USER_ID_KEY, googleUserId);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(GOOGLE_USER_ID_KEY, googleUserId);
+      }
       
       // Générer un portefeuille Solana pour l'utilisateur Google
       const googleWallet = googleWalletService.getOrCreateGoogleWallet(googleUserId);
@@ -110,12 +112,14 @@ function App() {
         authService.saveToken(token, expiresAt, walletAddress);
         
         // Définir explicitement les valeurs dans le localStorage
-        localStorage.setItem('jwt_token', token);
-        localStorage.setItem('token_expires_at', expiresAt.toString());
-        localStorage.setItem(WALLET_ADDRESS_KEY, walletAddress);
-        localStorage.setItem('isAuthReady', 'true');
-        localStorage.setItem('isConnected', 'true');
-        localStorage.setItem('isGoogleWallet', 'true'); // Indiquer que c'est un portefeuille Google
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('jwt_token', token);
+          localStorage.setItem('token_expires_at', expiresAt.toString());
+          localStorage.setItem(WALLET_ADDRESS_KEY, walletAddress);
+          localStorage.setItem('isAuthReady', 'true');
+          localStorage.setItem('isConnected', 'true');
+          localStorage.setItem('isGoogleWallet', 'true'); // Indiquer que c'est un portefeuille Google
+        }
         
         console.log('Authentification réussie, redirection dans 1 seconde...');
         

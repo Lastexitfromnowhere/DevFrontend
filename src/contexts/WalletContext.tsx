@@ -184,11 +184,11 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
   }, [connected, publicKey]);
 
   // Vérifier si l'utilisateur est connecté via Google
-  const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
+  const isGoogleWallet = typeof window !== 'undefined' ? localStorage.getItem('isGoogleWallet') === 'true' : false;
   
   // Récupérer l'adresse du portefeuille Google si nécessaire
   const getGoogleWalletPublicKey = () => {
-    if (isGoogleWallet) {
+    if (isGoogleWallet && typeof window !== 'undefined') {
       // Récupérer l'adresse du portefeuille depuis le localStorage
       return localStorage.getItem('wallet_address');
     }

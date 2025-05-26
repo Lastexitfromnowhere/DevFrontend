@@ -38,11 +38,24 @@ const generateDeterministicWallet = (googleId) => {
 };
 
 /**
+ * Vérifie si le code s'exécute dans un environnement navigateur
+ * @returns {boolean} - True si le code s'exécute dans un navigateur, false sinon
+ */
+const isBrowser = () => {
+  return typeof window !== 'undefined';
+};
+
+/**
  * Récupère ou génère un portefeuille pour un utilisateur Google
  * @param {string} googleId - L'identifiant unique de l'utilisateur Google
  * @returns {{ publicKey: string, secretKey: string }} - Le portefeuille avec publicKey et secretKey
  */
 const getOrCreateGoogleWallet = (googleId) => {
+  // Si nous ne sommes pas dans un navigateur, retourner null
+  if (!isBrowser()) {
+    return null;
+  }
+  
   // Vérifier si un portefeuille existe déjà pour cet utilisateur
   const existingWallet = localStorage.getItem(`${GOOGLE_WALLET_KEY}_${googleId}`);
   
@@ -78,6 +91,9 @@ const getGoogleWalletAddress = (googleId) => {
  * @returns {boolean} - True si l'utilisateur a un portefeuille, false sinon
  */
 const hasGoogleWallet = (googleId) => {
+  if (!isBrowser()) {
+    return false;
+  }
   return localStorage.getItem(`${GOOGLE_WALLET_KEY}_${googleId}`) !== null;
 };
 
@@ -86,6 +102,9 @@ const hasGoogleWallet = (googleId) => {
  * @param {string} googleId - L'identifiant unique de l'utilisateur Google
  */
 const removeGoogleWallet = (googleId) => {
+  if (!isBrowser()) {
+    return;
+  }
   localStorage.removeItem(`${GOOGLE_WALLET_KEY}_${googleId}`);
 };
 
