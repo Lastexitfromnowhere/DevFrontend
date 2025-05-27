@@ -157,15 +157,38 @@ function App() {
       if (walletButtons && walletButtons.length > 0) {
         // Simuler un clic sur le premier bouton de portefeuille trouvé
         (walletButtons[0] as HTMLElement).click();
+        
+        // Ajouter un écouteur d'événement pour détecter quand le wallet est connecté
+        const checkWalletConnection = setInterval(() => {
+          // Vérifier si le wallet est connecté via le contexte
+          if (isConnected) {
+            clearInterval(checkWalletConnection);
+            console.log('Wallet connecté, préparation de la redirection...');
+            
+            // Définir explicitement les valeurs dans le localStorage
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('isConnected', 'true');
+              localStorage.setItem('isAuthReady', 'true');
+              
+              // Ajouter un délai avant la redirection
+              setTimeout(() => {
+                console.log('Redirection vers la page d\'accueil après connexion wallet...');
+                window.location.href = '/';
+              }, 1500);
+            }
+          }
+        }, 500);
+        
+        // Arrêter la vérification après 15 secondes si aucune connexion n'est détectée
+        setTimeout(() => {
+          clearInterval(checkWalletConnection);
+          setLoading(false);
+        }, 15000);
       } else {
         // Si le bouton n'est pas trouvé, essayer d'utiliser la fonction connectWallet du contexte
         connectWallet();
+        setLoading(false);
       }
-      
-      // Désactiver le chargement car le sélecteur de portefeuille gère son propre état
-      setLoading(false);
-      
-      // La redirection sera gérée par l'effet qui surveille isConnected et isAuthReady
     } catch (error) {
       console.error('Erreur lors de la connexion wallet:', error);
       alert('Erreur lors de la connexion wallet. Veuillez réessayer.');
