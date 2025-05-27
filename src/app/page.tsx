@@ -46,6 +46,7 @@ export default function Dashboard() {
     
     // Vérifier si l'utilisateur est connecté via wallet ou via Google
     const isLoggedIn = isConnected || localStorage.getItem('jwt_token');
+    const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
     
     if (!isLoggedIn) {
       console.log('Utilisateur non connecté, redirection vers /login');
@@ -54,9 +55,16 @@ export default function Dashboard() {
     } else {
       console.log('Utilisateur connecté, affichage du dashboard');
       // S'assurer que les états de connexion sont synchronisés
-      if (!isConnected && localStorage.getItem('jwt_token')) {
+      if ((!isConnected && localStorage.getItem('jwt_token')) || isGoogleWallet) {
         localStorage.setItem('isConnected', 'true');
         localStorage.setItem('isAuthReady', 'true');
+        
+        // Forcer un rafraîchissement de la page si l'utilisateur est connecté via Google
+        // mais que les composants ne s'affichent pas
+        if (isGoogleWallet && !isAuthReady) {
+          console.log('Utilisateur Google détecté mais isAuthReady est false, rafraîchissement de la page');
+          window.location.reload();
+        }
       }
       // Réinitialiser le drapeau de redirection
       sessionStorage.removeItem('isRedirecting');

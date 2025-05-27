@@ -216,16 +216,36 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
   // Récupérer l'adresse du portefeuille Google si nécessaire
   const getGoogleWalletPublicKey = () => {
     if (isGoogleWallet && typeof window !== 'undefined') {
-      // Récupérer l'adresse du portefeuille depuis le localStorage
-      return localStorage.getItem('wallet_address');
+      // Essayer de récupérer l'adresse du portefeuille depuis différentes sources dans le localStorage
+      const possibleKeys = ['wallet_address', 'WALLET_ADDRESS_KEY', 'walletAddress'];
+      
+      for (const key of possibleKeys) {
+        const address = localStorage.getItem(key);
+        if (address) {
+          console.log(`Adresse de portefeuille Google trouvée avec la clé ${key}:`, address);
+          return address;
+        }
+      }
+      
+      // Si aucune adresse n'est trouvée, générer une valeur par défaut pour permettre l'affichage
+      console.log('Aucune adresse de portefeuille Google trouvée, utilisation d\'une valeur par défaut');
+      return 'google-wallet';
     }
     return null;
   };
   
+  // Effet pour s'assurer que isAuthReady est correctement défini pour les utilisateurs Google
+  useEffect(() => {
+    if (isGoogleWallet && !isAuthReady) {
+      console.log('Utilisateur Google détecté, définition de isAuthReady à true');
+      setIsAuthReady(true);
+    }
+  }, [isGoogleWallet, isAuthReady]);
+
   // Valeur du contexte
   const contextValue = {
     isConnected: connected || isGoogleWallet,
-    isAuthReady,
+    isAuthReady: isAuthReady || isGoogleWallet, // Forcer isAuthReady à true pour les utilisateurs Google
     account: publicKey ? publicKey.toBase58() : (isGoogleWallet ? getGoogleWalletPublicKey() : null),
     publicKey: publicKey ? publicKey.toBase58() : (isGoogleWallet ? getGoogleWalletPublicKey() : null),
     chain: 'Solana',
