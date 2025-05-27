@@ -95,8 +95,14 @@ export default function DiscordLink() {
     if (!account) {
       throw new Error("Aucun wallet connecté");
     }
+    // Vérifier si l'utilisateur est connecté via Google
+    const isGoogleWallet = typeof window !== 'undefined' ? localStorage.getItem('isGoogleWallet') === 'true' : false;
+    
     // Crée un objet state contenant l'adresse du wallet
-    const stateObj = { walletAddress: account };
+    const stateObj = { 
+      walletAddress: account,
+      isGoogleWallet: isGoogleWallet
+    };
     // Encode en JSON puis en base64
     const state = btoa(JSON.stringify(stateObj));
     setLocalStorageState(state);
@@ -302,10 +308,13 @@ export default function DiscordLink() {
     checkForDiscordCode();
   }, [isConnected, account]);
 
+  // Vérifier si l'utilisateur est connecté via Google
+  const isGoogleWallet = typeof window !== 'undefined' ? localStorage.getItem('isGoogleWallet') === 'true' : false;
+
   if (!isConnected) {
     return (
       <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg text-center">
-        <p className="text-gray-400">Veuillez connecter votre portefeuille pour lier votre compte Discord</p>
+        <p className="text-gray-400">Veuillez vous connecter pour lier votre compte Discord</p>
       </Card>
     );
   }

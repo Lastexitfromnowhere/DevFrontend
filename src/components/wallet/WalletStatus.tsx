@@ -9,7 +9,11 @@ export default function WalletStatus() {
   const { isConnected, isAuthReady, account, chain, disconnectWallet, isGoogleWallet } = useWalletContext();
 
   // N'affiche le statut que si la session est sécurisée (signature OK)
-  if (!isConnected || !isAuthReady || !account) return null;
+  // Pour les utilisateurs Google, on affiche même si account est null
+  if (!isConnected || !isAuthReady || (!account && !isGoogleWallet)) return null;
+  
+  // Si c'est un utilisateur Google sans adresse de portefeuille, utiliser une valeur par défaut
+  const displayAccount = account || (isGoogleWallet ? 'Google-User' : null);
 
   return (
     <Card variant="terminal" className="space-y-4">
@@ -38,7 +42,9 @@ export default function WalletStatus() {
         <div className="flex justify-between items-center">
           <span className="text-gray-500">address:</span>
           <span className="text-gray-300 font-mono">
-            {account.slice(0, 6)}...{account.slice(-4)}
+            {displayAccount && typeof displayAccount === 'string' && displayAccount.length > 10 
+              ? `${displayAccount.slice(0, 6)}...${displayAccount.slice(-4)}`
+              : displayAccount}
           </span>
         </div>
         <div className="flex justify-between items-center">

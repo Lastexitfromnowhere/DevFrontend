@@ -43,6 +43,9 @@ export default function DailyClaims() {
       setError('Wallet not connected');
       return;
     }
+    
+    // Vérifier si l'utilisateur est connecté via Google
+    const isGoogleWallet = typeof window !== 'undefined' ? localStorage.getItem('isGoogleWallet') === 'true' : false;
 
     setIsLoading(true);
     try {
@@ -201,10 +204,13 @@ export default function DailyClaims() {
     }
   }, [isConnected, account]);
 
+  // Vérifier si l'utilisateur est connecté via Google
+  const isGoogleWallet = typeof window !== 'undefined' ? localStorage.getItem('isGoogleWallet') === 'true' : false;
+
   if (!isConnected) {
     return (
       <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg text-center">
-        <p className="text-gray-400">Veuillez connecter votre portefeuille pour voir vos récompenses</p>
+        <p className="text-gray-400">Veuillez vous connecter pour voir vos récompenses</p>
       </Card>
     );
   }

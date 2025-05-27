@@ -104,7 +104,34 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
 
   // Méthode pour déconnecter le portefeuille
   const disconnectWallet = () => {
-    if (disconnect) {
+    // Vérifier si l'utilisateur est connecté via Google
+    const isGoogleWallet = typeof window !== 'undefined' ? localStorage.getItem('isGoogleWallet') === 'true' : false;
+    
+    if (isGoogleWallet) {
+      // Déconnexion pour les utilisateurs Google
+      console.log('Déconnexion d\'un utilisateur Google');
+      
+      // Supprimer les données de session Google
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('isGoogleWallet');
+        localStorage.removeItem('google_user_id');
+        // Supprimer également les données d'authentification standard
+        authService.logout();
+        setIsAuthReady(false);
+        
+        // Créer et dispatcher un événement personnalisé
+        const disconnectEvent = new Event('wallet-disconnect');
+        window.dispatchEvent(disconnectEvent);
+        
+        // Rediriger vers la page de login
+        if (router) {
+          router.push('/login');
+        } else {
+          window.location.href = '/login';
+        }
+      }
+    } else if (disconnect) {
+      // Déconnexion standard pour les utilisateurs de portefeuille Solana
       disconnect();
       // Déconnexion du service d'authentification
       authService.logout();
