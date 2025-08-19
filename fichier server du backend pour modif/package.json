@@ -1,0 +1,36 @@
+{
+  "name": "vpn-backend",
+  "version": "1.0.0",
+  "description": "Backend API pour WireGuard VPN",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "dependencies": {
+    "@chainsafe/libp2p-noise": "^16.0.3",
+    "@chainsafe/libp2p-yamux": "^7.0.1",
+    "@libp2p/bootstrap": "^11.0.30",
+    "@libp2p/kad-dht": "^14.2.13",
+    "@libp2p/mplex": "^11.0.30",
+    "@libp2p/noise": "^12.0.1",
+    "@libp2p/tcp": "^10.1.6",
+    "@libp2p/webrtc": "^5.2.7",
+    "@libp2p/websockets": "^9.2.6",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "libp2p": "^2.8.0",
+    "mongoose": "^7.0.3",
+    "node-fetch": "^3.3.2",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "redis": "^4.6.13"
+  }
+}

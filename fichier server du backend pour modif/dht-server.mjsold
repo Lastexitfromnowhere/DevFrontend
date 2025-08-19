@@ -1,0 +1,107 @@
+// dht-server.mjs
+// Serveur Express pour les routes DHT avec implémentation réelle
+
+import express from 'express';
+import cors from 'cors';
+import bodyParser from 'body-parser';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import fs from 'fs';
+
+// Charger les variables d'environnement
+dotenv.config();
+
+// Définir __dirname dans le contexte ESM
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Charger le polyfill pour CustomEvent
+import './polyfill.mjs';
+
+// Créer l'application Express
+const app = express();
+const PORT = process.env.DHT_PORT || 10001;
+
+// Configuration CORS
+app.use(cors({
+  origin: ['https://wind-frontend-rosy.vercel.app', 'http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-wallet-address'],
+  credentials: true
+}));
+
+// Middleware pour parser le JSON
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// Définir NODE_ENV si ce n'est pas déjà fait
+if (!process.env.NODE_ENV) {
+  process.env.NODE_ENV = 'production';
+}
+
+// Importer les routes
+let dhtRouter;
+try {
+  // Essayer d'abord d'importer la version ESM
+  dhtRouter = (await import('./routes/dht.mjs')).default;
+} catch (error) {
+  console.warn('⚠️ Impossible de charger dht.mjs, tentative avec dht.js');
+
+  // Si ça échoue, essayer la version CommonJS
+  const dhtRouterPath = join(__dirname, 'routes', 'dht.js');
+  if (fs.existsSync(dhtRouterPath)) {
+    // Créer un wrapper ESM autour du module CommonJS
+    const dhtRouterCommonJS = await import(`file://${dhtRouterPath}`);
+    dhtRouter = dhtRouterCommonJS.router || dhtRouterCommonJS;
+  } else {
+    console.error('❌ Impossible de trouver le fichier de routes DHT');
+    process.exit(1);
+  }
+}
+
+// Routes
+app.use('/dht', dhtRouter);
+
+// Route de base pour vérifier que le serveur fonctionne
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Serveur DHT opérationnel',
+    version: '1.0.0',
+    mode: process.env.NODE_ENV,
+    time: new Date().toISOString()
+  });
+});
+
+// Middleware de gestion des erreurs
+app.use((err, req, res, next) => {
+  console.error('❌ Erreur serveur:', err);
+  res.status(500).json({
+    success: false,
+    message: 'Erreur serveur',
+    error: process.env.NODE_ENV === 'development' ? err.message : 'Une erreur est survenue'
+  });
+});
+
+// Démarrer le serveur
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Serveur DHT démarré sur le port ${PORT} en mode ${process.env.NODE_ENV}`);
+  console.log(`📡 API disponible à l'adresse: http://localhost:${PORT}/dht`);
+});
+
+// Gérer les signaux d'arrêt pour une fermeture propre
+process.on('SIGINT', async () => {
+  console.log('⏹️ Arrêt du serveur DHT...');
+
+  try {
+    // Tenter d'arrêter proprement le nœud DHT si possible
+    const dhtUtils = await import('./utils/dhtUtils.js');
+    if (dhtUtils && dhtUtils.stopDHTNode) {
+      await dhtUtils.stopDHTNode();
+    }
+  } catch (error) {
+    console.error('❌ Erreur lors de l\'arrêt du nœud DHT:', error);
+  }
+
+  process.exit(0);
+});

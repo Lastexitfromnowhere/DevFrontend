@@ -275,20 +275,9 @@ export const generateToken = async (walletAddress) => {
   }
 };
 
-// Fonction pour sauvegarder le token et les informations associées
-export const saveToken = (token, expiresAt, walletAddress) => {
-  localStorage.setItem(TOKEN_KEY, token);
-  if (expiresAt) localStorage.setItem(TOKEN_EXPIRY_KEY, expiresAt.toString());
-  if (walletAddress) localStorage.setItem(WALLET_ADDRESS_KEY, walletAddress);
-};
-
 // Fonction pour rafraîchir le token si nécessaire
-export const refreshTokenIfNeeded = async () => {
-  console.log('🔄 Vérification de la nécessité de rafraîchir le token...');
-  
-  // Vérifier si le token est expiré
+const refreshTokenIfNeeded = async () => {
   const isExpired = isTokenExpired();
-  console.log('📝 Token expiré?', isExpired ? 'Oui' : 'Non');
   
   if (isExpired) {
     console.log('🔄 Token expiré, tentative de rafraîchissement...');
@@ -372,6 +361,53 @@ export const verifyTokenWalletMatch = () => {
   }
 };
 
+// Fonction pour sauvegarder le token
+export const saveToken = (token, expiresAt, walletAddress) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem(TOKEN_KEY, token);
+    if (expiresAt) {
+      localStorage.setItem(TOKEN_EXPIRY_KEY, expiresAt);
+    }
+    if (walletAddress) {
+      localStorage.setItem(WALLET_ADDRESS_KEY, walletAddress);
+    }
+  }
+};
+
+// Fonction pour sauvegarder une association Google-Wallet
+export const saveGoogleWalletAssociation = async (googleUserId, userEmail, userName, walletAddress) => {
+  try {
+    const response = await fetch('/auth/google-wallet-association', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        googleUserId,
+        userEmail,
+        userName,
+        walletAddress
+      })
+    });
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde de l\'association Google-Wallet:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Fonction pour récupérer une association Google-Wallet
+export const getGoogleWalletAssociation = async (googleUserId) => {
+  try {
+    const response = await fetch(`/auth/google-wallet-association/${googleUserId}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'association Google-Wallet:', error);
+    return { success: false, error: error.message };
+  }
+};
+
 // Fonction pour synchroniser toutes les références à l'adresse du wallet
 export const synchronizeWalletAddress = (newWalletAddress) => {
   // Mettre à jour les clés principales
@@ -407,5 +443,208 @@ export const authService = {
   saveToken,
   refreshTokenIfNeeded,
   verifyTokenWalletMatch,
-  synchronizeWalletAddress
+  synchronizeWalletAddress,
+  saveGoogleWalletAssociation,
+  getGoogleWalletAssociation,
+
+  // Créer ou mettre à jour un utilisateur Solana
+  createOrUpdateSolanaUser: async (walletAddress, publicKey, userType = 'direct', additionalData = {}) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/solana-user`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress,
+          publicKey,
+          userType,
+          ...additionalData
+        })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Utilisateur Solana créé/mis à jour:', data.data);
+        return {
+          success: true,
+          data: data.data,
+          message: data.message
+        };
+      } else {
+        console.error('Erreur lors de la création de l\'utilisateur Solana:', data.message);
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'utilisateur Solana:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Récupérer un utilisateur Solana
+  getSolanaUser: async (walletAddress) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/solana-user/${walletAddress}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+      
+      if (data.success && data.data) {
+        return {
+          success: true,
+          data: data.data
+        };
+      } else {
+        return { success: false, message: data.message || 'Utilisateur non trouvé' };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la récupération de l\'utilisateur Solana:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Mettre à jour les préférences utilisateur
+  updateSolanaUserPreferences: async (walletAddress, preferences) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/solana-user/${walletAddress}/preferences`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ preferences })
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        return {
+          success: true,
+          data: data.data,
+          message: data.message
+        };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour des préférences:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Synchroniser les rewards avec les données existantes
+  syncSolanaUserRewards: async (walletAddress, rewardsData) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/solana-user/${walletAddress}/sync-rewards`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rewardsData)
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        console.log('Rewards synchronisés:', data.data);
+        return {
+          success: true,
+          data: data.data,
+          message: data.message
+        };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error('Erreur lors de la synchronisation des rewards:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Méthode helper pour créer un utilisateur Google-Wallet complet
+  createGoogleWalletUser: async (googleUserData, walletAddress, publicKey) => {
+    try {
+      // 1. Sauvegarder l'association Google-Wallet
+      const googleWalletResult = await authService.saveGoogleWalletAssociation(
+        googleUserData.sub,
+        googleUserData.email,
+        googleUserData.name,
+        walletAddress
+      );
+
+      if (!googleWalletResult.success) {
+        console.warn('Échec de la sauvegarde Google-Wallet, continuation...');
+      }
+
+      // 2. Créer l'utilisateur Solana avec type 'google'
+      const solanaUserResult = await authService.createOrUpdateSolanaUser(
+        walletAddress,
+        publicKey,
+        'google',
+        {
+          googleUserId: googleUserData.sub,
+          email: googleUserData.email,
+          name: googleUserData.name
+        }
+      );
+
+      return {
+        success: solanaUserResult.success,
+        data: {
+          googleWallet: googleWalletResult,
+          solanaUser: solanaUserResult
+        },
+        message: solanaUserResult.success 
+          ? 'Utilisateur Google-Wallet créé avec succès'
+          : solanaUserResult.message
+      };
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'utilisateur Google-Wallet:', error);
+      return {
+        success: false,
+        message: error.message
+      };
+    }
+  },
+
+  // Méthode helper pour créer un utilisateur wallet direct
+  createDirectWalletUser: async (walletAddress, publicKey) => {
+    try {
+      const result = await authService.createOrUpdateSolanaUser(
+        walletAddress,
+        publicKey,
+        'direct'
+      );
+
+      return result;
+    } catch (error) {
+      console.error('Erreur lors de la création de l\'utilisateur wallet direct:', error);
+      return { success: false, error: error.message };
+    }
+  },
+
+  // Méthode pour migrer les rewards existants d'un utilisateur
+  migrateUserRewards: async (walletAddress, existingRewardsData) => {
+    try {
+      // Récupérer l'utilisateur Solana
+      const userResult = await authService.getSolanaUser(walletAddress);
+      
+      if (!userResult.success) {
+        console.warn('Utilisateur Solana non trouvé, création...');
+        // Si l'utilisateur n'existe pas, le créer d'abord
+        const createResult = await authService.createDirectWalletUser(walletAddress, walletAddress);
+        if (!createResult.success) {
+          return { success: false, message: 'Impossible de créer l\'utilisateur pour la migration' };
+        }
+      }
+
+      // Synchroniser les rewards
+      const syncResult = await authService.syncSolanaUserRewards(walletAddress, {
+        totalRewardsClaimed: existingRewardsData.totalRewards || 0,
+        consecutiveDays: existingRewardsData.consecutiveDays || 0,
+        lastClaimDate: existingRewardsData.lastClaimDate || null
+      });
+
+      return syncResult;
+    } catch (error) {
+      console.error('Erreur lors de la migration des rewards:', error);
+      return { success: false, error: error.message };
+    }
+  }
 };

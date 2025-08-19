@@ -1,0 +1,18 @@
+{
+  "trigger": "force-deployment-v2",
+  "timestamp": "2025-01-18T01:56:50+02:00",
+  "changes": [
+    "Fixed wallet connection on login page",
+    "Added Next.js redirects for lastparadox.xyz",
+    "Improved authentication flow with debug logs",
+    "Disabled interfering middleware",
+    "Updated Git config with proper email"
+  ],
+  "domains": [
+    "https://lastparadox.xyz",
+    "https://wind-frontend-git-master-last-exits-projects.vercel.app"
+  ],
+  "status": "ready-for-deployment",
+  "force_rebuild": true,
+  "deployment_id": "trigger-v2-2025-01-18"
+}

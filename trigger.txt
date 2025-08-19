@@ -1,2 +1,5 @@
-Ce fichier est créé pour déclencher un nouveau déploiement sur Vercel.
-Timestamp: 2025-05-18T20:22:00+02:00
+Trigger deployment - 2025-01-18 00:54:00
+Fix login page wallet selector and Google auth integration
+Deploy LastParad0x branding updates
+Force Vercel redeploy after git sync
+Timestamp: 2025-01-18T00:54:27+02:00

@@ -1,0 +1,30 @@
+<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="triangleGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#e5e7eb;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#9ca3af;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6b7280;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Network connections -->
+  <g stroke="#9ca3af" stroke-width="0.5" opacity="0.6">
+    <line x1="6" y1="8" x2="16" y2="12" />
+    <line x1="26" y1="8" x2="16" y2="12" />
+    <line x1="6" y1="8" x2="8" y2="24" />
+    <line x1="26" y1="8" x2="24" y2="24" />
+    <line x1="8" y1="24" x2="24" y2="24" />
+    <line x1="16" y1="12" x2="8" y2="24" />
+    <line x1="16" y1="12" x2="24" y2="24" />
+  </g>
+  
+  <!-- Network nodes -->
+  <circle cx="6" cy="8" r="1.5" fill="#e5e7eb" />
+  <circle cx="26" cy="8" r="1.5" fill="#e5e7eb" />
+  <circle cx="8" cy="24" r="1.5" fill="#9ca3af" />
+  <circle cx="24" cy="24" r="1.5" fill="#9ca3af" />
+  
+  <!-- Main triangle -->
+  <path d="M16 6 L26 22 L6 22 Z" fill="url(#triangleGradient)" stroke="#e5e7eb" stroke-width="0.5"/>
+  <path d="M16 10 L22 20 L10 20 Z" fill="#f9fafb" opacity="0.8"/>
+</svg>

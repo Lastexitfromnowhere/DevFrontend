@@ -2,8 +2,11 @@
 
 'use client';
 
-import React, { createContext, useContext, ReactNode, useMemo, useEffect, useState } from 'react';
+import React, { createContext, useContext, useMemo, ReactNode, useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { authService } from '../services/authService';
 import { 
+  ConnectionProvider, 
   WalletProvider, 
   useWallet 
 } from '@solana/wallet-adapter-react';
@@ -11,19 +14,17 @@ import {
   PhantomWalletAdapter, 
   SolflareWalletAdapter 
 } from '@solana/wallet-adapter-wallets';
-import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
-import '@solana/wallet-adapter-react-ui/styles.css';
-import { authService } from '@/services/authService';
-import { googleWalletService } from '@/services/googleWalletService';
-import { ConnectionProvider } from '@solana/wallet-adapter-react';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { WalletModalProvider } from '@solana/wallet-adapter-react-ui';
+
+// Imports par défaut requis
 import { clusterApiUrl } from '@solana/web3.js';
 
-// Déterminer le réseau en fonction de l'environnement
-const getNetwork = () => {
-  if (process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet') {
-    return 'mainnet-beta';
-  }
-  return 'devnet';
+// Fonction pour obtenir le réseau
+const getNetwork = (): WalletAdapterNetwork => {
+  return typeof process !== 'undefined' && process.env.NODE_ENV === 'development' 
+    ? WalletAdapterNetwork.Devnet 
+    : WalletAdapterNetwork.Mainnet;
 };
 
 // Interface du contexte de portefeuille
@@ -52,25 +53,11 @@ const WalletContext = createContext<WalletContextType>({
 
 // Composant Provider principal
 export const WalletContextProvider = ({ children }: { children: ReactNode }) => {
-  // Configuration des adaptateurs de portefeuille
-  const wallets = useMemo(() => [
-    new PhantomWalletAdapter(),
-    new SolflareWalletAdapter()
-  ], []);
-
-  const endpoint = useMemo(() => clusterApiUrl(getNetwork()), []);
-
+  // Ne pas créer de providers ici car ils sont déjà dans providers.tsx
   return (
-    <ConnectionProvider endpoint={endpoint}>
-      <WalletProvider 
-        wallets={wallets} 
-        autoConnect
-      >
-        <WalletContextWrapper>
-          {children}
-        </WalletContextWrapper>
-      </WalletProvider>
-    </ConnectionProvider>
+    <WalletContextWrapper>
+      {children}
+    </WalletContextWrapper>
   );
 };
 
@@ -79,26 +66,63 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
   const { 
     publicKey, 
     connected, 
-    disconnect 
+    disconnect,
+    select,
+    connect,
+    wallets
   } = useWallet();
 
   const [isAuthReady, setIsAuthReady] = useState(false);
   
   // Pour la redirection après déconnexion
-  const router = typeof window !== 'undefined' ? require('next/navigation').useRouter() : null;
+  const router = useRouter();
 
-  // Méthode pour connecter le portefeuille
-  const connectWallet = () => {
-    // Simuler un clic sur le WalletMultiButton pour ouvrir le sélecteur de portefeuille
-    if (typeof window !== 'undefined') {
-      const walletButtons = document.getElementsByClassName('wallet-adapter-button');
-      
-      if (walletButtons && walletButtons.length > 0) {
-        // Simuler un clic sur le premier bouton de portefeuille trouvé
-        (walletButtons[0] as HTMLElement).click();
-      } else {
-        console.warn('Aucun bouton de portefeuille trouvé dans le DOM');
+  // Méthode pour connecter le portefeuille - Version directe
+  const connectWallet = async () => {
+    console.log('Tentative de connexion wallet...');
+    
+    try {
+      // Utiliser directement le hook useWallet pour la connexion
+      if (select && wallets.length > 0) {
+        console.log('Sélection du premier wallet disponible...');
+        const firstWallet = wallets[0];
+        select(firstWallet.adapter.name);
+        
+        // Attendre un peu pour que la sélection se fasse
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        if (connect) {
+          console.log('Connexion au wallet sélectionné...');
+          await connect();
+          return;
+        }
       }
+      
+      // Fallback: connexion directe aux wallets
+      console.log('Fallback: tentative de connexion directe...');
+      
+      // Essayer Phantom en premier
+      if (window.solana?.isPhantom) {
+        console.log('Phantom détecté, connexion directe...');
+        const response = await window.solana.connect();
+        console.log('Phantom connecté:', response.publicKey.toString());
+        return;
+      }
+      
+      // Essayer Solflare
+      if ((window as any).solflare?.isSolflare) {
+        console.log('Solflare détecté, connexion directe...');
+        const response = await (window as any).solflare.connect();
+        console.log('Solflare connecté:', response.publicKey.toString());
+        return;
+      }
+      
+      console.log('Aucun wallet détecté');
+      throw new Error('Aucun wallet compatible trouvé');
+      
+    } catch (error) {
+      console.error('Erreur lors de la connexion wallet:', error);
+      throw error;
     }
   };
 
@@ -176,13 +200,8 @@ const WalletContextWrapper = ({ children }: { children: ReactNode }) => {
             setIsAuthReady(true);
             console.log('Authentification réussie avec un nouveau token');
             
-            // Rediriger vers la page d'accueil après authentification réussie
-            if (typeof window !== 'undefined') {
-              // Ajouter un délai pour permettre la mise à jour de l'état
-              setTimeout(() => {
-                window.location.href = '/';
-              }, 500);
-            }
+            // Ne pas rediriger automatiquement, laisser la page se mettre à jour
+            console.log('Token généré, état mis à jour');
           } else {
             console.warn('Impossible de générer un token, mais on continue quand même');
             setIsAuthReady(true); // On continue quand même

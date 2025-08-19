@@ -1,0 +1,857 @@
+import express from 'express';
+import fetch from 'node-fetch';
+import jwt from 'jsonwebtoken';
+import { authenticateToken } from '../middleware/auth.js';
+import DiscordLink from '../models/DiscordLink.js';
+import { sendMessageToDiscordChannel, sendDirectMessageToUser, assignRoleToUser, addUserToGuild } from '../utils/sendDiscordMessage.js';
+import { maskWalletAddress, maskDiscordId } from '../utils/privacyUtils.js';
+
+const router = express.Router();
+
+// Configuration Discord OAuth2
+const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
+const DISCORD_CLIENT_SECRET = process.env.DISCORD_CLIENT_SECRET;
+const DISCORD_REDIRECT_URI = process.env.DISCORD_REDIRECT_URI || 'https://lastexitvpn.duckdns.org/discord/callback';
+const DISCORD_API_ENDPOINT = 'https://discord.com/api/v10';
+
+// Log des variables d'environnement pour le débogage
+console.log('Variables d\'environnement Discord:', {
+  DISCORD_CLIENT_ID,
+  DISCORD_CLIENT_SECRET: DISCORD_CLIENT_SECRET ? '***' : 'non défini',
+  DISCORD_REDIRECT_URI,
+  NODE_ENV: process.env.NODE_ENV
+});
+
+// Route pour initier l'authentification Discord
+router.get('/auth', authenticateToken, (req, res) => {
+  // Récupérer l'adresse du wallet depuis le token JWT
+  const walletAddress = req.user.address || req.user.walletAddress;
+  
+  if (!walletAddress) {
+    return res.status(401).json({
+      success: false,
+      message: 'Vous devez être connecté avec un wallet pour lier votre compte Discord'
+    });
+  }
+  
+  // Créer l'URL d'authentification Discord
+  const state = Buffer.from(JSON.stringify({ walletAddress })).toString('base64');
+  
+  // Inclure le scope guilds.join pour permettre l'ajout automatique au serveur
+  const discordAuthUrl = `https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENT_ID}&redirect_uri=${encodeURIComponent(DISCORD_REDIRECT_URI)}&response_type=code&scope=identify%20guilds.join&state=${state}`;
+  
+  res.json({
+    success: true,
+    authUrl: discordAuthUrl
+  });
+});
+
+// Route pour compléter la liaison Discord depuis le frontend
+router.post('/complete-link', authenticateToken, async (req, res) => {
+  try {
+    // Récupérer l'adresse du wallet depuis le token JWT
+    const walletAddress = req.user.address || req.user.walletAddress;
+    
+    if (!walletAddress) {
+      return res.status(401).json({
+        success: false,
+        message: 'Vous devez être connecté avec un wallet pour lier votre compte Discord'
+      });
+    }
+    
+    const { code } = req.body;
+    
+    if (!code) {
+      return res.status(400).json({
+        success: false,
+        message: 'Code d\'autorisation Discord manquant'
+      });
+    }
+    
+    console.log(`Tentative de liaison Discord pour le wallet ${walletAddress} avec le code ${code.substring(0, 10)}...`);
+    
+    // Vérifier que les variables d'environnement Discord sont définies
+    if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
+      console.error('Variables d\'environnement Discord manquantes:', { 
+        DISCORD_CLIENT_ID: !!DISCORD_CLIENT_ID, 
+        DISCORD_CLIENT_SECRET: !!DISCORD_CLIENT_SECRET 
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Configuration Discord manquante sur le serveur'
+      });
+    }
+
+    // Échanger le code contre un token d'accès Discord
+    try {
+      const tokenResponse = await fetch(`${DISCORD_API_ENDPOINT}/oauth2/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          client_id: DISCORD_CLIENT_ID,
+          client_secret: DISCORD_CLIENT_SECRET,
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: DISCORD_REDIRECT_URI
+        })
+      });
+      
+      // Vérifier si la réponse est OK
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        console.error('Erreur lors de l\'obtention du token Discord:', {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+          error: errorText
+        });
+        return res.status(500).json({
+          success: false,
+          message: `Erreur lors de l'échange du code: ${tokenResponse.status} ${tokenResponse.statusText}`
+        });
+      }
+      
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        console.error('Erreur lors de l\'\u00e9change du code:', tokenData);
+        return res.status(500).json({
+          success: false,
+          message: 'Erreur lors de l\'\u00e9change du code d\'autorisation'
+        });
+      }
+      
+      // Récupérer les informations de l'utilisateur Discord
+      const userResponse = await fetch(`${DISCORD_API_ENDPOINT}/users/@me`, {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`
+        }
+      });
+      
+      // Vérifier si la réponse est OK
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text();
+        console.error('Erreur lors de la récupération des infos utilisateur:', {
+          status: userResponse.status,
+          statusText: userResponse.statusText,
+          error: errorText
+        });
+        return res.status(500).json({
+          success: false,
+          message: `Erreur lors de la récupération des infos utilisateur: ${userResponse.status}`
+        });
+      }
+      
+      const userData = await userResponse.json();
+      
+      if (!userData.id) {
+        console.error('Erreur lors de la récupération des informations de l\'utilisateur:', userData);
+        return res.status(500).json({
+          success: false,
+          message: 'Erreur lors de la récupération des informations de l\'utilisateur Discord'
+        });
+      }
+      
+      // Supprimer les liens existants pour éviter les duplications
+      await DiscordLink.deleteMany({ $or: [{ discordId: userData.id }, { walletAddress }] });
+      
+      // Compter le nombre total d'utilisateurs pour déterminer l'ordre d'inscription
+      const totalUsers = await DiscordLink.countDocuments();
+      
+      // Créer un nouveau document Discord Link
+      const discordLink = new DiscordLink({
+        walletAddress,
+        discordId: userData.id,
+        discordUsername: userData.username,
+        discordAvatar: userData.avatar,
+        registrationOrder: totalUsers + 1,
+        notifyDailyClaims: true,
+        roles: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      });
+      
+      await discordLink.save();
+      console.log(`Lien Discord créé avec succès pour ${userData.username} (${userData.id}) avec le wallet ${walletAddress}`);
+      
+      // Ajouter l'utilisateur au serveur Discord s'il n'en est pas déjà membre
+      console.log(`Tentative d'ajout de l'utilisateur ${maskDiscordId(userData.id)} au serveur Discord`);
+      const addedToGuild = await addUserToGuild(userData.id, tokenData.access_token);
+      if (addedToGuild) {
+        console.log(`Utilisateur ${maskDiscordId(userData.id)} ajouté au serveur Discord avec succès`);
+        
+        // Attendre que Discord synchronise l'ajout du membre (2 secondes)
+        console.log(`Attente de 2 secondes pour la synchronisation Discord...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        console.warn(`Impossible d'ajouter l'utilisateur ${maskDiscordId(userData.id)} au serveur Discord`);
+      }
+      
+      // Vérifier si l'utilisateur est parmi les 5000 premiers pour le rôle Early Contributor
+      let isEarlyContributor = false;
+      if (discordLink.registrationOrder <= 5000) {
+        console.log(`L'utilisateur ${userData.username} est parmi les 5000 premiers (position: ${discordLink.registrationOrder})`);
+        // Attribuer le rôle "Early Contributor"
+        const roleAssigned = await assignRoleToUser(userData.id, "Early Contributor");
+        
+        if (roleAssigned) {
+          console.log(`Rôle Early Contributor attribué à ${userData.username}`);
+          // Ajouter le rôle à la liste des rôles de l'utilisateur
+          discordLink.roles.push("Early Contributor");
+          await discordLink.save();
+          isEarlyContributor = true;
+          
+          // Envoyer un message privé à l'utilisateur
+          await sendDirectMessageToUser(userData.id, `🌟 **Congratulations!** As one of our first 5,000 users, you've been granted the **Early Contributor** role in our Discord server. Thank you for your early support of our decentralized VPN network!`);
+        }
+      }
+      
+      // Envoyer un message dans le canal Discord
+      await sendMessageToDiscordChannel(`🔗 Le wallet \`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}\` a lié son compte Discord \`${userData.username}\` (ID: ${userData.id.slice(0, 3)}***${userData.id.slice(-2)})`);
+
+      
+      return res.json({
+        success: true,
+        message: 'Compte Discord lié avec succès',
+        isEarlyContributor
+      });
+      
+    } catch (error) {
+      console.error('Erreur lors de la liaison Discord:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la liaison Discord: ' + (error.message || 'Erreur inconnue')
+      });
+    }
+  } catch (error) {
+    console.error('Erreur générale lors de la liaison Discord:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la liaison Discord'
+    });
+  }
+});
+
+// Route de callback pour l'authentification Discord
+router.get('/callback', async (req, res) => {
+  const { code, state } = req.query;
+  
+  if (!code) {
+    return res.status(400).json({
+      success: false,
+      message: 'Code d\'autorisation manquant dans la requête'
+    });
+  }
+  
+  try {
+    // Récupérer le walletAddress depuis le token JWT dans les cookies ou les headers
+    // Vérifier d'abord si req.cookies existe pour éviter l'erreur
+    const token = req.cookies?.token || 
+                 (req.headers.authorization ? req.headers.authorization.split(' ')[1] : null) ||
+                 req.query.token; // Essayer aussi de récupérer le token depuis les paramètres d'URL
+    
+    console.log('Tentative de récupération du token:', { 
+      hasCookies: !!req.cookies,
+      hasAuthHeader: !!req.headers.authorization,
+      hasTokenQuery: !!req.query.token,
+      token: token ? `${token.substring(0, 10)}...` : null 
+    });
+    
+    let walletAddress;
+    
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        walletAddress = decoded.walletAddress || decoded.address;
+        console.log('WalletAddress récupérée du token:', walletAddress);
+      } catch (err) {
+        console.error('Erreur de décodage du JWT:', err);
+      }
+    } else {
+      console.log('Aucun token trouvé dans la requête');
+    }
+    
+    // Si pas de walletAddress dans le JWT, rediriger vers le frontend avec le code
+    // pour que le frontend puisse compléter la liaison
+    if (!walletAddress) {
+      console.log('Pas de walletAddress trouvée, redirection vers le frontend');
+      // Rediriger vers le frontend avec le code et l'état
+      const frontendUrl = process.env.FRONTEND_URL || 'https://wind-frontend-rosy.vercel.app';
+      const redirectUrl = `${frontendUrl}/discord/callback?code=${code}&state=${state}&noToken=true`;
+      console.log('Redirection vers:', redirectUrl);
+      return res.redirect(redirectUrl);
+    }
+    
+    // Vérifier que les variables d'environnement Discord sont définies
+    if (!DISCORD_CLIENT_ID || !DISCORD_CLIENT_SECRET) {
+      console.error('Variables d\'environnement Discord manquantes:', { 
+        DISCORD_CLIENT_ID: !!DISCORD_CLIENT_ID, 
+        DISCORD_CLIENT_SECRET: !!DISCORD_CLIENT_SECRET 
+      });
+      return res.status(500).json({
+        success: false,
+        message: 'Configuration Discord manquante sur le serveur'
+      });
+    }
+
+    // Échanger le code contre un token d'accès Discord
+    try {
+      const tokenResponse = await fetch(`${DISCORD_API_ENDPOINT}/oauth2/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: new URLSearchParams({
+          client_id: DISCORD_CLIENT_ID,
+          client_secret: DISCORD_CLIENT_SECRET,
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: DISCORD_REDIRECT_URI
+        })
+      });
+      
+      // Vérifier si la réponse est OK
+      if (!tokenResponse.ok) {
+        const errorText = await tokenResponse.text();
+        console.error('Erreur lors de l\'obtention du token Discord:', {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+          error: errorText
+        });
+        return res.status(500).json({
+          success: false,
+          message: `Erreur lors de l'échange du code: ${tokenResponse.status} ${tokenResponse.statusText}`
+        });
+      }
+      
+      const tokenData = await tokenResponse.json();
+      
+      if (!tokenData.access_token) {
+        console.error('Erreur lors de l\'échange du code:', tokenData);
+        return res.status(500).json({
+          success: false,
+          message: 'Erreur lors de l\'échange du code d\'autorisation'
+        });
+      }
+      
+      // Récupérer les informations de l'utilisateur Discord
+      const userResponse = await fetch(`${DISCORD_API_ENDPOINT}/users/@me`, {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`
+        }
+      });
+      
+      // Vérifier si la réponse est OK
+      if (!userResponse.ok) {
+        const errorText = await userResponse.text();
+        console.error('Erreur lors de la récupération des infos utilisateur:', {
+          status: userResponse.status,
+          statusText: userResponse.statusText,
+          error: errorText
+        });
+        return res.status(500).json({
+          success: false,
+          message: `Erreur lors de la récupération des infos utilisateur: ${userResponse.status}`
+        });
+      }
+      
+      const userData = await userResponse.json();
+      
+      if (!userData.id) {
+        console.error('Erreur lors de la récupération des informations de l\'utilisateur:', userData);
+        return res.status(500).json({
+          success: false,
+          message: 'Erreur lors de la récupération des informations de l\'utilisateur Discord'
+        });
+      }
+    } catch (error) {
+      console.error('Erreur lors de la communication avec Discord:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la communication avec Discord'
+      });
+    }
+    
+    try {
+      console.log(`Tentative de liaison du compte Discord ${userData.id} (${userData.username}) avec le wallet ${walletAddress}`);
+      
+      // IMPORTANT: Supprimer d'abord tous les liens existants pour éviter les erreurs de clé dupliquée
+      console.log(`Suppression préventive de tous les liens existants pour le discordId ${userData.id} ou le wallet ${walletAddress}`);
+      const deleteResult = await DiscordLink.deleteMany({ $or: [{ discordId: userData.id }, { walletAddress }] });
+      console.log(`${deleteResult.deletedCount} liens supprimés`);
+      
+      // Compter le nombre total d'utilisateurs pour déterminer l'ordre d'inscription
+      const totalUsers = await DiscordLink.countDocuments();
+      
+      // Créer un nouveau document Discord Link
+      const discordLink = new DiscordLink({
+        walletAddress,
+        discordId: userData.id,
+        discordUsername: userData.username,
+        discordAvatar: userData.avatar,
+        registrationOrder: totalUsers + 1,
+        notifyDailyClaims: true,
+        roles: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      });
+      
+      console.log(`Création d'un nouveau lien Discord pour ${userData.id} (${userData.username}) avec le wallet ${walletAddress}`);
+      await discordLink.save();
+      console.log(`Lien Discord créé avec succès, ID: ${discordLink._id}`);
+      
+      // Ajouter l'utilisateur au serveur Discord s'il n'en est pas déjà membre
+      console.log(`Tentative d'ajout de l'utilisateur ${maskDiscordId(userData.id)} au serveur Discord`);
+      const addedToGuild = await addUserToGuild(userData.id, tokenData.access_token);
+      if (addedToGuild) {
+        console.log(`Utilisateur ${maskDiscordId(userData.id)} ajouté au serveur Discord avec succès`);
+        
+        // Attendre que Discord synchronise l'ajout du membre (2 secondes)
+        console.log(`Attente de 2 secondes pour la synchronisation Discord...`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      } else {
+        console.warn(`Impossible d'ajouter l'utilisateur ${maskDiscordId(userData.id)} au serveur Discord`);
+      }
+      
+      // Vérifier si l'utilisateur est parmi les 5000 premiers pour le rôle Early Contributor
+      if (discordLink.registrationOrder <= 5000) {
+        console.log(`L'utilisateur ${userData.username} est parmi les 5000 premiers (position: ${discordLink.registrationOrder})`);
+        
+        // Déclarer la variable roleAssigned en dehors des blocs conditionnels
+        let roleAssigned = false;
+        
+        // Attribuer le rôle "Early Contributor" seulement si l'utilisateur a été ajouté au serveur
+        if (addedToGuild) {
+          console.log(`Tentative d'attribution du rôle Early Contributor à ${userData.username}`);
+          roleAssigned = await assignRoleToUser(userData.id, "Early Contributor");
+        } else {
+          console.warn(`Attribution du rôle ignorée car l'utilisateur n'a pas pu être ajouté au serveur`);
+        }
+        
+        if (roleAssigned) {
+          console.log(`Rôle Early Contributor attribué à ${userData.username}`);
+          // Ajouter le rôle à la liste des rôles de l'utilisateur
+          discordLink.roles.push("Early Contributor");
+          await discordLink.save();
+          
+          // Envoyer un message privé à l'utilisateur
+          await sendDirectMessageToUser(userData.id, `🌟 **Congratulations!** As one of our first 5,000 users, you've been granted the **Early Contributor** role in our Discord server. Thank you for your early support of our decentralized VPN network!`);
+        }
+      }
+      
+      // Envoyer un message dans le canal Discord
+     await sendMessageToDiscordChannel(`🔗 Le wallet \`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}\` a lié son compte Discord \`${userData.username}\` (ID: ${userData.id.slice(0, 3)}***${userData.id.slice(-2)})`);
+      
+    } catch (error) {
+      console.error('Erreur lors de la liaison Discord:', error);
+      
+      // Gérer spécifiquement l'erreur de clé dupliquée
+      if (error.code === 11000) {
+        console.log('Erreur de clé dupliquée détectée, tentative de résolution désespérée...');
+        
+        try {
+          // Attendre un peu pour éviter les conflits de timing
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Supprimer TOUS les liens existants qui pourraient causer des conflits
+          console.log(`Suppression d'urgence de tous les liens pour ${userData.id} ou ${walletAddress}`);
+          await DiscordLink.collection.deleteMany({ $or: [{ discordId: userData.id }, { walletAddress }] });
+          
+          // Attendre encore un peu
+          await new Promise(resolve => setTimeout(resolve, 1000));
+          
+          // Créer un nouveau lien après avoir supprimé les liens conflictuels
+          const totalUsers = await DiscordLink.countDocuments();
+          
+          console.log(`Tentative de création d'un nouveau lien après suppression des conflits`);
+          const newDiscordLink = new DiscordLink({
+            walletAddress,
+            discordId: userData.id,
+            discordUsername: userData.username,
+            discordAvatar: userData.avatar,
+            registrationOrder: totalUsers + 1,
+            notifyDailyClaims: true,
+            roles: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          });
+          
+          await newDiscordLink.save();
+          console.log(`Nouveau lien créé avec succès après résolution de conflit, ID: ${newDiscordLink._id}`);
+          
+          // Envoyer un message dans le canal Discord
+          await sendMessageToDiscordChannel(`🔗 Après résolution de conflit, le wallet \`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}\` a lié son compte Discord \`${userData.username}\` (ID: ${userData.id.slice(0, 3)}***${userData.id.slice(-2)})`);
+        } catch (secondError) {
+          console.error('Erreur lors de la seconde tentative de liaison Discord:', secondError);
+          throw secondError; // Propager l'erreur pour la gérer dans le bloc catch parent
+        }
+      } else {
+        // Pour les autres types d'erreurs, propager l'erreur
+        throw error;
+      }
+    }
+    
+    // Rediriger vers le frontend avec un message de succès
+    try {
+      // Vérifier que la liaison a bien été effectuée
+      const verificationLink = await DiscordLink.findOne({ discordId: userData.id, walletAddress });
+      console.log('Vérification de la liaison:', verificationLink ? 'Liaison trouvée' : 'Liaison NON trouvée');
+      
+      if (!verificationLink) {
+        console.warn(`ATTENTION: La liaison entre ${userData.id} et ${walletAddress} n'a pas été trouvée après le processus!`);
+        // Essayer de créer la liaison une dernière fois
+        try {
+          console.log('Tentative de création de liaison de secours...');
+          const totalUsers = await DiscordLink.countDocuments();
+          const emergencyLink = new DiscordLink({
+            walletAddress,
+            discordId: userData.id,
+            discordUsername: userData.username,
+            discordAvatar: userData.avatar,
+            registrationOrder: totalUsers + 1,
+            notifyDailyClaims: true,
+            roles: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now()
+          });
+          await emergencyLink.save();
+          console.log('Liaison de secours créée avec succès!');
+        } catch (emergencyError) {
+          console.error('Erreur lors de la création de la liaison de secours:', emergencyError);
+        }
+      }
+      
+      // Construire l'URL de redirection vers le frontend
+      const frontendUrl = process.env.FRONTEND_URL || 'https://lastexitfromnowhere.github.io/vpn-frontend';
+      const redirectUrl = `${frontendUrl}?discordLinked=true&username=${encodeURIComponent(userData.username)}`;
+      
+      console.log(`Redirection vers ${redirectUrl}`);
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET');
+      res.header('Access-Control-Allow-Headers', 'Content-Type');
+      
+      // Rediriger l'utilisateur vers le frontend
+      return res.redirect(redirectUrl);
+    } catch (redirectError) {
+      console.error('Erreur lors de la redirection:', redirectError);
+      // En cas d'erreur de redirection, renvoyer un JSON
+      return res.json({
+        success: true,
+        message: 'Compte Discord lié avec succès, mais erreur lors de la redirection',
+        discordUser: {
+          id: userData.id,
+          username: userData.username,
+          avatar: userData.avatar
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Erreur lors de l\'authentification Discord:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de l\'authentification Discord'
+    });
+  }
+});
+
+// Route de diagnostic sans authentification pour vérifier l'état du serveur Discord
+router.get('/link-debug', async (req, res) => {
+  // Définir les en-têtes CORS explicitement pour cette route
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  
+  res.json({
+    success: true,
+    message: 'Route de diagnostic Discord fonctionnelle',
+    serverTime: new Date().toISOString(),
+    discordConfig: {
+      clientId: DISCORD_CLIENT_ID,
+      redirectUri: DISCORD_REDIRECT_URI
+    }
+  });
+});
+
+// Route pour récupérer les informations du compte Discord lié
+router.get('/link', authenticateToken, async (req, res) => {
+  try {
+    const walletAddress = req.user.address || req.user.walletAddress;
+    
+    console.log(`Vérification de liaison Discord pour le wallet: ${walletAddress}`);
+    
+    if (!walletAddress) {
+      console.log('Erreur: Wallet non fourni dans la requête');
+      return res.status(401).json({
+        success: false,
+        message: 'Vous devez être connecté avec un wallet pour accéder à cette ressource'
+      });
+    }
+    
+    // Vérifier toutes les liaisons existantes pour ce wallet
+    const allLinks = await DiscordLink.find({ walletAddress });
+    console.log(`Nombre de liaisons trouvées pour ${walletAddress}: ${allLinks.length}`);
+    
+    if (allLinks.length > 0) {
+      allLinks.forEach((link, index) => {
+        console.log(`Liaison ${index+1}:`, {
+          discordId: link.discordId,
+          username: link.discordUsername,
+          createdAt: link.createdAt
+        });
+      });
+    }
+    
+    const discordLink = allLinks.length > 0 ? allLinks[0] : null;
+    
+    if (!discordLink) {
+      console.log(`Aucune liaison Discord trouvée pour le wallet ${walletAddress}`);
+      return res.status(200).json({
+        success: true,
+        message: 'Aucun compte Discord lié à ce wallet',
+        isLinked: false
+      });
+    }
+    
+    console.log(`Liaison Discord trouvée pour ${walletAddress}:`, {
+      discordId: discordLink.discordId,
+      username: discordLink.discordUsername
+    });
+    
+    res.json({
+      success: true,
+      isLinked: true,
+      discordUser: {
+        id: discordLink.discordId,
+        username: discordLink.discordUsername,
+        avatar: discordLink.discordAvatar
+      }
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération du lien Discord:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération du lien Discord'
+    });
+  }
+});
+
+// Route pour vérifier la disponibilité du serveur Discord (sans authentification)
+router.get('/status', async (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-wallet-address');
+  
+  // Gérer les requêtes OPTIONS pour le pre-flight CORS
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  try {
+    // Vérifier si le serveur Discord est accessible
+    const response = await fetch(`${DISCORD_API_ENDPOINT}/users/@me`, {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    // Même si la requête échoue avec 401, cela signifie que le serveur Discord est accessible
+    res.json({
+      success: true,
+      isAvailable: true,
+      message: 'Le serveur Discord est accessible'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la vérification du statut Discord:', error);
+    res.json({
+      success: false,
+      isAvailable: false,
+      message: 'Le serveur Discord est inaccessible'
+    });
+  }
+});
+
+// Route pour vérifier le statut de liaison Discord (avec authentification)
+router.get('/link-status', authenticateToken, async (req, res) => {
+  try {
+    const walletAddress = req.user.address || req.user.walletAddress;
+    
+    if (!walletAddress) {
+      return res.status(401).json({
+        success: false,
+        message: 'Vous devez être connecté avec un wallet pour accéder à cette ressource'
+      });
+    }
+    
+    // Vérifier toutes les liaisons existantes pour ce wallet
+    const discordLink = await DiscordLink.findOne({ walletAddress });
+    
+    if (!discordLink) {
+      return res.json({
+        linked: false,
+        discordUsername: null,
+        discordAvatar: null,
+        discordId: null,
+        notifyDailyClaims: false,
+        isEarlyContributor: false,
+        registrationOrder: null
+      });
+    }
+    
+    // Déterminer si l'utilisateur est un early contributor (parmi les 5000 premiers)
+    const isEarlyContributor = discordLink.registrationOrder <= 5000;
+    
+    res.json({
+      linked: true,
+      discordUsername: discordLink.discordUsername,
+      discordAvatar: discordLink.discordAvatar,
+      discordId: discordLink.discordId,
+      notifyDailyClaims: discordLink.notifyDailyClaims !== undefined ? discordLink.notifyDailyClaims : true,
+      isEarlyContributor,
+      registrationOrder: discordLink.registrationOrder
+    });
+  } catch (error) {
+    console.error('Erreur lors de la récupération du statut Discord:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération du statut Discord'
+    });
+  }
+});
+
+// Route pour supprimer le lien entre un wallet et un compte Discord
+router.delete('/link', authenticateToken, async (req, res) => {
+  try {
+    const walletAddress = req.user.address || req.user.walletAddress;
+    
+    if (!walletAddress) {
+      return res.status(401).json({
+        success: false,
+        message: 'Vous devez être connecté avec un wallet pour accéder à cette ressource'
+      });
+    }
+    
+    const discordLink = await DiscordLink.findOne({ walletAddress });
+    
+    if (!discordLink) {
+      return res.status(404).json({
+        success: false,
+        message: 'Aucun compte Discord lié à ce wallet'
+      });
+    }
+    
+    const discordUsername = discordLink.discordUsername;
+    
+    await DiscordLink.deleteOne({ walletAddress });
+    
+    // Envoyer un message dans le canal Discord
+    await sendMessageToDiscordChannel(`❌ Le wallet \`${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}\` a supprimé son lien avec le compte Discord \`${discordUsername}\``);
+
+    
+    res.json({
+      success: true,
+      message: 'Lien Discord supprimé avec succès'
+    });
+  } catch (error) {
+    console.error('Erreur lors de la suppression du lien Discord:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la suppression du lien Discord'
+    });
+  }
+});
+
+// Route pour activer/désactiver les notifications de daily claims
+router.post('/notifications/daily-claims', authenticateToken, async (req, res) => {
+  try {
+    const walletAddress = req.user.address || req.user.walletAddress;
+    const { enabled } = req.body;
+    
+    if (enabled === undefined) {
+      return res.status(400).json({
+        success: false,
+        message: 'Le paramètre "enabled" est requis'
+      });
+    }
+    
+    if (!walletAddress) {
+      return res.status(401).json({
+        success: false,
+        message: 'Vous devez être connecté avec un wallet pour accéder à cette ressource'
+      });
+    }
+    
+    const discordLink = await DiscordLink.findOne({ walletAddress });
+    
+    if (!discordLink) {
+      return res.status(404).json({
+        success: false,
+        message: 'Aucun compte Discord lié à ce wallet'
+      });
+    }
+    
+    // Mettre à jour les préférences de notification
+    discordLink.notifyDailyClaims = enabled;
+    await discordLink.save();
+    
+    // Envoyer un message privé à l'utilisateur pour confirmer
+    if (enabled) {
+      await sendDirectMessageToUser(discordLink.discordId, `🔔 You have **enabled** daily claim notifications. You will now receive a private message when your daily rewards are available to claim.`);
+    } else {
+      await sendDirectMessageToUser(discordLink.discordId, `🔕 You have **disabled** daily claim notifications. You will no longer receive private messages about daily claims.`);
+    }
+    
+    res.json({
+      success: true,
+      message: enabled ? 'Notifications de daily claims activées' : 'Notifications de daily claims désactivées',
+      notifyDailyClaims: enabled
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour des préférences de notification:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la mise à jour des préférences de notification'
+    });
+  }
+});
+
+// Route pour vérifier si l'utilisateur est parmi les 5000 premiers
+router.get('/early-contributor', authenticateToken, async (req, res) => {
+  try {
+    const walletAddress = req.user.address || req.user.walletAddress;
+    
+    if (!walletAddress) {
+      return res.status(401).json({
+        success: false,
+        message: 'Vous devez être connecté avec un wallet pour accéder à cette ressource'
+      });
+    }
+    
+    const discordLink = await DiscordLink.findOne({ walletAddress });
+    
+    if (!discordLink) {
+      return res.status(404).json({
+        success: false,
+        message: 'Aucun compte Discord lié à ce wallet',
+        isEarlyContributor: false
+      });
+    }
+    
+    const isEarlyContributor = discordLink.registrationOrder <= 5000;
+    
+    res.json({
+      success: true,
+      isEarlyContributor,
+      registrationOrder: discordLink.registrationOrder,
+      roles: discordLink.roles || []
+    });
+  } catch (error) {
+    console.error('Erreur lors de la vérification du statut de contributeur précoce:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la vérification du statut de contributeur précoce'
+    });
+  }
+});
+
+export default router;

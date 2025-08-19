@@ -1,0 +1,15 @@
+{
+  "name": "cleanup-scripts",
+  "version": "1.0.0",
+  "description": "Scripts de nettoyage pour la base de données",
+  "main": "cleanup-wallet-addresses.js",
+  "type": "module",
+  "scripts": {
+    "cleanup-wallets": "node cleanup-wallet-addresses.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^7.0.3"
+  }
+}

@@ -6,7 +6,7 @@ export const TruffleMint: FC = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleClick = () => {
-    window.open('https://truffle.wtf/project/last-paradox-jkg4h', '_blank');
+    window.open('https://lastparadoxpresale.vercel.app', '_blank');
   };
 
   return (
@@ -16,7 +16,7 @@ export const TruffleMint: FC = () => {
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleClick}
       style={{
-        backgroundImage: 'url(https://wind-frontend-rosy.vercel.app/truffle.png)',
+        backgroundImage: 'url(https://wind-frontend-rosy.vercel.app/truffle2.png)',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundBlendMode: 'overlay',
@@ -30,14 +30,6 @@ export const TruffleMint: FC = () => {
         }}
       />
       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white">
-        <div className="text-center bg-black/30 backdrop-blur-sm p-4 rounded-lg border border-gray-700/30 mb-4">
-          <h2 className="text-xl font-semibold mb-2 text-white">
-            {`// Mint Page: Last Paradox`}
-          </h2>
-          <p className="text-gray-300 text-sm">
-            {`> Last Paradox Genesis : Private Access`}
-          </p>
-        </div>
         <button 
           className="px-6 py-2 bg-black-500/20 backdrop-blur-sm border border-black-400/30 hover:bg-black-500/40 rounded-lg transition-all duration-300 text-white-400 font-medium"
           onClick={handleClick}

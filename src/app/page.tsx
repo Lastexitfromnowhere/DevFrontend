@@ -35,41 +35,61 @@ export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('ecosystem');
   const { isConnected, isAuthReady, connectWallet } = useWalletContext();
   const [showDisclaimer, setShowDisclaimer] = useState(true);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const router = useRouter();
   
-  // Rediriger vers la page de login si l'utilisateur n'est pas connecté
-  // Utiliser useEffect avec un drapeau pour éviter les redirections multiples
   useEffect(() => {
-    // Vérifier si nous sommes déjà en train de rediriger
-    const isRedirecting = sessionStorage.getItem('isRedirecting');
-    if (isRedirecting === 'true') return;
-    
-    // Vérifier si l'utilisateur est connecté via wallet ou via Google
-    const isLoggedIn = isConnected || localStorage.getItem('jwt_token');
-    const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
-    
-    if (!isLoggedIn) {
-      console.log('Utilisateur non connecté, redirection vers /login');
-      sessionStorage.setItem('isRedirecting', 'true');
-      router.push('/login');
-    } else {
-      console.log('Utilisateur connecté, affichage du dashboard');
-      // S'assurer que les états de connexion sont synchronisés
-      if ((!isConnected && localStorage.getItem('jwt_token')) || isGoogleWallet) {
-        localStorage.setItem('isConnected', 'true');
-        localStorage.setItem('isAuthReady', 'true');
+    const checkAuth = () => {
+      const hasJwtToken = localStorage.getItem('jwt_token');
+      const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
+      const walletConnected = isConnected && isAuthReady;
+      const tokenExpiresAt = localStorage.getItem('token_expires_at');
+      
+      // Vérifier si le token JWT n'est pas expiré
+      let isTokenValid = false;
+      if (hasJwtToken && tokenExpiresAt) {
+        const expirationTime = parseInt(tokenExpiresAt);
+        const currentTime = Date.now();
+        isTokenValid = currentTime < expirationTime;
         
-        // Forcer un rafraîchissement de la page si l'utilisateur est connecté via Google
-        // mais que les composants ne s'affichent pas
-        if (isGoogleWallet && !isAuthReady) {
-          console.log('Utilisateur Google détecté mais isAuthReady est false, rafraîchissement de la page');
-          window.location.reload();
+        if (!isTokenValid) {
+          console.log('JWT token expired, clearing localStorage');
+          localStorage.removeItem('jwt_token');
+          localStorage.removeItem('token_expires_at');
+          localStorage.removeItem('wallet_address');
+          localStorage.removeItem('isGoogleWallet');
+          localStorage.removeItem('isAuthReady');
+          localStorage.removeItem('isConnected');
         }
       }
-      // Réinitialiser le drapeau de redirection
-      sessionStorage.removeItem('isRedirecting');
-    }
-  }, [isConnected, router]);
+      
+      const isAuthenticated = walletConnected || (hasJwtToken && isTokenValid);
+      
+      console.log('Auth check:', { 
+        hasJwtToken: !!hasJwtToken, 
+        isTokenValid, 
+        isGoogleWallet, 
+        walletConnected, 
+        isAuthenticated 
+      });
+      
+      if (!isAuthenticated) {
+        console.log('Redirecting to /login - not authenticated');
+        // Utiliser router.push au lieu de window.location.href pour une meilleure compatibilité
+        router.push('/login');
+      } else {
+        console.log('User authenticated, hiding login prompt');
+        setShowLoginPrompt(false);
+      }
+    };
+
+    // Délai pour s'assurer que le DOM est chargé
+    const timer = setTimeout(() => {
+      checkAuth();
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isConnected, isAuthReady, router]);
   
   // Effet pour gérer la déconnexion manuelle
   useEffect(() => {
@@ -105,17 +125,51 @@ export default function Dashboard() {
         flex items-center space-x-2 px-4 py-2 rounded-md
         transition-all duration-200 ease-in-out
         ${activeSection === id 
-          ? 'text-white bg-gradient-to-r from-blue-600/70 to-purple-600/70 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10' 
-          : 'text-gray-300 hover:text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-gray-700/30 hover:border-blue-500/30'
+          ? 'text-white bg-gradient-to-r from-gray-600/70 to-gray-500/70 backdrop-blur-sm border border-gray-500/30 shadow-lg shadow-gray-500/10' 
+          : 'text-gray-300 hover:text-white bg-black/30 hover:bg-black/50 backdrop-blur-sm border border-gray-700/30 hover:border-gray-500/30'
         }
       `}
     >
-      <span className={activeSection === id ? 'text-blue-300' : 'text-gray-400'}>{icon}</span>
+      <span className={activeSection === id ? 'text-gray-300' : 'text-gray-400'}>{icon}</span>
       <span>{label}</span>
     </button>
   );
 
   const renderContent = () => {
+    // Si l'utilisateur n'est pas authentifié, afficher l'interface de connexion
+    if (showLoginPrompt) {
+      return (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="bg-black/40 backdrop-blur-md border border-gray-700/30 rounded-lg p-8 max-w-md w-full mx-4 shadow-lg">
+            <div className="text-center space-y-6">
+              <div className="w-16 h-16 flex items-center justify-center mx-auto">
+                <img src="/logo-lastparadox.png" alt="Last Paradox" className="w-16 h-16" />
+              </div>
+              
+              <div>
+                <h2 className="text-2xl font-semibold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent mb-2">
+                  Last_Paradox △ mesh online
+                </h2>
+                <p className="text-gray-400">
+                  Connect your wallet to access the ecosystem
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <button
+                  onClick={() => router.push('/login')}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-blue-600/80 to-purple-600/80 backdrop-blur-sm border border-blue-500/30 rounded-md text-white hover:from-blue-600/90 hover:to-purple-600/90 transition-all duration-200 font-medium"
+                >
+                  Connect Wallet & Login
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Contenu normal pour les utilisateurs authentifiés
     switch (activeSection) {
       case 'vpn':
         return <DesktopAppPromo />;
@@ -149,29 +203,68 @@ export default function Dashboard() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-black to-gray-900 text-white p-4 overflow-auto">
-      <div className="max-w-7xl mx-auto">
-        {/* Navigation Header */}
-        <header className="bg-black/40 backdrop-blur-md border border-gray-700/30 rounded-lg p-4 mb-6 shadow-lg">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
 
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white relative overflow-hidden">
+      {/* Background Effects */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-gray-800/20 via-transparent to-transparent"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,_var(--tw-gradient-stops))] from-gray-700/20 via-transparent to-transparent"></div>
+      
+      {/* Animated background elements */}
+      <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-gray-500/10 rounded-full blur-3xl animate-pulse"></div>
+      <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gray-400/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      
+      {/* Main Content */}
+      <div className="relative z-10 flex flex-col min-h-screen">
+        {/* Header */}
+        <header className="p-6 border-b border-gray-800/50 backdrop-blur-sm">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 flex items-center justify-center">
+                <img src="/logo-lastparadox.png" alt="Last Paradox" className="w-8 h-8" />
+              </div>
+              <h1 className="text-xl font-semibold bg-gradient-to-r from-gray-200 to-gray-400 bg-clip-text text-transparent">
+                Last_Paradox △ mesh online
+              </h1>
+            </div>
+            
             <div className="flex items-center space-x-4">
-              <HeaderDiscordButton />
-              
-              <nav className="flex space-x-4">
-              {renderSectionButton('ecosystem', <Terminal size={20} />, 'Ecosystem')}
-              {renderSectionButton('vpn', <Shield size={20} />, 'Desktop App')}
-              {renderSectionButton('goals', <Target size={20} />, 'Site Goals')}
-            </nav>
+              {!showLoginPrompt && (
+                <div className="flex items-center space-x-3">
+                  {isConnected && (
+                    <span className="text-sm text-green-400 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">
+                      {localStorage.getItem('isGoogleWallet') === 'true' ? 'Connected with Google' : 'Connected with Wallet'}
+                    </span>
+                  )}
+                  {!isConnected && <WalletMultiButton />}
+                </div>
+              )}
+              {showLoginPrompt && (
+                <div className="text-sm text-gray-400">
+                  Please connect below
+                </div>
+              )}
             </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="space-y-6">
-          {/* Modal de sécurité supprimée pour éviter la demande de signature à chaque rafraîchissement */}
-          {renderContent()}
+        <main className="flex-1 p-6">
+          <div className="max-w-7xl mx-auto">
+            {/* Navigation Header */}
+            <header className="bg-black/40 backdrop-blur-md border border-gray-700/30 rounded-lg p-4 mb-6 shadow-lg">
+              <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex space-x-2">
+                  {renderSectionButton('ecosystem', <Network size={18} />, 'Ecosystem')}
+                  {renderSectionButton('vpn', <Shield size={18} />, 'VPN')}
+                  {renderSectionButton('goals', <Target size={18} />, 'Goals')}
+                </div>
+              </div>
+            </header>
+            
+            {/* Modal de sécurité supprimée pour éviter la demande de signature à chaque rafraîchissement */}
+            {renderContent()}
+          </div>
         </main>
 
         {/* Footer */}
