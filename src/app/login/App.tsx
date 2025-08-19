@@ -48,12 +48,43 @@ function App() {
 
   // Rediriger vers la page d'accueil si déjà connecté
   useEffect(() => {
-    if (isConnected && isAuthReady) {
-      console.log('Utilisateur connecté et authentifié, redirection vers la page d\'accueil');
-      // Utiliser window.location.href au lieu de router.push pour forcer un rafraîchissement complet
-      window.location.href = '/';
-    }
-  }, [isConnected, isAuthReady]);
+    const checkAuthAndRedirect = () => {
+      const hasJwtToken = localStorage.getItem('jwt_token');
+      const tokenExpiresAt = localStorage.getItem('token_expires_at');
+      const walletConnected = isConnected && isAuthReady;
+      
+      // Vérifier si le token JWT n'est pas expiré
+      let isTokenValid = false;
+      if (hasJwtToken && tokenExpiresAt) {
+        const expirationTime = parseInt(tokenExpiresAt);
+        const currentTime = Date.now();
+        isTokenValid = currentTime < expirationTime;
+        
+        if (!isTokenValid) {
+          console.log('JWT token expired on login page, clearing localStorage');
+          localStorage.removeItem('jwt_token');
+          localStorage.removeItem('token_expires_at');
+          localStorage.removeItem('wallet_address');
+          localStorage.removeItem('isGoogleWallet');
+          localStorage.removeItem('isAuthReady');
+          localStorage.removeItem('isConnected');
+        }
+      }
+      
+      const isAuthenticated = walletConnected || (hasJwtToken && isTokenValid);
+      
+      if (isAuthenticated) {
+        console.log('Utilisateur authentifié sur /login, redirection vers la page d\'accueil');
+        // Utiliser router.push au lieu de window.location.href pour éviter les boucles
+        router.push('/');
+      }
+    };
+    
+    // Délai pour éviter les conflits avec les redirections Next.js
+    const timer = setTimeout(checkAuthAndRedirect, 200);
+    
+    return () => clearTimeout(timer);
+  }, [isConnected, isAuthReady, router]);
   
   // Écouteur d'événements pour détecter la connexion du portefeuille
   useEffect(() => {
@@ -84,14 +115,33 @@ function App() {
         throw new Error('Aucun credential reçu de Google');
       }
       
-      // Utiliser l'ID du token comme identifiant unique
-      // Dans une implémentation réelle, nous décoderions le JWT pour obtenir l'ID utilisateur Google
-      const googleUserId = `google-${Date.now()}`;
-      console.log('Google User ID généré:', googleUserId);
+      // Décoder le JWT Google pour obtenir l'ID utilisateur réel
+      const googleToken = credentialResponse.credential;
+      const base64Url = googleToken.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
       
-      // Stocker l'ID Google pour référence future
+      // Utiliser l'ID Google réel
+      const googleUserId = payload.sub; // 'sub' est l'ID unique Google
+      const userEmail = payload.email;
+      const userName = payload.name;
+      
+      console.log('Google User Info:', { googleUserId, userEmail, userName });
+      
+      // Stocker les informations Google complètes
       if (typeof window !== 'undefined') {
         localStorage.setItem(GOOGLE_USER_ID_KEY, googleUserId);
+        localStorage.setItem('google_user_email', userEmail);
+        localStorage.setItem('google_user_name', userName);
+        
+        // Créer un mapping Google ID -> Wallet Solana persistant
+        const googleWalletMapping = JSON.parse(localStorage.getItem('google_wallet_mappings') || '{}');
+        googleWalletMapping[googleUserId] = {
+          email: userEmail,
+          name: userName,
+          createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('google_wallet_mappings', JSON.stringify(googleWalletMapping));
       }
       
       // Générer un portefeuille Solana pour l'utilisateur Google
@@ -100,6 +150,38 @@ function App() {
       
       // Utiliser l'adresse du portefeuille généré comme identifiant pour l'authentification
       const walletAddress = googleWallet?.publicKey || googleUserId;
+      
+      // Créer un utilisateur Google-Wallet complet (association + utilisateur Solana)
+      try {
+        const googleUserData = {
+          sub: googleUserId,
+          email: userEmail,
+          name: userName,
+          picture: null
+        };
+        const publicKey = googleWallet?.publicKey || walletAddress;
+        const userCreationResult = await authService.createGoogleWalletUser(
+          googleUserData,
+          walletAddress,
+          publicKey
+        );
+        
+        if (userCreationResult.success) {
+          console.log('Utilisateur Google-Wallet complet créé:', userCreationResult);
+        } else {
+          console.error('Erreur lors de la création de l\'utilisateur complet:', userCreationResult);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la création de l\'utilisateur Google-Wallet:', error);
+      }
+      
+      // Sauvegarder l'association Google-Wallet dans MongoDB
+      try {
+        await authService.saveGoogleWalletAssociation(googleUserId, userEmail, userName, walletAddress);
+        console.log('Association Google-Wallet sauvegardée en base de données');
+      } catch (error) {
+        console.warn('Impossible de sauvegarder en base, utilisation du localStorage:', error);
+      }
       
       // Utiliser le service d'authentification existant pour générer un token
       console.log('Génération du token JWT avec l\'adresse du portefeuille:', walletAddress);
@@ -145,53 +227,24 @@ function App() {
     alert('Échec de la connexion Google. Veuillez réessayer.');
   };
 
-  // Fonction pour gérer la connexion wallet
-  const handleWalletLogin = () => {
+  // Fonction pour gérer la connexion wallet - Déclencher le sélecteur
+  const handleWalletLogin = async () => {
     setLoading(true);
+    console.log('Ouverture du sélecteur de wallet...');
     
     try {
-      // Ouvrir le sélecteur de portefeuille en utilisant le bouton WalletMultiButton
-      // Nous créons un événement personnalisé pour simuler un clic sur le bouton WalletMultiButton
-      const walletButtons = document.getElementsByClassName('wallet-adapter-button');
+      // Essayer directement avec connectWallet du contexte
+      console.log('Utilisation directe de connectWallet...');
+      await connectWallet();
       
-      if (walletButtons && walletButtons.length > 0) {
-        // Simuler un clic sur le premier bouton de portefeuille trouvé
-        (walletButtons[0] as HTMLElement).click();
-        
-        // Ajouter un écouteur d'événement pour détecter quand le wallet est connecté
-        const checkWalletConnection = setInterval(() => {
-          // Vérifier si le wallet est connecté via le contexte
-          if (isConnected) {
-            clearInterval(checkWalletConnection);
-            console.log('Wallet connecté, préparation de la redirection...');
-            
-            // Définir explicitement les valeurs dans le localStorage
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('isConnected', 'true');
-              localStorage.setItem('isAuthReady', 'true');
-              
-              // Ajouter un délai avant la redirection
-              setTimeout(() => {
-                console.log('Redirection vers la page d\'accueil après connexion wallet...');
-                window.location.href = '/';
-              }, 1500);
-            }
-          }
-        }, 500);
-        
-        // Arrêter la vérification après 15 secondes si aucune connexion n'est détectée
-        setTimeout(() => {
-          clearInterval(checkWalletConnection);
-          setLoading(false);
-        }, 15000);
-      } else {
-        // Si le bouton n'est pas trouvé, essayer d'utiliser la fonction connectWallet du contexte
-        connectWallet();
-        setLoading(false);
-      }
+      // Attendre un peu pour voir si la connexion s'établit
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
     } catch (error) {
       console.error('Erreur lors de la connexion wallet:', error);
       alert('Erreur lors de la connexion wallet. Veuillez réessayer.');
+    } finally {
+      // Réinitialiser le loading
       setLoading(false);
     }
   };
@@ -205,41 +258,53 @@ function App() {
       <div className="auth-container">
         {/* Section de la mascotte à gauche */}
         <div className="mascot-section">
-          <img src="/image.png" alt="Mascotte" className="mascot-image" />
+          <img src="/dsgx.png" alt="Mascotte" className="mascot-image" />
         </div>
         
         {/* Section de connexion à droite */}
         <div className="login-section">
-          <Typography variant="h4" className="login-title">
-            Welcome
-          </Typography>
+          <img src="/welcome.png" alt="Welcome" className="login-title" />
           
           <Typography variant="body1" className="login-subtitle">
             Sign in to access your dashboard
           </Typography>
           
-          {/* Bouton de connexion wallet */}
-          <Button 
-            variant="contained"
-            className="login-button wallet-button"
-            onClick={handleWalletLogin}
-            startIcon={<AccountBalanceWallet />}
-            disabled={loading}
-            fullWidth
-            sx={{ 
-              marginTop: 3,
-              backgroundColor: 'rgba(0, 195, 255, 0.3)',
-              '&:hover': {
-                backgroundColor: 'rgba(0, 195, 255, 0.5)',
-              }
-            }}
-          >
-            {loading ? <CircularProgress size={24} color="inherit" /> : 'Connect with Wallet'}
-          </Button>
-          
-          {/* WalletMultiButton caché pour permettre l'ouverture du sélecteur de portefeuille */}
-          <div style={{ position: 'absolute', visibility: 'hidden' }}>
-            <WalletMultiButton className="wallet-adapter-button" />
+          {/* Bouton wallet personnalisé */}
+          <div style={{ marginTop: '24px', width: '100%' }}>
+            <button
+              onClick={handleWalletLogin}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                backgroundColor: '#6366f1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor = '#5856eb';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor = '#6366f1';
+                }
+              }}
+            >
+              {loading ? 'Connecting...' : 'Connect Wallet'}
+            </button>
+            
+            {/* WalletMultiButton caché - le problème vient du double provider */}
+            <div style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+              <WalletMultiButton className="wallet-adapter-button-trigger" />
+            </div>
           </div>
           
           {/* Séparateur */}
