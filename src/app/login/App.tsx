@@ -350,7 +350,7 @@ function App() {
           <a href="https://discord.gg/w4xvwUQg" target="_blank" rel="noopener noreferrer" className="social-link">Discord</a>
           <a href="https://x.com/LastParadox__" target="_blank" rel="noopener noreferrer" className="social-link">Twitter</a>
           <a href="https://github.com/Lastexitfromnowhere" target="_blank" rel="noopener noreferrer" className="social-link">GitHub</a>
-          <Link href="/tokenomics" className="social-link">Tokenomics</Link>
+          <a href="#" target="_blank" rel="noopener noreferrer" className="social-link">Tokenomics</a>
         </div>
       </footer>
     </div>

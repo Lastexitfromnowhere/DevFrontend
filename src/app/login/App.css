@@ -141,31 +141,48 @@ body, html {
 /* Particules supprimées pour fond noir simple */
 
 /* Footer styles */
+footer {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 10;
+}
+
+.copyright {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.75rem;
+  margin-bottom: 8px;
+  text-align: center;
+}
+
 .social-links {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .social-link {
-    display: flex;
-    align-items: center;
-    gap: 3px;
-    color: var(--foreground);
-    text-decoration: none;
-    padding: 4px 6px;
-    border: 1px solid rgba(100, 100, 100, 0.25);
-    border-radius: 3px;
-    transition: all 0.3s ease;
-    opacity: 0.8;
-    font-size: 0.42rem;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  padding: 4px 6px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 3px;
+  transition: all 0.3s ease;
+  opacity: 0.8;
+  font-size: 0.42rem;
 }
 
 .social-link:hover {
-    opacity: 1;
-    box-shadow: 0 0 2px rgba(150, 150, 150, 0.35);
-    border-color: rgba(130, 130, 130, 0.45);
+  opacity: 1;
+  color: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 2px rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.45);
 }
 
 /* Responsive design */
