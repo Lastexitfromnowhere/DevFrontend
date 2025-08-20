@@ -152,7 +152,7 @@ footer {
 
 .copyright {
   color: rgba(255, 255, 255, 0.6);
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   margin-bottom: 8px;
   text-align: center;
 }
@@ -175,7 +175,7 @@ footer {
   border-radius: 3px;
   transition: all 0.3s ease;
   opacity: 0.8;
-  font-size: 0.42rem;
+  font-size: 0.5rem;
 }
 
 .social-link:hover {
