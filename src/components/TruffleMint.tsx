@@ -6,7 +6,7 @@ export const TruffleMint: FC = () => {
   const [isHovered, setIsHovered] = useState(false);
 
   const handleClick = () => {
-    window.open('https://rwrdpresale.netlify.app/', '_blank');
+    window.open('https://mint.lastparadox.xyz/', '_blank');
   };
 
   return (
