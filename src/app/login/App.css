@@ -140,6 +140,34 @@ body, html {
 
 /* Particules supprimées pour fond noir simple */
 
+/* Footer styles */
+.social-links {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.social-link {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--foreground);
+    text-decoration: none;
+    padding: 4px 6px;
+    border: 1px solid rgba(100, 100, 100, 0.25);
+    border-radius: 3px;
+    transition: all 0.3s ease;
+    opacity: 0.8;
+    font-size: 0.42rem;
+}
+
+.social-link:hover {
+    opacity: 1;
+    box-shadow: 0 0 2px rgba(150, 150, 150, 0.35);
+    border-color: rgba(130, 130, 130, 0.45);
+}
+
 /* Responsive design */
 @media (max-width: 768px) {
   .auth-container {

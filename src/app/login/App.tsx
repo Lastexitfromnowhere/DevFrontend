@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import './App.css';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
-import { Button, Box, Typography, CircularProgress } from '@mui/material';
+import { Button, Box, Typography, CircularProgress, Link } from '@mui/material';
 import { AccountBalanceWallet } from '@mui/icons-material';
 import { useWalletContext } from '@/contexts/WalletContext';
 import { useRouter } from 'next/navigation';
@@ -343,6 +343,16 @@ function App() {
       
       {/* Particules animées pour effet visuel (CSS uniquement) */}
       <div id="particles-container"></div>
+      
+      <footer>
+        <p className="copyright"> 2024 Last Parad0x vPN — All rights reserved</p>
+        <div className="social-links">
+          <a href="https://discord.gg/w4xvwUQg" target="_blank" rel="noopener noreferrer" className="social-link">Discord</a>
+          <a href="https://x.com/LastParadox__" target="_blank" rel="noopener noreferrer" className="social-link">Twitter</a>
+          <a href="https://github.com/Lastexitfromnowhere" target="_blank" rel="noopener noreferrer" className="social-link">GitHub</a>
+          <Link href="/tokenomics" className="social-link">Tokenomics</Link>
+        </div>
+      </footer>
     </div>
   );
 }
