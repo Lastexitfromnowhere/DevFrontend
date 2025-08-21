@@ -125,21 +125,25 @@ export const connectWithWallet = async (walletAddress) => {
 };
 
 // Fonction pour déconnecter l'utilisateur
-export const logout = () => {
-  // Nettoyer toutes les clés d'authentification
+export const logout = (preserveGoogleSession = false) => {
+  // Nettoyer les tokens d'authentification
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem('auth_token'); // Ancienne clé
   localStorage.removeItem(USER_KEY);
-  localStorage.removeItem(WALLET_ADDRESS_KEY);
-  localStorage.removeItem('walletAddress'); // Clé alternative
   localStorage.removeItem(TOKEN_EXPIRY_KEY);
   localStorage.removeItem('token_expiry'); // Ancienne clé
-  localStorage.removeItem('isGoogleWallet');
-  localStorage.removeItem('isAuthReady');
-  localStorage.removeItem('isConnected');
-  localStorage.removeItem('google_user_id');
-  localStorage.removeItem('google_user_email');
-  localStorage.removeItem('google_user_name');
+  
+  // Si on veut préserver la session Google, ne pas supprimer ces clés
+  if (!preserveGoogleSession) {
+    localStorage.removeItem(WALLET_ADDRESS_KEY);
+    localStorage.removeItem('walletAddress'); // Clé alternative
+    localStorage.removeItem('isGoogleWallet');
+    localStorage.removeItem('isAuthReady');
+    localStorage.removeItem('isConnected');
+    localStorage.removeItem('google_user_id');
+    localStorage.removeItem('google_user_email');
+    localStorage.removeItem('google_user_name');
+  }
 };
 
 // Fonction pour vérifier si l'utilisateur est connecté
@@ -452,6 +456,7 @@ export const checkAuthenticationState = () => {
   const walletAddress = getWalletAddress();
   const tokenExpiresAt = localStorage.getItem(TOKEN_EXPIRY_KEY);
   const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
+  const googleUserId = localStorage.getItem('google_user_id');
   
   // Vérifier si le token existe et n'est pas expiré
   let isTokenValid = false;
@@ -462,12 +467,16 @@ export const checkAuthenticationState = () => {
     
     if (!isTokenValid) {
       console.log('Token JWT expiré, nettoyage automatique');
-      logout(); // Nettoyer complètement
+      // Pour les utilisateurs Google, préserver la session
+      logout(isGoogleWallet);
     }
   }
   
   // Vérifier la correspondance token/wallet
   const tokenWalletMatch = token && walletAddress ? verifyTokenWalletMatch() : false;
+  
+  // Pour les utilisateurs Google, vérifier si on peut régénérer un token
+  const canRegenerateToken = isGoogleWallet && googleUserId && walletAddress && !isTokenValid;
   
   const authState = {
     hasToken: !!token,
@@ -475,6 +484,7 @@ export const checkAuthenticationState = () => {
     isTokenValid,
     tokenWalletMatch,
     isGoogleWallet,
+    canRegenerateToken,
     isAuthenticated: isTokenValid && tokenWalletMatch,
     reason: !isTokenValid && token ? 'token_expired' : null
   };

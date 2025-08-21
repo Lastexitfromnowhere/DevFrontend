@@ -40,14 +40,32 @@ export default function Dashboard() {
   const router = useRouter();
   
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       // Utiliser la nouvelle fonction d'état d'authentification
       const authState = authService.checkAuthenticationState();
       
       console.log('Vérification d\'authentification:', authState);
       
-      // Si le token a expiré, l'utilisateur a déjà été déconnecté automatiquement
-      if ('reason' in authState && authState.reason === 'token_expired') {
+      // Si le token a expiré mais qu'on peut le régénérer (utilisateur Google)
+      if (authState.canRegenerateToken) {
+        console.log('Token expiré pour utilisateur Google, tentative de régénération...');
+        try {
+          const walletAddress = authService.getWalletAddress();
+          if (walletAddress) {
+            const { token, expiresAt } = await authService.generateToken(walletAddress);
+            if (token && expiresAt) {
+              authService.saveToken(token, expiresAt, walletAddress);
+              console.log('Token régénéré avec succès pour utilisateur Google');
+              return; // Ne pas rediriger, l'utilisateur reste connecté
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors de la régénération du token:', error);
+        }
+      }
+      
+      // Si le token a expiré et ne peut pas être régénéré
+      if ('reason' in authState && authState.reason === 'token_expired' && !authState.canRegenerateToken) {
         console.log('Token expiré détecté, redirection vers /login');
         router.push('/login');
         return;
