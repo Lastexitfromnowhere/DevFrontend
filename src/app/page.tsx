@@ -10,6 +10,7 @@ import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 // Assure-toi que lucide-react est bien installé : npm install lucide-react
 // Si tu utilises TypeScript, installe aussi les types : npm install --save-dev @types/react
 import { useWalletContext } from '@/contexts/WalletContext';
+import { authService } from '@/services/authService';
 
 // Components Imports
 import WalletDisclaimer from '@/components/wallet/WalletDisclaimer';
@@ -40,45 +41,27 @@ export default function Dashboard() {
   
   useEffect(() => {
     const checkAuth = () => {
-      const hasJwtToken = localStorage.getItem('jwt_token');
-      const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
-      const walletConnected = isConnected && isAuthReady;
-      const tokenExpiresAt = localStorage.getItem('token_expires_at');
+      // Utiliser la nouvelle fonction d'état d'authentification
+      const authState = authService.checkAuthenticationState();
       
-      // Vérifier si le token JWT n'est pas expiré
-      let isTokenValid = false;
-      if (hasJwtToken && tokenExpiresAt) {
-        const expirationTime = parseInt(tokenExpiresAt);
-        const currentTime = Date.now();
-        isTokenValid = currentTime < expirationTime;
-        
-        if (!isTokenValid) {
-          console.log('JWT token expired, clearing localStorage');
-          localStorage.removeItem('jwt_token');
-          localStorage.removeItem('token_expires_at');
-          localStorage.removeItem('wallet_address');
-          localStorage.removeItem('isGoogleWallet');
-          localStorage.removeItem('isAuthReady');
-          localStorage.removeItem('isConnected');
-        }
+      console.log('Vérification d\'authentification:', authState);
+      
+      // Si le token a expiré, l'utilisateur a déjà été déconnecté automatiquement
+      if (authState.reason === 'token_expired') {
+        console.log('Token expiré détecté, redirection vers /login');
+        router.push('/login');
+        return;
       }
       
-      const isAuthenticated = walletConnected || (hasJwtToken && isTokenValid);
-      
-      console.log('Auth check:', { 
-        hasJwtToken: !!hasJwtToken, 
-        isTokenValid, 
-        isGoogleWallet, 
-        walletConnected, 
-        isAuthenticated 
-      });
+      // Vérifier si l'utilisateur est authentifié
+      const walletConnected = isConnected && isAuthReady;
+      const isAuthenticated = authState.isAuthenticated || walletConnected;
       
       if (!isAuthenticated) {
-        console.log('Redirecting to /login - not authenticated');
-        // Utiliser router.push au lieu de window.location.href pour une meilleure compatibilité
+        console.log('Utilisateur non authentifié, redirection vers /login');
         router.push('/login');
       } else {
-        console.log('User authenticated, hiding login prompt');
+        console.log('Utilisateur authentifié, accès autorisé');
         setShowLoginPrompt(false);
       }
     };

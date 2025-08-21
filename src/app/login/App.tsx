@@ -49,33 +49,23 @@ function App() {
   // Rediriger vers la page d'accueil si déjà connecté
   useEffect(() => {
     const checkAuthAndRedirect = () => {
-      const hasJwtToken = localStorage.getItem('jwt_token');
-      const tokenExpiresAt = localStorage.getItem('token_expires_at');
+      // Utiliser la nouvelle fonction d'état d'authentification
+      const authState = authService.checkAuthenticationState();
       const walletConnected = isConnected && isAuthReady;
       
-      // Vérifier si le token JWT n'est pas expiré
-      let isTokenValid = false;
-      if (hasJwtToken && tokenExpiresAt) {
-        const expirationTime = parseInt(tokenExpiresAt);
-        const currentTime = Date.now();
-        isTokenValid = currentTime < expirationTime;
-        
-        if (!isTokenValid) {
-          console.log('JWT token expired on login page, clearing localStorage');
-          localStorage.removeItem('jwt_token');
-          localStorage.removeItem('token_expires_at');
-          localStorage.removeItem('wallet_address');
-          localStorage.removeItem('isGoogleWallet');
-          localStorage.removeItem('isAuthReady');
-          localStorage.removeItem('isConnected');
-        }
+      console.log('Vérification d\'authentification sur /login:', authState);
+      
+      // Si le token a expiré, ne pas rediriger
+      if (authState.reason === 'token_expired') {
+        console.log('Token expiré sur /login, utilisateur reste sur la page de connexion');
+        return;
       }
       
-      const isAuthenticated = walletConnected || (hasJwtToken && isTokenValid);
+      // Vérifier si l'utilisateur est authentifié
+      const isAuthenticated = authState.isAuthenticated || walletConnected;
       
       if (isAuthenticated) {
         console.log('Utilisateur authentifié sur /login, redirection vers la page d\'accueil');
-        // Utiliser router.push au lieu de window.location.href pour éviter les boucles
         router.push('/');
       }
     };

@@ -3,10 +3,10 @@ import axios from 'axios';
 
 // Utiliser des chemins relatifs pour que le proxy Next.js intercepte les requêtes
 const API_URL = '';
-const TOKEN_KEY = 'auth_token';
+const TOKEN_KEY = 'jwt_token'; // Unifié avec le reste de l'app
 const USER_KEY = 'user_info';
-const WALLET_ADDRESS_KEY = 'wallet_address';
-const TOKEN_EXPIRY_KEY = 'token_expiry';
+const WALLET_ADDRESS_KEY = 'wallet_address'; // Clé principale unifiée
+const TOKEN_EXPIRY_KEY = 'token_expires_at'; // Unifié avec le reste de l'app
 
 // Fonction pour détecter l'origine actuelle
 const getCurrentOrigin = () => {
@@ -126,10 +126,20 @@ export const connectWithWallet = async (walletAddress) => {
 
 // Fonction pour déconnecter l'utilisateur
 export const logout = () => {
+  // Nettoyer toutes les clés d'authentification
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem('auth_token'); // Ancienne clé
   localStorage.removeItem(USER_KEY);
   localStorage.removeItem(WALLET_ADDRESS_KEY);
+  localStorage.removeItem('walletAddress'); // Clé alternative
   localStorage.removeItem(TOKEN_EXPIRY_KEY);
+  localStorage.removeItem('token_expiry'); // Ancienne clé
+  localStorage.removeItem('isGoogleWallet');
+  localStorage.removeItem('isAuthReady');
+  localStorage.removeItem('isConnected');
+  localStorage.removeItem('google_user_id');
+  localStorage.removeItem('google_user_email');
+  localStorage.removeItem('google_user_name');
 };
 
 // Fonction pour vérifier si l'utilisateur est connecté
@@ -139,7 +149,7 @@ export const isAuthenticated = () => {
 
 // Fonction pour obtenir le token JWT
 export const getToken = () => {
-  return localStorage.getItem(TOKEN_KEY);
+  return localStorage.getItem(TOKEN_KEY) || localStorage.getItem('auth_token');
 };
 
 // Fonction pour obtenir les informations de l'utilisateur
@@ -212,7 +222,7 @@ export const isTokenExpired = () => {
 
 // Fonction pour obtenir l'adresse du wallet stockée
 export const getWalletAddress = () => {
-  return localStorage.getItem(WALLET_ADDRESS_KEY);
+  return localStorage.getItem(WALLET_ADDRESS_KEY) || localStorage.getItem('walletAddress');
 };
 
 // Fonction pour obtenir l'adresse du wallet directement depuis le token JWT
@@ -329,9 +339,8 @@ const refreshTokenIfNeeded = async () => {
 // Fonction pour vérifier si le token JWT correspond à l'adresse du wallet
 export const verifyTokenWalletMatch = () => {
   try {
-    // Récupérer l'adresse du wallet actuel
-    const currentWallet = localStorage.getItem(WALLET_ADDRESS_KEY);
-    const walletAddressFromLocalStorage = localStorage.getItem('walletAddress');
+    // Récupérer l'adresse du wallet actuel (essayer les deux clés)
+    const currentWallet = localStorage.getItem(WALLET_ADDRESS_KEY) || localStorage.getItem('walletAddress');
     
     // Récupérer le token JWT
     const token = getToken();
@@ -341,20 +350,24 @@ export const verifyTokenWalletMatch = () => {
       return false;
     }
     
+    if (!currentWallet) {
+      console.log('Aucune adresse de wallet trouvée');
+      return false;
+    }
+    
     // Décoder le token JWT (partie payload)
     const base64Url = token.split('.')[1];
     const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
     const payload = JSON.parse(window.atob(base64));
     
     // Vérifier si l'adresse du wallet dans le token correspond à l'adresse actuelle
-    console.log('Adresse du wallet dans localStorage (wallet_address):', currentWallet);
-    console.log('Adresse du wallet dans localStorage (walletAddress):', walletAddressFromLocalStorage);
+    console.log('Adresse du wallet dans localStorage:', currentWallet);
     console.log('Adresse du wallet dans le token JWT:', payload.walletAddress);
-    console.log('Les adresses correspondent (wallet_address):', currentWallet === payload.walletAddress);
-    console.log('Les adresses correspondent (walletAddress):', walletAddressFromLocalStorage === payload.walletAddress);
     
-    // Vérifier avec les deux clés possibles
-    return currentWallet === payload.walletAddress || walletAddressFromLocalStorage === payload.walletAddress;
+    const isMatch = currentWallet === payload.walletAddress;
+    console.log('Les adresses correspondent:', isMatch);
+    
+    return isMatch;
   } catch (error) {
     console.error('Erreur lors de la vérification du token:', error);
     return false;
@@ -369,7 +382,9 @@ export const saveToken = (token, expiresAt, walletAddress) => {
       localStorage.setItem(TOKEN_EXPIRY_KEY, expiresAt);
     }
     if (walletAddress) {
+      // Synchroniser les deux clés pour éviter les incohérences
       localStorage.setItem(WALLET_ADDRESS_KEY, walletAddress);
+      localStorage.setItem('walletAddress', walletAddress);
     }
   }
 };
@@ -410,7 +425,12 @@ export const getGoogleWalletAssociation = async (googleUserId) => {
 
 // Fonction pour synchroniser toutes les références à l'adresse du wallet
 export const synchronizeWalletAddress = (newWalletAddress) => {
-  // Mettre à jour les clés principales
+  if (!newWalletAddress) {
+    console.warn('Tentative de synchronisation avec une adresse vide');
+    return;
+  }
+  
+  // Mettre à jour les clés principales de manière synchronisée
   localStorage.setItem(WALLET_ADDRESS_KEY, newWalletAddress);
   localStorage.setItem('walletAddress', newWalletAddress);
   
@@ -422,6 +442,49 @@ export const synchronizeWalletAddress = (newWalletAddress) => {
   } catch (error) {
     console.error('Erreur lors de la mise à jour du statut du nœud VPN:', error);
   }
+  
+  console.log('Adresse de wallet synchronisée:', newWalletAddress);
+};
+
+// Fonction pour vérifier l'état d'authentification complet
+export const checkAuthenticationState = () => {
+  const token = getToken();
+  const walletAddress = getWalletAddress();
+  const tokenExpiresAt = localStorage.getItem(TOKEN_EXPIRY_KEY);
+  const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
+  
+  // Vérifier si le token existe et n'est pas expiré
+  let isTokenValid = false;
+  if (token && tokenExpiresAt) {
+    const expirationTime = parseInt(tokenExpiresAt);
+    const currentTime = Date.now();
+    isTokenValid = currentTime < expirationTime;
+    
+    if (!isTokenValid) {
+      console.log('Token JWT expiré, nettoyage automatique');
+      logout(); // Nettoyer complètement
+      return {
+        isAuthenticated: false,
+        reason: 'token_expired'
+      };
+    }
+  }
+  
+  // Vérifier la correspondance token/wallet
+  const tokenWalletMatch = token && walletAddress ? verifyTokenWalletMatch() : false;
+  
+  const authState = {
+    hasToken: !!token,
+    hasWalletAddress: !!walletAddress,
+    isTokenValid,
+    tokenWalletMatch,
+    isGoogleWallet,
+    isAuthenticated: isTokenValid && tokenWalletMatch
+  };
+  
+  console.log('État d\'authentification:', authState);
+  
+  return authState;
 };
 
 // Créer et exporter un objet authService pour la compatibilité
