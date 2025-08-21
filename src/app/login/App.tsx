@@ -56,7 +56,7 @@ function App() {
       console.log('Vérification d\'authentification sur /login:', authState);
       
       // Si le token a expiré, ne pas rediriger
-      if (authState.reason === 'token_expired') {
+      if ('reason' in authState && authState.reason === 'token_expired') {
         console.log('Token expiré sur /login, utilisateur reste sur la page de connexion');
         return;
       }
