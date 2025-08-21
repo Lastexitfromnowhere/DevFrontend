@@ -509,6 +509,7 @@ export const authService = {
   synchronizeWalletAddress,
   saveGoogleWalletAssociation,
   getGoogleWalletAssociation,
+  checkAuthenticationState,
 
   // Créer ou mettre à jour un utilisateur Solana
   createOrUpdateSolanaUser: async (walletAddress, publicKey, userType = 'direct', additionalData = {}) => {
