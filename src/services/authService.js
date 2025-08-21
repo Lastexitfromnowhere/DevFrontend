@@ -463,10 +463,6 @@ export const checkAuthenticationState = () => {
     if (!isTokenValid) {
       console.log('Token JWT expiré, nettoyage automatique');
       logout(); // Nettoyer complètement
-      return {
-        isAuthenticated: false,
-        reason: 'token_expired'
-      };
     }
   }
   
@@ -479,7 +475,8 @@ export const checkAuthenticationState = () => {
     isTokenValid,
     tokenWalletMatch,
     isGoogleWallet,
-    isAuthenticated: isTokenValid && tokenWalletMatch
+    isAuthenticated: isTokenValid && tokenWalletMatch,
+    reason: !isTokenValid && token ? 'token_expired' : null
   };
   
   console.log('État d\'authentification:', authState);

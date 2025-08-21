@@ -47,7 +47,7 @@ export default function Dashboard() {
       console.log('Vérification d\'authentification:', authState);
       
       // Si le token a expiré, l'utilisateur a déjà été déconnecté automatiquement
-      if (authState.reason === 'token_expired') {
+      if ('reason' in authState && authState.reason === 'token_expired') {
         console.log('Token expiré détecté, redirection vers /login');
         router.push('/login');
         return;
