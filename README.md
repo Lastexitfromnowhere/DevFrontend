@@ -1,6 +1,6 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-<!-- Trigger Vercel deployment - Timestamp: 2025-03-29T15:11:52+01:00 -->
+
 
 ## Getting Started
 

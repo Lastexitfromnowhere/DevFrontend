@@ -1,95 +1,1 @@
-"use client";
-
-// src/components/ecosystem/Empowerment.tsx
-import React from 'react';
-import { Modal } from '@/components/ui/Modal';
-import { Card } from '@/components/ui/Card';
-import { 
-  Key, 
-  Shield, 
-  CreditCard, 
-  Users, 
-  Database, 
-  Lock 
-} from 'lucide-react';
-
-const empowermentFeatures = [
-  {
-    icon: Shield,
-    title: "VPN Privacy",
-    description: "Secure your connection with our decentralized VPN network."
-  },
-  {
-    icon: Lock,
-    title: "No-Logs Policy",
-    description: "Your browsing activity is never tracked or stored."
-  },
-  {
-    icon: Key,
-    title: "Encryption",
-    description: "Military-grade encryption protects all your data."
-  },
-  {
-    icon: Database,
-    title: "Decentralized Network",
-    description: "No single point of failure ensures constant availability."
-  },
-  {
-    icon: Users,
-    title: "Community Nodes",
-    description: "Powered by users, for users - a truly peer-to-peer network."
-  },
-  {
-    icon: CreditCard,
-    title: "Token Incentives",
-    description: "Earn rewards for contributing to network security."
-  }
-];
-
-export default function Empowerment({ onClose }: { onClose: () => void }) {
-  return (
-    <Modal
-      isOpen={true}
-      onClose={onClose}
-      title="Last Paradox Network"
-      className="max-w-2xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow"
-    >
-      <div className="space-y-6 animate-fade-in-down">
-        <p className="text-gray-300 bg-black/30 backdrop-blur-sm p-3 rounded-md border border-gray-700/30">
-          Last Paradox Network is committed to providing secure, private, and decentralized VPN services.
-          Here's how we protect your online freedom and privacy:
-        </p>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          {empowermentFeatures.map((feature, index) => {
-            const FeatureIcon = feature.icon;
-            return (
-              <Card 
-                key={index} 
-                className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-black/50"
-              >
-                <div className="flex space-x-3">
-                  <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
-                    <FeatureIcon className="w-5 h-5 text-blue-400 flex-shrink-0" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-white mb-1">
-                      {feature.title}
-                    </h3>
-                    <p className="text-sm text-gray-300">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            );
-          })}
-        </div>
-
-        <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
-          {`// Freedom • Security • Anonymity`}
-        </div>
-      </div>
-    </Modal>
-  );
-}
+"use client";import React from 'react';import { Modal } from '@/components/ui/Modal';import { Card } from '@/components/ui/Card';import {   Key,   Shield,   CreditCard,   Users,   Database,   Lock } from 'lucide-react';const empowermentFeatures = [  {    icon: Shield,    title: "VPN Privacy",    description: "Secure your connection with our decentralized VPN network."  },  {    icon: Lock,    title: "No-Logs Policy",    description: "Your browsing activity is never tracked or stored."  },  {    icon: Key,    title: "Encryption",    description: "Military-grade encryption protects all your data."  },  {    icon: Database,    title: "Decentralized Network",    description: "No single point of failure ensures constant availability."  },  {    icon: Users,    title: "Community Nodes",    description: "Powered by users, for users - a truly peer-to-peer network."  },  {    icon: CreditCard,    title: "Token Incentives",    description: "Earn rewards for contributing to network security."  }];export default function Empowerment({ onClose }: { onClose: () => void }) {  return (    <Modal      isOpen={true}      onClose={onClose}      title="Last Paradox Network"      className="max-w-2xl backdrop-blur-md bg-black/40 border border-gray-700/50 shadow-lg transition-all duration-500 animate-pulse-shadow"    >      <div className="space-y-6 animate-fade-in-down">        <p className="text-gray-300 bg-black/30 backdrop-blur-sm p-3 rounded-md border border-gray-700/30">          Last Paradox Network is committed to providing secure, private, and decentralized VPN services.          Here's how we protect your online freedom and privacy:        </p>        <div className="grid md:grid-cols-2 gap-4">          {empowermentFeatures.map((feature, index) => {            const FeatureIcon = feature.icon;            return (              <Card                 key={index}                 className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg transition-all duration-300 hover:shadow-xl hover:bg-black/50"              >                <div className="flex space-x-3">                  <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">                    <FeatureIcon className="w-5 h-5 text-blue-400 flex-shrink-0" />                  </div>                  <div>                    <h3 className="font-bold text-white mb-1">                      {feature.title}                    </h3>                    <p className="text-sm text-gray-300">                      {feature.description}                    </p>                  </div>                </div>              </Card>            );          })}        </div>        <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">          {`        </div>      </div>    </Modal>  );}

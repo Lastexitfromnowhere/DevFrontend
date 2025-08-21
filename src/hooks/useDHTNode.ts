@@ -1,832 +1,1 @@
-// src/hooks/useDHTNode.ts
-import { useState, useEffect, useRef, useCallback } from 'react';
-import axios from 'axios';
-import { useWalletContext } from '@/contexts/WalletContext';
-import { config } from '@/config/env';
-import * as dhtUtils from '@/utils/dhtUtils'; // Corriger l'importation
-import { authService } from '@/services/authService'; // Ajouter l'importation du service d'authentification
-
-// Définir les types pour les réponses API
-interface DHTNodeStatus {
-  active: boolean;
-  nodeType?: string;
-  nodeId?: string;
-  nodeIp?: string;
-  connectedPeers?: number;
-  storageUsed?: number;
-  totalStorage?: number;
-  uptime?: number;
-  lastUpdated?: string;
-  protocol?: string;
-  wireGuardEnabled?: boolean;  // Indique si WireGuard est activé sur ce nœud
-  wireGuardConfig?: WireGuardConfig;  // Configuration WireGuard si disponible
-}
-
-interface DHTNodeResponse {
-  success: boolean;
-  message?: string;
-  data?: {
-    active: boolean;
-    nodeType?: string;
-    nodeId?: string;
-    nodeIp?: string;
-    connectedPeers?: number;
-    storageUsed?: number;
-    totalStorage?: number;
-    uptime?: number;
-    lastUpdated?: string;
-    protocol?: string;
-    wireGuardEnabled?: boolean;
-    wireGuardConfig?: WireGuardConfig;
-  };
-}
-
-// Interface pour la configuration WireGuard
-interface WireGuardConfig {
-  publicKey: string;
-  privateKey?: string;
-  address: string;
-  port: number;
-  dns?: string[];
-  allowedIPs?: string[];
-  endpoint?: string;
-  persistentKeepalive?: number;
-  status?: 'active' | 'inactive' | 'connecting' | 'error';
-  lastConnected?: string;
-  peerPublicKey?: string;
-  // Champs obligatoires selon le backend
-  serverIp: string;
-  serverPublicKey: string;
-}
-
-interface WireGuardPeer {
-  publicKey: string;
-  allowedIPs: string[];
-  endpoint?: string;
-  persistentKeepalive?: number;
-  lastHandshake?: string;
-  transferRx?: number;
-  transferTx?: number;
-}
-
-// Interface pour les erreurs Axios
-interface AxiosErrorResponse {
-  response?: {
-    status: number;
-    data?: any;
-  };
-  message?: string;
-}
-
-// Configuration de base d'Axios avec logs
-const api = axios.create({
-  baseURL: config.API_BASE_URL,
-  timeout: config.DEFAULT_TIMEOUT,
-  headers: { 'Content-Type': 'application/json' }
-});
-
-// Intercepteur pour ajouter l'adresse du wallet à toutes les requêtes
-api.interceptors.request.use(
-  (config) => {
-    // Récupérer l'adresse du wallet depuis le localStorage
-    const walletAddress = localStorage.getItem('walletAddress');
-    // Récupérer le token JWT depuis le localStorage avec la clé correcte
-    const token = localStorage.getItem('auth_token');
-    
-    // Si l'adresse existe, l'ajouter aux en-têtes
-    if (walletAddress && config.headers) {
-      config.headers['X-Wallet-Address'] = walletAddress;
-      
-      // Utiliser le token JWT s'il existe, sinon utiliser l'adresse du wallet comme fallback
-      if (token) {
-        config.headers['Authorization'] = `Bearer ${token}`;
-        console.log('Intercepteur: Utilisation du token JWT pour l\'authentification');
-      } else {
-        config.headers['Authorization'] = `Bearer ${walletAddress}`;
-        console.warn('Intercepteur: Token JWT non trouvé, utilisation de l\'adresse du wallet comme fallback');
-      }
-    }
-    
-    return config;
-  },
-  (error: unknown) => {
-    return Promise.reject(error);
-  }
-);
-
-// Fonction pour obtenir l'adresse IP locale
-const getLocalIpAddress = async (): Promise<string> => {
-  try {
-    // Essayer de récupérer l'adresse IP depuis le localStorage
-    const storedIp = localStorage.getItem('wireguard_server_ip');
-    if (storedIp) {
-      return storedIp;
-    }
-    
-    // Si pas d'IP stockée, utiliser une valeur par défaut
-    const defaultIp = '10.8.0.1';
-    localStorage.setItem('wireguard_server_ip', defaultIp);
-    return defaultIp;
-  } catch (error) {
-    console.error('Erreur lors de la récupération de l\'adresse IP locale:', error);
-    return '10.8.0.1'; // Valeur par défaut en cas d'erreur
-  }
-};
-
-export function useDHTNode() {
-  // État pour stocker les informations sur le noeud DHT
-  const [status, setStatus] = useState<DHTNodeStatus>({
-    active: false,
-    nodeType: '',
-    nodeId: '',
-    nodeIp: '',
-    connectedPeers: 0,
-    storageUsed: 0,
-    totalStorage: 0,
-    uptime: 0,
-    lastUpdated: '',
-    protocol: '',
-    wireGuardEnabled: false
-  });
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
-  
-  // État pour les configurations WireGuard
-  const [wireGuardConfig, setWireGuardConfig] = useState<WireGuardConfig | null>(null);
-  const [wireGuardNodes, setWireGuardNodes] = useState<WireGuardPeer[]>([]);
-  const [wireGuardLoading, setWireGuardLoading] = useState(false);
-  const [wireGuardError, setWireGuardError] = useState<string | null>(null);
-  
-  // Références pour le polling et les tentatives
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
-  const statusRetryCount = useRef(0);
-  const maxRetryDelay = 60000; // 1 minute maximum entre les tentatives
-  
-  // Contexte du wallet
-  const { isConnected, account } = useWalletContext();
-  
-  // Générer ou récupérer un ID d'appareil unique
-  const getDeviceId = useCallback(() => {
-    const storageKey = 'wind-device-id';
-    let deviceId = localStorage.getItem(storageKey);
-    
-    if (!deviceId) {
-      // Générer un ID unique pour cet appareil
-      deviceId = `device-${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;
-      localStorage.setItem(storageKey, deviceId);
-    }
-    
-    return deviceId;
-  }, []);
-  
-  // Fonction pour récupérer le statut du nœud DHT
-  const fetchStatus = useCallback(async (forceRefresh = false) => {
-    if (!isConnected || !account) return;
-
-    // Si nous ne forçons pas le rafraîchissement et que nous avons un cache récent
-    const now = Date.now();
-    const deviceId = getDeviceId();
-    const cacheKey = `dht-status-${account}-${deviceId}`;
-    
-    const cachedData = localStorage.getItem(cacheKey);
-    
-    // Réduire la durée du cache à 5 secondes au lieu de 30 secondes
-    // et toujours forcer un rafraîchissement au premier chargement
-    if (!forceRefresh && cachedData) {
-      try {
-        const { data, timestamp } = JSON.parse(cachedData);
-        if (now - timestamp < 5000) { // 5 secondes au lieu de 30
-          setStatus(data);
-          return;
-        }
-      } catch (e) {
-        console.error('Erreur lors de la lecture du cache:', e);
-        // En cas d'erreur de parsing, continuer avec la récupération depuis l'API
-      }
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // S'assurer que l'adresse du wallet est correctement synchronisée dans localStorage
-      authService.synchronizeWalletAddress(account);
-      
-      // Rafraîchir le token si nécessaire
-      await authService.refreshTokenIfNeeded();
-      
-      // Régénérer un nouveau token avec l'adresse du wallet connecté
-      try {
-        const { token, expiresAt } = await authService.generateToken(account);
-        authService.saveToken(token, expiresAt, account);
-        console.log('Nouveau token généré pour le wallet:', account);
-      } catch (tokenError) {
-        console.error('Erreur lors de la génération du token:', tokenError);
-      }
-      
-      console.log('Récupération du statut DHT pour le wallet:', account, 'et l\'appareil:', deviceId);
-      
-      // Utiliser getDHTStatusByWallet avec l'adresse du wallet connecté et l'ID de l'appareil
-      const data = await dhtUtils.getDHTStatusByWallet(account, deviceId);
-      
-      console.log('Statut DHT reçu:', data);
-      
-      // Vérifier que la réponse concerne bien le wallet actuel
-      // Cela évite les interférences entre différentes instances de l'application
-      const currentWallet = authService.getWalletAddress();
-      if (currentWallet !== account) {
-        console.log(`La réponse concerne le wallet ${account} mais le wallet actuel est ${currentWallet}. Ignorer cette réponse.`);
-        setLoading(false);
-        return;
-      }
-      
-      if (data.success === false) {
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        // Si pas d'erreur spécifique mais succès = false, définir un statut inactif
-        setStatus({ active: false });
-        // Mettre à jour le cache
-        localStorage.setItem(cacheKey, JSON.stringify({
-          data: { active: false },
-          timestamp: now
-        }));
-        setLoading(false);
-        return;
-      }
-      
-      // Convertir isActive en active pour la cohérence
-      const formattedData = {
-        ...data,
-        active: data.isActive || data.active || false,
-        // Préserver l'état de WireGuard s'il n'est pas explicitement défini dans la réponse
-        wireGuardEnabled: data.wireGuardEnabled !== undefined ? data.wireGuardEnabled : status.wireGuardEnabled
-      };
-      
-      console.log('Données formatées avant mise à jour du statut:', formattedData);
-      
-      try {
-        // Mettre à jour l'état
-        setStatus(formattedData);
-        
-        // Mettre à jour le cache
-        localStorage.setItem(cacheKey, JSON.stringify({
-          data: formattedData,
-          timestamp: now
-        }));
-        
-        console.log('Statut DHT et cache mis à jour avec succès');
-      } catch (updateError) {
-        console.error('Erreur lors de la mise à jour du statut ou du cache:', updateError);
-      }
-    } catch (err: any) {
-      console.error('Failed to check node status:', err);
-      setError(err.message || 'Une erreur est survenue');
-    } finally {
-      setLoading(false);
-    }
-  }, [isConnected, account, getDeviceId]);
-  
-  // Fonction pour démarrer un nœud DHT
-  const startNode = useCallback(async () => {
-    if (!isConnected || !account) {
-      setError('Wallet not connected');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Obtenir l'ID de l'appareil
-      const deviceId = getDeviceId();
-      console.log('Démarrage du nœud DHT pour le wallet:', account, 'et l\'appareil:', deviceId);
-      
-      // Utiliser la fonction startDHTNode avec l'adresse du wallet et l'ID de l'appareil
-      const result = await dhtUtils.startDHTNode(account, deviceId);
-      
-      if (result.success) {
-        console.log('Nœud DHT démarré avec succès');
-        // Forcer le rafraîchissement du statut
-        await fetchStatus(true);
-      } else {
-        throw new Error(result.message || 'Failed to start DHT node');
-      }
-    } catch (err: any) {
-      console.error('Failed to start node:', err);
-      setError(err.message || 'Une erreur est survenue');
-    } finally {
-      setLoading(false);
-    }
-  }, [isConnected, account, fetchStatus, getDeviceId]);
-
-  // Fonction pour arrêter un nœud DHT
-  const stopNode = useCallback(async () => {
-    if (!isConnected || !account) {
-      setError('Wallet not connected');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Obtenir l'ID de l'appareil
-      const deviceId = getDeviceId();
-      console.log('Arrêt du nœud DHT pour le wallet:', account, 'et l\'appareil:', deviceId);
-      
-      // Utiliser la fonction stopDHTNode avec l'adresse du wallet et l'ID de l'appareil
-      const result = await dhtUtils.stopDHTNode(account, deviceId);
-      
-      if (result.success) {
-        console.log('Nœud DHT arrêté avec succès');
-        // Forcer le rafraîchissement du statut
-        await fetchStatus(true);
-      } else {
-        throw new Error(result.message || 'Failed to stop DHT node');
-      }
-    } catch (err: any) {
-      console.error('Failed to stop node:', err);
-      setError(err.message || 'Une erreur est survenue');
-    } finally {
-      setLoading(false);
-    }
-  }, [isConnected, account, fetchStatus, getDeviceId]);
-  
-  // Fonction pour récupérer la configuration WireGuard
-  const fetchWireGuardConfig = useCallback(async () => {
-    if (!isConnected || !account) {
-      setWireGuardError('Wallet not connected');
-      return null;
-    }
-    
-    setWireGuardLoading(true);
-    setWireGuardError(null);
-    
-    try {
-      console.log('Récupération de la configuration WireGuard pour le wallet:', account);
-      
-      // Utiliser l'endpoint correct pour récupérer la configuration WireGuard
-      const response = await api.get(`${config.DHT_API_URL}/dht/wireguard-nodes`, {
-        params: { walletAddress: account }
-      });
-      
-      console.log('Réponse de la récupération des nœuds WireGuard:', response.data);
-      
-      // Vérifier le format de la réponse et extraire les nœuds
-      const responseData = response.data as any; // Utiliser any pour éviter les erreurs de typage
-      const nodes = Array.isArray(responseData) 
-        ? responseData 
-        : (responseData && responseData.nodes && Array.isArray(responseData.nodes)) 
-          ? responseData.nodes 
-          : [];
-      
-      if (nodes.length > 0) {
-        // Si nous avons des nœuds WireGuard, prendre le premier
-        const wireGuardNode = nodes[0];
-        console.log('Nœud WireGuard trouvé:', wireGuardNode);
-        
-        // Construire la configuration WireGuard à partir du nœud
-        const wireGuardConfig: WireGuardConfig = {
-          publicKey: wireGuardNode.publicKey,
-          address: wireGuardNode.ip,
-          port: wireGuardNode.port || 51820,
-          serverIp: wireGuardNode.ip,
-          serverPublicKey: wireGuardNode.publicKey,
-          status: 'active'
-        };
-        
-        setWireGuardConfig(wireGuardConfig);
-        setWireGuardNodes(nodes);
-        
-        // Mettre à jour le statut pour refléter que WireGuard est activé
-        setStatus(prevStatus => ({
-          ...prevStatus,
-          wireGuardEnabled: true,
-          wireGuardConfig: wireGuardConfig,
-          protocol: 'WireGuard'
-        }));
-        
-        return wireGuardConfig;
-      } else {
-        console.log('Aucun nœud WireGuard trouvé pour ce wallet');
-        setWireGuardConfig(null);
-        setWireGuardNodes([]);
-        
-        // Mettre à jour le statut pour refléter que WireGuard n'est pas activé
-        setStatus(prevStatus => ({
-          ...prevStatus,
-          wireGuardEnabled: false,
-          wireGuardConfig: undefined,
-          protocol: 'DHT'
-        }));
-        
-        return null;
-      }
-    } catch (error: unknown) {
-      console.error('Error fetching WireGuard configuration:', error);
-      
-      const axiosError = error as AxiosErrorResponse;
-      if (axiosError.response && axiosError.response.status === 404) {
-        // WireGuard n'est pas configuré
-        setWireGuardConfig(null);
-        setWireGuardNodes([]);
-        setStatus(prevStatus => ({
-          ...prevStatus,
-          wireGuardEnabled: false,
-          wireGuardConfig: undefined,
-          protocol: 'DHT'
-        }));
-      }
-      
-      setWireGuardError(error instanceof Error ? error.message : 'Failed to fetch WireGuard configuration');
-      return null;
-    } finally {
-      setWireGuardLoading(false);
-    }
-  }, [isConnected, account]);
-  
-  // Fonction pour activer WireGuard
-  const enableWireGuard = useCallback(async () => {
-    if (!isConnected || !account) {
-      setWireGuardError('Wallet not connected');
-      return false;
-    }
-    
-    setWireGuardLoading(true);
-    setWireGuardError(null);
-    
-    try {
-      // Vérifier d'abord si un nœud WireGuard existe déjà pour ce wallet
-      console.log('Vérification si un nœud WireGuard existe déjà pour le wallet:', account);
-      
-      try {
-        const existingNodesResponse = await api.get(`${config.DHT_API_URL}/dht/wireguard-nodes`, {
-          params: { walletAddress: account }
-        });
-        
-        console.log('Nœuds WireGuard existants:', existingNodesResponse.data);
-        
-        // Vérifier le format de la réponse et extraire les nœuds
-        const responseData = existingNodesResponse.data as any;
-        const existingNodes = Array.isArray(responseData) 
-          ? responseData 
-          : (responseData && responseData.nodes && Array.isArray(responseData.nodes)) 
-            ? responseData.nodes 
-            : [];
-        
-        // Vérifier si un nœud existe déjà pour ce wallet et ce deviceId
-        const deviceId = getDeviceId();
-        const existingNode = existingNodes.find((node: any) => 
-          node.walletAddress === account && node.deviceId === deviceId
-        );
-        
-        if (existingNode) {
-          console.log('Un nœud WireGuard existe déjà pour ce wallet et cet appareil:', existingNode);
-          
-          // Utiliser la configuration existante
-          await fetchWireGuardConfig();
-          return true;
-        }
-      } catch (error) {
-        console.log('Erreur lors de la vérification des nœuds existants, on continue avec la publication:', error);
-      }
-      
-      // Utiliser une adresse IP publique au lieu de l'adresse IP locale
-      // Pour les tests, on peut utiliser une adresse IP publique fictive ou celle du serveur DHT
-      const serverIp = "46.101.36.247"; // Adresse IP publique du serveur DHT (d'après les logs)
-      
-      // Générer une paire de clés WireGuard si nécessaire
-      let serverPublicKey = localStorage.getItem('wireguard_server_public_key');
-      if (!serverPublicKey) {
-        // Utiliser une clé de démonstration si nous ne pouvons pas en générer une
-        serverPublicKey = 'mPxEu7wjxMmKI3tWzBnEp8/Hs/MUhQEY6S7Iee+NGFI=';
-        localStorage.setItem('wireguard_server_public_key', serverPublicKey);
-      }
-      
-      console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
-      
-      // Récupérer directement le token JWT depuis le localStorage
-      const token = localStorage.getItem('auth_token');
-      
-      // Créer les en-têtes d'authentification
-      const headers: Record<string, string> = {};
-      
-      // Ajouter le token d'authentification s'il existe
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-        console.log('Utilisation du token JWT pour l\'authentification:', token);
-      } else {
-        console.log('Token JWT non trouvé dans localStorage');
-        // Essayer de générer un nouveau token si possible
-        try {
-          await authService.refreshTokenIfNeeded();
-          const newToken = localStorage.getItem('auth_token');
-          if (newToken) {
-            headers['Authorization'] = `Bearer ${newToken}`;
-            console.log('Nouveau token JWT généré:', newToken);
-          } else {
-            console.log('Impossible de générer un nouveau token JWT');
-          }
-        } catch (error) {
-          console.error('Erreur lors de la génération du token JWT:', error);
-        }
-      }
-      
-      // Ajouter l'adresse du wallet dans les en-têtes
-      headers['X-Wallet-Address'] = account;
-      
-      // Récupérer l'ID de l'appareil en utilisant la fonction getDeviceId()
-      const deviceId = getDeviceId();
-      
-      // Préparer les données complètes pour l'API, en s'inspirant de dhtUtils.js
-      const nodeInfo = {
-        walletAddress: account,
-        deviceId,
-        publicKey: serverPublicKey,
-        ip: serverIp,
-        port: 51820, // Port standard WireGuard
-        lastSeen: new Date().toISOString()
-      };
-      
-      // Afficher les données exactes envoyées au serveur
-      console.log('Publication du nœud WireGuard avec les données:', JSON.stringify(nodeInfo));
-      console.log('Headers:', JSON.stringify(headers));
-      
-      try {
-        const response = await axios.post(
-          `${config.DHT_API_URL}/dht/publish-wireguard`, 
-          {
-            ...nodeInfo,
-            publicKey: nodeInfo.publicKey || '',
-            deviceId: await getDeviceId(), // Assurez-vous d'inclure l'ID de l'appareil
-            port: nodeInfo.port || 51820, // Port standard WireGuard
-            lastSeen: new Date().toISOString()
-          },
-          { headers }
-        );
-        
-        console.log('Réponse de l\'activation WireGuard:', response.data);
-        
-        if (response.data && (response.data as { success?: boolean }).success) {
-          // Récupérer la nouvelle configuration
-          await fetchWireGuardConfig();
-          return true;
-        } else {
-          console.log('Réponse du serveur sans succès explicite, mais potentiellement réussie:', response.data);
-          // Tenter quand même de récupérer la configuration
-          await fetchWireGuardConfig();
-          return true;
-        }
-      } catch (error) {
-        console.error('Erreur lors de la publication du nœud WireGuard:', error);
-        
-        // Afficher plus de détails sur l'erreur
-        const axiosError = error as AxiosErrorResponse;
-        if (axiosError.response) {
-          console.error('Détails de l\'erreur:', {
-            status: axiosError.response.status,
-            data: axiosError.response.data
-          });
-          
-          // Afficher le corps complet de la réponse d'erreur
-          console.error('Corps de la réponse d\'erreur:', JSON.stringify(axiosError.response.data));
-          
-          if (axiosError.response.status === 400) {
-            console.error('Erreur 400 :', axiosError.response.data);
-          }
-          
-          // Tenter de récupérer la configuration même en cas d'erreur
-          // Parfois, le nœud est publié mais l'API renvoie une erreur
-          await fetchWireGuardConfig();
-        }
-        
-        setWireGuardError(error instanceof Error ? error.message : 'Failed to enable WireGuard');
-        return false;
-      }
-    } catch (error: unknown) {
-      console.error('Erreur lors de la publication du nœud WireGuard:', error);
-      
-      // Afficher plus de détails sur l'erreur
-      const axiosError = error as AxiosErrorResponse;
-      if (axiosError.response) {
-        console.error('Détails de l\'erreur:', {
-          status: axiosError.response.status,
-          data: axiosError.response.data
-        });
-        
-        // Afficher le corps complet de la réponse d'erreur
-        console.error('Corps de la réponse d\'erreur:', JSON.stringify(axiosError.response.data));
-        
-        if (axiosError.response.status === 400) {
-          console.error('Erreur 400 :', axiosError.response.data);
-        }
-        
-        // Tenter de récupérer la configuration même en cas d'erreur
-        // Parfois, le nœud est publié mais l'API renvoie une erreur
-        await fetchWireGuardConfig();
-      }
-      
-      setWireGuardError(error instanceof Error ? error.message : 'Failed to enable WireGuard');
-      return false;
-    } finally {
-      setWireGuardLoading(false);
-    }
-  }, [isConnected, account, fetchWireGuardConfig]);
-  
-  // Fonction pour désactiver WireGuard
-  const disableWireGuard = useCallback(async () => {
-    if (!isConnected || !account) {
-      setWireGuardError('Wallet not connected');
-      return false;
-    }
-    
-    setWireGuardLoading(true);
-    setWireGuardError(null);
-    
-    try {
-      const response = await api.post('/dht/stop', {});
-      
-      if (response.data && (response.data as { success?: boolean }).success) {
-        // Réinitialiser la configuration
-        setWireGuardConfig(null);
-        
-        // Mettre à jour le statut
-        setStatus(prevStatus => ({
-          ...prevStatus,
-          wireGuardEnabled: false,
-          wireGuardConfig: undefined,
-          protocol: 'DHT'
-        }));
-        
-        return true;
-      } else {
-        throw new Error((response.data as { message?: string })?.message || 'Failed to disable WireGuard');
-      }
-    } catch (error: unknown) {
-      console.error('Error disabling WireGuard:', error);
-      
-      setWireGuardError(error instanceof Error ? error.message : 'Failed to disable WireGuard');
-      return false;
-    } finally {
-      setWireGuardLoading(false);
-    }
-  }, [isConnected, account]);
-  
-  // Fonction pour se connecter à un pair WireGuard
-  const connectToWireGuardPeer = useCallback(async (peerPublicKey: string, endpoint: string) => {
-    if (!isConnected || !account) {
-      setWireGuardError('Wallet not connected');
-      return false;
-    }
-    
-    if (!wireGuardConfig) {
-      setWireGuardError('WireGuard not configured');
-      return false;
-    }
-    
-    setWireGuardLoading(true);
-    setWireGuardError(null);
-    
-    try {
-      // S'assurer que serverIp et serverPublicKey sont disponibles
-      const serverIp = wireGuardConfig.serverIp || await getLocalIpAddress();
-      const serverPublicKey = wireGuardConfig.serverPublicKey || localStorage.getItem('wireguard_server_public_key') || 'mPxEu7wjxMmKI3tWzBnEp8/Hs/MUhQEY6S7Iee+NGFI=';
-      
-      console.log('Connexion à WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);
-      
-      const response = await api.post('/connect-to-node', {
-        hostWalletAddress: account,
-        peerPublicKey,
-        endpoint,
-        serverIp
-      });
-      
-      if (response.data && (response.data as { success?: boolean }).success) {
-        // Mettre à jour la configuration
-        const updatedConfig = {
-          ...wireGuardConfig,
-          peerPublicKey,
-          endpoint,
-          status: 'active' as const,
-          lastConnected: new Date().toISOString(),
-          serverIp,
-          serverPublicKey
-        };
-        
-        setWireGuardConfig(updatedConfig);
-        setStatus(prevStatus => ({
-          ...prevStatus,
-          wireGuardConfig: updatedConfig
-        }));
-        
-        return true;
-      } else {
-        throw new Error((response.data as { message?: string })?.message || 'Failed to connect to WireGuard peer');
-      }
-    } catch (error: unknown) {
-      console.error('Error connecting to WireGuard peer:', error);
-      setWireGuardError(error instanceof Error ? error.message : 'Failed to connect to WireGuard peer');
-      return false;
-    } finally {
-      setWireGuardLoading(false);
-    }
-  }, [isConnected, account, wireGuardConfig]);
-  
-  // Effet pour démarrer le polling lorsque le wallet est connecté
-  useEffect(() => {
-    // Fonction pour démarrer le polling
-    const startPolling = () => {
-      // Arrêter le polling existant si nécessaire
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-      }
-      
-      // Récupérer immédiatement le statut avec force refresh
-      fetchStatus(true);
-      
-      // Configurer le polling toutes les 30 secondes pour aligner avec useDHT
-      pollingInterval.current = setInterval(() => {
-        // Forcer le rafraîchissement à chaque intervalle pour éviter les problèmes de cache
-        fetchStatus(true);
-      }, 30000);
-    };
-    
-    // Si le wallet est connecté, démarrer le polling
-    if (isConnected && account) {
-      startPolling();
-      
-      // Vérifier également la configuration WireGuard au démarrage
-      fetchWireGuardConfig();
-      
-      // Ajouter un gestionnaire d'événement pour le focus de la fenêtre
-      const handleFocus = () => {
-        console.log("Fenêtre a reçu le focus, rafraîchissement forcé du statut DHT");
-        fetchStatus(true);
-      };
-      
-      // Rafraîchir le statut quand la fenêtre reçoit le focus (après un changement d'onglet par exemple)
-      window.addEventListener('focus', handleFocus);
-      
-      // Nettoyer l'écouteur d'événement
-      return () => {
-        window.removeEventListener('focus', handleFocus);
-        if (pollingInterval.current) {
-          clearInterval(pollingInterval.current);
-          pollingInterval.current = null;
-        }
-      };
-    } else {
-      // Si le wallet est déconnecté, arrêter le polling et réinitialiser l'état
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
-        pollingInterval.current = null;
-      }
-      
-      setStatus({
-        active: false,
-        nodeType: '',
-        nodeId: '',
-        nodeIp: '',
-        connectedPeers: 0,
-        storageUsed: 0,
-        totalStorage: 0,
-        uptime: 0,
-        lastUpdated: '',
-        protocol: '',
-        wireGuardEnabled: false
-      });
-      
-      setWireGuardConfig(null);
-      setWireGuardNodes([]);
-      
-      return () => {
-        if (pollingInterval.current) {
-          clearInterval(pollingInterval.current);
-          pollingInterval.current = null;
-        }
-      };
-    }
-  }, [isConnected, account, fetchStatus, fetchWireGuardConfig]);
-  
-  return {
-    status,
-    error,
-    loading,
-    fetchStatus,
-    startNode,
-    stopNode,
-    
-    // Fonctionnalités WireGuard
-    wireGuard: {
-      config: wireGuardConfig,
-      nodes: wireGuardNodes,
-      loading: wireGuardLoading,
-      error: wireGuardError,
-      fetchConfig: fetchWireGuardConfig,
-      enable: enableWireGuard,
-      disable: disableWireGuard,
-      connectToPeer: connectToWireGuardPeer
-    }
-  };
-}
+import { useState, useEffect, useRef, useCallback } from 'react';import axios from 'axios';import { useWalletContext } from '@/contexts/WalletContext';import { config } from '@/config/env';import * as dhtUtils from '@/utils/dhtUtils'; import { authService } from '@/services/authService'; interface DHTNodeStatus {  active: boolean;  nodeType?: string;  nodeId?: string;  nodeIp?: string;  connectedPeers?: number;  storageUsed?: number;  totalStorage?: number;  uptime?: number;  lastUpdated?: string;  protocol?: string;  wireGuardEnabled?: boolean;    wireGuardConfig?: WireGuardConfig;  }interface DHTNodeResponse {  success: boolean;  message?: string;  data?: {    active: boolean;    nodeType?: string;    nodeId?: string;    nodeIp?: string;    connectedPeers?: number;    storageUsed?: number;    totalStorage?: number;    uptime?: number;    lastUpdated?: string;    protocol?: string;    wireGuardEnabled?: boolean;    wireGuardConfig?: WireGuardConfig;  };}interface WireGuardConfig {  publicKey: string;  privateKey?: string;  address: string;  port: number;  dns?: string[];  allowedIPs?: string[];  endpoint?: string;  persistentKeepalive?: number;  status?: 'active' | 'inactive' | 'connecting' | 'error';  lastConnected?: string;  peerPublicKey?: string;  serverIp: string;  serverPublicKey: string;}interface WireGuardPeer {  publicKey: string;  allowedIPs: string[];  endpoint?: string;  persistentKeepalive?: number;  lastHandshake?: string;  transferRx?: number;  transferTx?: number;}interface AxiosErrorResponse {  response?: {    status: number;    data?: any;  };  message?: string;}const api = axios.create({  baseURL: config.API_BASE_URL,  timeout: config.DEFAULT_TIMEOUT,  headers: { 'Content-Type': 'application/json' }});api.interceptors.request.use(  (config) => {    const walletAddress = localStorage.getItem('walletAddress');    const token = localStorage.getItem('auth_token');    if (walletAddress && config.headers) {      config.headers['X-Wallet-Address'] = walletAddress;      if (token) {        config.headers['Authorization'] = `Bearer ${token}`;        console.log('Intercepteur: Utilisation du token JWT pour l\'authentification');      } else {        config.headers['Authorization'] = `Bearer ${walletAddress}`;        console.warn('Intercepteur: Token JWT non trouvé, utilisation de l\'adresse du wallet comme fallback');      }    }    return config;  },  (error: unknown) => {    return Promise.reject(error);  });const getLocalIpAddress = async (): Promise<string> => {  try {    const storedIp = localStorage.getItem('wireguard_server_ip');    if (storedIp) {      return storedIp;    }    const defaultIp = '10.8.0.1';    localStorage.setItem('wireguard_server_ip', defaultIp);    return defaultIp;  } catch (error) {    console.error('Erreur lors de la récupération de l\'adresse IP locale:', error);    return '10.8.0.1';   }};export function useDHTNode() {  const [status, setStatus] = useState<DHTNodeStatus>({    active: false,    nodeType: '',    nodeId: '',    nodeIp: '',    connectedPeers: 0,    storageUsed: 0,    totalStorage: 0,    uptime: 0,    lastUpdated: '',    protocol: '',    wireGuardEnabled: false  });  const [error, setError] = useState<string | null>(null);  const [loading, setLoading] = useState(false);  const [wireGuardConfig, setWireGuardConfig] = useState<WireGuardConfig | null>(null);  const [wireGuardNodes, setWireGuardNodes] = useState<WireGuardPeer[]>([]);  const [wireGuardLoading, setWireGuardLoading] = useState(false);  const [wireGuardError, setWireGuardError] = useState<string | null>(null);  const pollingInterval = useRef<NodeJS.Timeout | null>(null);  const statusRetryCount = useRef(0);  const maxRetryDelay = 60000;   const { isConnected, account } = useWalletContext();  const getDeviceId = useCallback(() => {    const storageKey = 'wind-device-id';    let deviceId = localStorage.getItem(storageKey);    if (!deviceId) {      deviceId = `device-${Math.random().toString(36).substring(2, 15)}-${Date.now().toString(36)}`;      localStorage.setItem(storageKey, deviceId);    }    return deviceId;  }, []);  const fetchStatus = useCallback(async (forceRefresh = false) => {    if (!isConnected || !account) return;    const now = Date.now();    const deviceId = getDeviceId();    const cacheKey = `dht-status-${account}-${deviceId}`;    const cachedData = localStorage.getItem(cacheKey);    if (!forceRefresh && cachedData) {      try {        const { data, timestamp } = JSON.parse(cachedData);        if (now - timestamp < 5000) {           setStatus(data);          return;        }      } catch (e) {        console.error('Erreur lors de la lecture du cache:', e);      }    }    setLoading(true);    setError(null);    try {      authService.synchronizeWalletAddress(account);      await authService.refreshTokenIfNeeded();      try {        const { token, expiresAt } = await authService.generateToken(account);        authService.saveToken(token, expiresAt, account);        console.log('Nouveau token généré pour le wallet:', account);      } catch (tokenError) {        console.error('Erreur lors de la génération du token:', tokenError);      }      console.log('Récupération du statut DHT pour le wallet:', account, 'et l\'appareil:', deviceId);      const data = await dhtUtils.getDHTStatusByWallet(account, deviceId);      console.log('Statut DHT reçu:', data);      const currentWallet = authService.getWalletAddress();      if (currentWallet !== account) {        console.log(`La réponse concerne le wallet ${account} mais le wallet actuel est ${currentWallet}. Ignorer cette réponse.`);        setLoading(false);        return;      }      if (data.success === false) {        if (data.error) {          throw new Error(data.error);        }        setStatus({ active: false });        localStorage.setItem(cacheKey, JSON.stringify({          data: { active: false },          timestamp: now        }));        setLoading(false);        return;      }      const formattedData = {        ...data,        active: data.isActive || data.active || false,        wireGuardEnabled: data.wireGuardEnabled !== undefined ? data.wireGuardEnabled : status.wireGuardEnabled      };      console.log('Données formatées avant mise à jour du statut:', formattedData);      try {        setStatus(formattedData);        localStorage.setItem(cacheKey, JSON.stringify({          data: formattedData,          timestamp: now        }));        console.log('Statut DHT et cache mis à jour avec succès');      } catch (updateError) {        console.error('Erreur lors de la mise à jour du statut ou du cache:', updateError);      }    } catch (err: any) {      console.error('Failed to check node status:', err);      setError(err.message || 'Une erreur est survenue');    } finally {      setLoading(false);    }  }, [isConnected, account, getDeviceId]);  const startNode = useCallback(async () => {    if (!isConnected || !account) {      setError('Wallet not connected');      return;    }    setLoading(true);    setError(null);    try {      const deviceId = getDeviceId();      console.log('Démarrage du nœud DHT pour le wallet:', account, 'et l\'appareil:', deviceId);      const result = await dhtUtils.startDHTNode(account, deviceId);      if (result.success) {        console.log('Nœud DHT démarré avec succès');        await fetchStatus(true);      } else {        throw new Error(result.message || 'Failed to start DHT node');      }    } catch (err: any) {      console.error('Failed to start node:', err);      setError(err.message || 'Une erreur est survenue');    } finally {      setLoading(false);    }  }, [isConnected, account, fetchStatus, getDeviceId]);  const stopNode = useCallback(async () => {    if (!isConnected || !account) {      setError('Wallet not connected');      return;    }    setLoading(true);    setError(null);    try {      const deviceId = getDeviceId();      console.log('Arrêt du nœud DHT pour le wallet:', account, 'et l\'appareil:', deviceId);      const result = await dhtUtils.stopDHTNode(account, deviceId);      if (result.success) {        console.log('Nœud DHT arrêté avec succès');        await fetchStatus(true);      } else {        throw new Error(result.message || 'Failed to stop DHT node');      }    } catch (err: any) {      console.error('Failed to stop node:', err);      setError(err.message || 'Une erreur est survenue');    } finally {      setLoading(false);    }  }, [isConnected, account, fetchStatus, getDeviceId]);  const fetchWireGuardConfig = useCallback(async () => {    if (!isConnected || !account) {      setWireGuardError('Wallet not connected');      return null;    }    setWireGuardLoading(true);    setWireGuardError(null);    try {      console.log('Récupération de la configuration WireGuard pour le wallet:', account);      const response = await api.get(`${config.DHT_API_URL}/dht/wireguard-nodes`, {        params: { walletAddress: account }      });      console.log('Réponse de la récupération des nœuds WireGuard:', response.data);      const responseData = response.data as any;       const nodes = Array.isArray(responseData)         ? responseData         : (responseData && responseData.nodes && Array.isArray(responseData.nodes))           ? responseData.nodes           : [];      if (nodes.length > 0) {        const wireGuardNode = nodes[0];        console.log('Nœud WireGuard trouvé:', wireGuardNode);        const wireGuardConfig: WireGuardConfig = {          publicKey: wireGuardNode.publicKey,          address: wireGuardNode.ip,          port: wireGuardNode.port || 51820,          serverIp: wireGuardNode.ip,          serverPublicKey: wireGuardNode.publicKey,          status: 'active'        };        setWireGuardConfig(wireGuardConfig);        setWireGuardNodes(nodes);        setStatus(prevStatus => ({          ...prevStatus,          wireGuardEnabled: true,          wireGuardConfig: wireGuardConfig,          protocol: 'WireGuard'        }));        return wireGuardConfig;      } else {        console.log('Aucun nœud WireGuard trouvé pour ce wallet');        setWireGuardConfig(null);        setWireGuardNodes([]);        setStatus(prevStatus => ({          ...prevStatus,          wireGuardEnabled: false,          wireGuardConfig: undefined,          protocol: 'DHT'        }));        return null;      }    } catch (error: unknown) {      console.error('Error fetching WireGuard configuration:', error);      const axiosError = error as AxiosErrorResponse;      if (axiosError.response && axiosError.response.status === 404) {        setWireGuardConfig(null);        setWireGuardNodes([]);        setStatus(prevStatus => ({          ...prevStatus,          wireGuardEnabled: false,          wireGuardConfig: undefined,          protocol: 'DHT'        }));      }      setWireGuardError(error instanceof Error ? error.message : 'Failed to fetch WireGuard configuration');      return null;    } finally {      setWireGuardLoading(false);    }  }, [isConnected, account]);  const enableWireGuard = useCallback(async () => {    if (!isConnected || !account) {      setWireGuardError('Wallet not connected');      return false;    }    setWireGuardLoading(true);    setWireGuardError(null);    try {      console.log('Vérification si un nœud WireGuard existe déjà pour le wallet:', account);      try {        const existingNodesResponse = await api.get(`${config.DHT_API_URL}/dht/wireguard-nodes`, {          params: { walletAddress: account }        });        console.log('Nœuds WireGuard existants:', existingNodesResponse.data);        const responseData = existingNodesResponse.data as any;        const existingNodes = Array.isArray(responseData)           ? responseData           : (responseData && responseData.nodes && Array.isArray(responseData.nodes))             ? responseData.nodes             : [];        const deviceId = getDeviceId();        const existingNode = existingNodes.find((node: any) =>           node.walletAddress === account && node.deviceId === deviceId        );        if (existingNode) {          console.log('Un nœud WireGuard existe déjà pour ce wallet et cet appareil:', existingNode);          await fetchWireGuardConfig();          return true;        }      } catch (error) {        console.log('Erreur lors de la vérification des nœuds existants, on continue avec la publication:', error);      }      const serverIp = "46.101.36.247";       let serverPublicKey = localStorage.getItem('wireguard_server_public_key');      if (!serverPublicKey) {        serverPublicKey = 'mPxEu7wjxMmKI3tWzBnEp8/Hs/MUhQEY6S7Iee+NGFI=';        localStorage.setItem('wireguard_server_public_key', serverPublicKey);      }      console.log('Activation de WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);      const token = localStorage.getItem('auth_token');      const headers: Record<string, string> = {};      if (token) {        headers['Authorization'] = `Bearer ${token}`;        console.log('Utilisation du token JWT pour l\'authentification:', token);      } else {        console.log('Token JWT non trouvé dans localStorage');        try {          await authService.refreshTokenIfNeeded();          const newToken = localStorage.getItem('auth_token');          if (newToken) {            headers['Authorization'] = `Bearer ${newToken}`;            console.log('Nouveau token JWT généré:', newToken);          } else {            console.log('Impossible de générer un nouveau token JWT');          }        } catch (error) {          console.error('Erreur lors de la génération du token JWT:', error);        }      }      headers['X-Wallet-Address'] = account;      const deviceId = getDeviceId();      const nodeInfo = {        walletAddress: account,        deviceId,        publicKey: serverPublicKey,        ip: serverIp,        port: 51820,         lastSeen: new Date().toISOString()      };      console.log('Publication du nœud WireGuard avec les données:', JSON.stringify(nodeInfo));      console.log('Headers:', JSON.stringify(headers));      try {        const response = await axios.post(          `${config.DHT_API_URL}/dht/publish-wireguard`,           {            ...nodeInfo,            publicKey: nodeInfo.publicKey || '',            deviceId: await getDeviceId(),             port: nodeInfo.port || 51820,             lastSeen: new Date().toISOString()          },          { headers }        );        console.log('Réponse de l\'activation WireGuard:', response.data);        if (response.data && (response.data as { success?: boolean }).success) {          await fetchWireGuardConfig();          return true;        } else {          console.log('Réponse du serveur sans succès explicite, mais potentiellement réussie:', response.data);          await fetchWireGuardConfig();          return true;        }      } catch (error) {        console.error('Erreur lors de la publication du nœud WireGuard:', error);        const axiosError = error as AxiosErrorResponse;        if (axiosError.response) {          console.error('Détails de l\'erreur:', {            status: axiosError.response.status,            data: axiosError.response.data          });          console.error('Corps de la réponse d\'erreur:', JSON.stringify(axiosError.response.data));          if (axiosError.response.status === 400) {            console.error('Erreur 400 :', axiosError.response.data);          }          await fetchWireGuardConfig();        }        setWireGuardError(error instanceof Error ? error.message : 'Failed to enable WireGuard');        return false;      }    } catch (error: unknown) {      console.error('Erreur lors de la publication du nœud WireGuard:', error);      const axiosError = error as AxiosErrorResponse;      if (axiosError.response) {        console.error('Détails de l\'erreur:', {          status: axiosError.response.status,          data: axiosError.response.data        });        console.error('Corps de la réponse d\'erreur:', JSON.stringify(axiosError.response.data));        if (axiosError.response.status === 400) {          console.error('Erreur 400 :', axiosError.response.data);        }        await fetchWireGuardConfig();      }      setWireGuardError(error instanceof Error ? error.message : 'Failed to enable WireGuard');      return false;    } finally {      setWireGuardLoading(false);    }  }, [isConnected, account, fetchWireGuardConfig]);  const disableWireGuard = useCallback(async () => {    if (!isConnected || !account) {      setWireGuardError('Wallet not connected');      return false;    }    setWireGuardLoading(true);    setWireGuardError(null);    try {      const response = await api.post('/dht/stop', {});      if (response.data && (response.data as { success?: boolean }).success) {        setWireGuardConfig(null);        setStatus(prevStatus => ({          ...prevStatus,          wireGuardEnabled: false,          wireGuardConfig: undefined,          protocol: 'DHT'        }));        return true;      } else {        throw new Error((response.data as { message?: string })?.message || 'Failed to disable WireGuard');      }    } catch (error: unknown) {      console.error('Error disabling WireGuard:', error);      setWireGuardError(error instanceof Error ? error.message : 'Failed to disable WireGuard');      return false;    } finally {      setWireGuardLoading(false);    }  }, [isConnected, account]);  const connectToWireGuardPeer = useCallback(async (peerPublicKey: string, endpoint: string) => {    if (!isConnected || !account) {      setWireGuardError('Wallet not connected');      return false;    }    if (!wireGuardConfig) {      setWireGuardError('WireGuard not configured');      return false;    }    setWireGuardLoading(true);    setWireGuardError(null);    try {      const serverIp = wireGuardConfig.serverIp || await getLocalIpAddress();      const serverPublicKey = wireGuardConfig.serverPublicKey || localStorage.getItem('wireguard_server_public_key') || 'mPxEu7wjxMmKI3tWzBnEp8/Hs/MUhQEY6S7Iee+NGFI=';      console.log('Connexion à WireGuard avec serverIp:', serverIp, 'et serverPublicKey:', serverPublicKey);      const response = await api.post('/connect-to-node', {        hostWalletAddress: account,        peerPublicKey,        endpoint,        serverIp      });      if (response.data && (response.data as { success?: boolean }).success) {        const updatedConfig = {          ...wireGuardConfig,          peerPublicKey,          endpoint,          status: 'active' as const,          lastConnected: new Date().toISOString(),          serverIp,          serverPublicKey        };        setWireGuardConfig(updatedConfig);        setStatus(prevStatus => ({          ...prevStatus,          wireGuardConfig: updatedConfig        }));        return true;      } else {        throw new Error((response.data as { message?: string })?.message || 'Failed to connect to WireGuard peer');      }    } catch (error: unknown) {      console.error('Error connecting to WireGuard peer:', error);      setWireGuardError(error instanceof Error ? error.message : 'Failed to connect to WireGuard peer');      return false;    } finally {      setWireGuardLoading(false);    }  }, [isConnected, account, wireGuardConfig]);  useEffect(() => {    const startPolling = () => {      if (pollingInterval.current) {        clearInterval(pollingInterval.current);      }      fetchStatus(true);      pollingInterval.current = setInterval(() => {        fetchStatus(true);      }, 30000);    };    if (isConnected && account) {      startPolling();      fetchWireGuardConfig();      const handleFocus = () => {        console.log("Fenêtre a reçu le focus, rafraîchissement forcé du statut DHT");        fetchStatus(true);      };      window.addEventListener('focus', handleFocus);      return () => {        window.removeEventListener('focus', handleFocus);        if (pollingInterval.current) {          clearInterval(pollingInterval.current);          pollingInterval.current = null;        }      };    } else {      if (pollingInterval.current) {        clearInterval(pollingInterval.current);        pollingInterval.current = null;      }      setStatus({        active: false,        nodeType: '',        nodeId: '',        nodeIp: '',        connectedPeers: 0,        storageUsed: 0,        totalStorage: 0,        uptime: 0,        lastUpdated: '',        protocol: '',        wireGuardEnabled: false      });      setWireGuardConfig(null);      setWireGuardNodes([]);      return () => {        if (pollingInterval.current) {          clearInterval(pollingInterval.current);          pollingInterval.current = null;        }      };    }  }, [isConnected, account, fetchStatus, fetchWireGuardConfig]);  return {    status,    error,    loading,    fetchStatus,    startNode,    stopNode,    wireGuard: {      config: wireGuardConfig,      nodes: wireGuardNodes,      loading: wireGuardLoading,      error: wireGuardError,      fetchConfig: fetchWireGuardConfig,      enable: enableWireGuard,      disable: disableWireGuard,      connectToPeer: connectToWireGuardPeer    }  };}

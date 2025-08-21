@@ -1,68 +1,1 @@
-import React from "react";
-import { HelpCircle, ShieldCheck, Globe, RefreshCcw, Wallet, Server } from "lucide-react";
-import { Card } from "@/components/ui/Card";
-
-interface QuestionProps {
-  icon: React.ElementType;
-  question: string;
-  answer: React.ReactNode;
-}
-
-const Question = ({ icon: Icon, question, answer }: QuestionProps) => (
-  <Card className="mb-6" variant="hover">
-    <div className="space-y-2">
-      <h2 className="text-xl font-semibold flex items-center gap-2 text-blue-400">
-        <Icon className="w-5 h-5 text-blue-300" />
-        {question}
-      </h2>
-      <p className="text-gray-300 leading-relaxed">{answer}</p>
-    </div>
-  </Card>
-);
-
-const questions: QuestionProps[] = [
-  {
-    icon: HelpCircle,
-    question: "What is Wind VPN?",
-    answer: "Wind VPN is a decentralized VPN platform that allows users to connect securely to the internet or become node hosts to earn rewards."
-  },
-  {
-    icon: ShieldCheck,
-    question: "Is Wind VPN safe and private?",
-    answer: "Absolutely. We never store logs, track activity, or collect personal data. Your wallet is your only identity."
-  },
-  {
-    icon: Wallet,
-    question: "How are rewards distributed?",
-    answer: "Rewards are based on your uptime and node activity. You can claim daily bonuses and monitor your rewards through the dashboard."
-  },
-  {
-    icon: Server,
-    question: "Can I host a VPN node?",
-    answer: "Yes! If you have a stable internet connection and meet the requirements, you can run a node from the desktop app and earn credits or tokens."
-  },
-  {
-    icon: Globe,
-    question: "Which regions are supported?",
-    answer: "The network is global. As more users host nodes, new regions will become available. You can connect to the nearest or most performant one."
-  },
-  {
-    icon: RefreshCcw,
-    question: "Can the system be updated?",
-    answer: "Yes, we're in active development. The dashboard, reward mechanics, and protocols may evolve to improve performance and fairness."
-  }
-];
-
-export default function FAQ() {
-  return (
-    <div className="container max-w-4xl mx-auto px-4 py-10">
-      <h1 className="text-3xl font-bold text-center text-blue-400 mb-8">
-        Frequently Asked Questions
-      </h1>
-
-      {questions.map((q, index) => (
-        <Question key={index} {...q} />
-      ))}
-    </div>
-  );
-}
+import React from "react";import { HelpCircle, ShieldCheck, Globe, RefreshCcw, Wallet, Server } from "lucide-react";import { Card } from "@/components/ui/Card";interface QuestionProps {  icon: React.ElementType;  question: string;  answer: React.ReactNode;}const Question = ({ icon: Icon, question, answer }: QuestionProps) => (  <Card className="mb-6" variant="hover">    <div className="space-y-2">      <h2 className="text-xl font-semibold flex items-center gap-2 text-blue-400">        <Icon className="w-5 h-5 text-blue-300" />        {question}      </h2>      <p className="text-gray-300 leading-relaxed">{answer}</p>    </div>  </Card>);const questions: QuestionProps[] = [  {    icon: HelpCircle,    question: "What is Wind VPN?",    answer: "Wind VPN is a decentralized VPN platform that allows users to connect securely to the internet or become node hosts to earn rewards."  },  {    icon: ShieldCheck,    question: "Is Wind VPN safe and private?",    answer: "Absolutely. We never store logs, track activity, or collect personal data. Your wallet is your only identity."  },  {    icon: Wallet,    question: "How are rewards distributed?",    answer: "Rewards are based on your uptime and node activity. You can claim daily bonuses and monitor your rewards through the dashboard."  },  {    icon: Server,    question: "Can I host a VPN node?",    answer: "Yes! If you have a stable internet connection and meet the requirements, you can run a node from the desktop app and earn credits or tokens."  },  {    icon: Globe,    question: "Which regions are supported?",    answer: "The network is global. As more users host nodes, new regions will become available. You can connect to the nearest or most performant one."  },  {    icon: RefreshCcw,    question: "Can the system be updated?",    answer: "Yes, we're in active development. The dashboard, reward mechanics, and protocols may evolve to improve performance and fairness."  }];export default function FAQ() {  return (    <div className="container max-w-4xl mx-auto px-4 py-10">      <h1 className="text-3xl font-bold text-center text-blue-400 mb-8">        Frequently Asked Questions      </h1>      {questions.map((q, index) => (        <Question key={index} {...q} />      ))}    </div>  );}

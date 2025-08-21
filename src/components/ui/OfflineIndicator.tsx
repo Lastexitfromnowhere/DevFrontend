@@ -1,63 +1,1 @@
-'use client';
-
-import React, { useEffect, useState } from 'react';
-import { apiService } from '@/services/apiService';
-
-interface OfflineIndicatorProps {
-  className?: string;
-}
-
-/**
- * Composant qui affiche un indicateur lorsque l'application est hors ligne
- */
-export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className = '' }) => {
-  const [isOffline, setIsOffline] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    // S'abonner aux changements d'état de connexion
-    const unsubscribe = apiService.addOfflineListener((offline) => {
-      setIsOffline(offline);
-      
-      if (offline) {
-        setIsVisible(true);
-      } else {
-        // Attendre un peu avant de cacher l'indicateur pour que l'utilisateur puisse voir qu'il est de nouveau en ligne
-        setTimeout(() => {
-          setIsVisible(false);
-        }, 3000);
-      }
-    });
-    
-    return () => unsubscribe();
-  }, []);
-
-  if (!isVisible) {
-    return null;
-  }
-
-  return (
-    <div 
-      className={`fixed bottom-4 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 ${
-        isOffline 
-          ? 'bg-red-600 text-white' 
-          : 'bg-green-600 text-white'
-      } ${className}`}
-    >
-      <div className="flex items-center space-x-2">
-        <div 
-          className={`w-3 h-3 rounded-full ${
-            isOffline ? 'bg-red-300 animate-pulse' : 'bg-green-300'
-          }`}
-        />
-        <span className="font-medium">
-          {isOffline 
-            ? 'Mode hors ligne - Certaines fonctionnalités sont limitées' 
-            : 'Connexion rétablie'}
-        </span>
-      </div>
-    </div>
-  );
-};
-
-export default OfflineIndicator;
+'use client';import React, { useEffect, useState } from 'react';import { apiService } from '@/services/apiService';interface OfflineIndicatorProps {  className?: string;}export const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({ className = '' }) => {  const [isOffline, setIsOffline] = useState(false);  const [isVisible, setIsVisible] = useState(false);  useEffect(() => {    const unsubscribe = apiService.addOfflineListener((offline) => {      setIsOffline(offline);      if (offline) {        setIsVisible(true);      } else {        setTimeout(() => {          setIsVisible(false);        }, 3000);      }    });    return () => unsubscribe();  }, []);  if (!isVisible) {    return null;  }  return (    <div       className={`fixed bottom-4 right-4 z-50 p-3 rounded-lg shadow-lg transition-all duration-300 ${        isOffline           ? 'bg-red-600 text-white'           : 'bg-green-600 text-white'      } ${className}`}    >      <div className="flex items-center space-x-2">        <div           className={`w-3 h-3 rounded-full ${            isOffline ? 'bg-red-300 animate-pulse' : 'bg-green-300'          }`}        />        <span className="font-medium">          {isOffline             ? 'Mode hors ligne - Certaines fonctionnalités sont limitées'             : 'Connexion rétablie'}        </span>      </div>    </div>  );};export default OfflineIndicator;

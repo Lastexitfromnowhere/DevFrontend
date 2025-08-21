@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -15,17 +19,39 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@components/*": ["./src/components/*"],
-      "@ui/*": ["./src/components/ui/*"],
-      "@hooks/*": ["./src/hooks/*"],
-      "@contexts/*": ["./src/contexts/*"],
-      "@types/*": ["./src/types/*"],
-      "@lib/*": ["./src/lib/*"],
-      "@utils/*": ["./src/utils/*"],
-      "@styles/*": ["./src/styles/*"],
-      "@vpn/*": ["./src/components/vpn/*"],
-      "@api/*": ["./src/app/api/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@components/*": [
+        "./src/components/*"
+      ],
+      "@ui/*": [
+        "./src/components/ui/*"
+      ],
+      "@hooks/*": [
+        "./src/hooks/*"
+      ],
+      "@contexts/*": [
+        "./src/contexts/*"
+      ],
+      "@types/*": [
+        "./src/types/*"
+      ],
+      "@lib/*": [
+        "./src/lib/*"
+      ],
+      "@utils/*": [
+        "./src/utils/*"
+      ],
+      "@styles/*": [
+        "./src/styles/*"
+      ],
+      "@vpn/*": [
+        "./src/components/vpn/*"
+      ],
+      "@api/*": [
+        "./src/app/api/*"
+      ]
     },
     "plugins": [
       {
@@ -40,5 +66,7 @@
     ".next/types/**/*.ts",
     "src/**/*"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules"
+  ]
 }

@@ -4,7 +4,6 @@ import { Card } from '@/components/ui/Card';
 import { DashboardBadge } from '@/components/ui/DashboardBadge';
 import type { Project } from '@/types/ecosystem.types';
 import Image from 'next/image';
-
 const projects: Project[] = [
   {
     id: 1,
@@ -12,7 +11,7 @@ const projects: Project[] = [
     category: 'AI Agent',
     description: 'Join the GetGrass testnet and earn GRASS tokens through active participation',
     logo: '/grass.jpg',
-    link: 'https://app.getgrass.io/register/?referralCode=6YkiJ8oFRgT4s9O',
+    link: 'https:
     rewards: 'Early Access + GRASS Tokens'
   },
   {
@@ -21,7 +20,7 @@ const projects: Project[] = [
     category: 'Identity',
     description: 'Building decentralized identity verification with HEART token rewards',
     logo: '/human.jpg',
-    link: 'https://testnet.humanity.org/login?ref=undacore',
+    link: 'https:
     rewards: 'HEART Testnet Tokens'
   },
   {
@@ -30,12 +29,10 @@ const projects: Project[] = [
    category: 'AI Agent',
    description: 'Community-driven network with innovative reward mechanisms',
    logo: 'bless.jpg',
-   link: 'https://bless.network/dashboard?ref=LHT6I4',
+   link: 'https:
    rewards: 'BLESS Network Tokens'
  },
-  // ... autres projets
 ];
-
 export default function ProjectsGrid() {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -51,7 +48,6 @@ export default function ProjectsGrid() {
                 filter: 'blur(3px)'
               }}
             />
-            
             <div className="relative z-10">
               <div className="flex items-start justify-between mb-4">
                 <div className="w-16 h-16 flex items-center justify-center bg-black/50 backdrop-blur-sm rounded-lg border border-gray-700/30">
@@ -65,7 +61,6 @@ export default function ProjectsGrid() {
                 </div>
                 <DashboardBadge variant="info">{project.category}</DashboardBadge>
               </div>
-  
               <div className="space-y-4">
                 <h3 className="text-xl font-medium text-white">
                   {project.name}
@@ -78,7 +73,6 @@ export default function ProjectsGrid() {
                   <p className="text-blue-400 font-medium">{project.rewards}</p>
                 </div>
               </div>
-  
               <a 
                 href={project.link}
                 target="_blank" 
