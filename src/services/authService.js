@@ -461,7 +461,7 @@ export const checkAuthenticationState = () => {
   // Vérifier si le token existe et n'est pas expiré
   let isTokenValid = false;
   if (token && tokenExpiresAt) {
-    const expirationTime = parseInt(tokenExpiresAt);
+    const expirationTime = parseInt(tokenExpiresAt) * 1000; // Convertir en millisecondes
     const currentTime = Date.now();
     isTokenValid = currentTime < expirationTime;
     
