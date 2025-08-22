@@ -1,1 +1,62 @@
-"use client";import React from 'react';interface DashboardBadgeProps {  variant?: 'success' | 'warning' | 'danger' | 'info' | 'default';  size?: 'sm' | 'md' | 'lg';  children: React.ReactNode;  className?: string;  dot?: boolean;}export const DashboardBadge: React.FC<DashboardBadgeProps> = ({  variant = 'default',  size = 'md',  children,  className = '',  dot = false}) => {  const baseStyles = "inline-flex items-center rounded-full font-medium";  const variantStyles = {    success: "bg-green-500/20 text-green-400 border border-green-500/30",    warning: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",    danger: "bg-red-500/20 text-red-400 border border-red-500/30",    info: "bg-blue-500/20 text-blue-400 border border-blue-500/30",    default: "bg-gray-700/50 text-gray-300 border border-gray-600/30"  };  const sizeStyles = {    sm: "text-xs px-2 py-0.5",    md: "text-sm px-2.5 py-0.5",    lg: "text-base px-3 py-1"  };  const dotSize = {    sm: "h-1.5 w-1.5",    md: "h-2 w-2",    lg: "h-2.5 w-2.5"  };  return (    <span      className={`        ${baseStyles}        ${variantStyles[variant]}        ${sizeStyles[size]}        ${className}      `}    >      {dot && (        <span           className={`            ${dotSize[size]}             rounded-full             ${variant === 'success' ? 'bg-green-400' :               variant === 'warning' ? 'bg-yellow-400' :               variant === 'danger' ? 'bg-red-400' :               variant === 'info' ? 'bg-blue-400' : 'bg-gray-400'            }            mr-1.5          `}        />      )}      {children}    </span>  );};export default DashboardBadge;
+"use client";
+import React from 'react';
+interface DashboardBadgeProps {
+  variant?: 'success' | 'warning' | 'danger' | 'info' | 'default';
+  size?: 'sm' | 'md' | 'lg';
+  children: React.ReactNode;
+  className?: string;
+  dot?: boolean;
+}
+export const DashboardBadge: React.FC<DashboardBadgeProps> = ({
+  variant = 'default',
+  size = 'md',
+  children,
+  className = '',
+  dot = false
+}) => {
+  const baseStyles = "inline-flex items-center rounded-full font-medium";
+  const variantStyles = {
+    success: "bg-green-500/20 text-green-400 border border-green-500/30",
+    warning: "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30",
+    danger: "bg-red-500/20 text-red-400 border border-red-500/30",
+    info: "bg-blue-500/20 text-blue-400 border border-blue-500/30",
+    default: "bg-gray-700/50 text-gray-300 border border-gray-600/30"
+  };
+  const sizeStyles = {
+    sm: "text-xs px-2 py-0.5",
+    md: "text-sm px-2.5 py-0.5",
+    lg: "text-base px-3 py-1"
+  };
+  const dotSize = {
+    sm: "h-1.5 w-1.5",
+    md: "h-2 w-2",
+    lg: "h-2.5 w-2.5"
+  };
+  return (
+    <span
+      className={`
+        ${baseStyles}
+        ${variantStyles[variant]}
+        ${sizeStyles[size]}
+        ${className}
+      `}
+    >
+      {dot && (
+        <span 
+          className={`
+            ${dotSize[size]} 
+            rounded-full 
+            ${variant === 'success' ? 'bg-green-400' : 
+              variant === 'warning' ? 'bg-yellow-400' : 
+              variant === 'danger' ? 'bg-red-400' : 
+              variant === 'info' ? 'bg-blue-400' : 'bg-gray-400'
+            }
+            mr-1.5
+          `}
+        />
+      )}
+      {children}
+    </span>
+  );
+};
+export default DashboardBadge;

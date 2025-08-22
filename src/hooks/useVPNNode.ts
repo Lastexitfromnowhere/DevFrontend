@@ -1,1 +1,895 @@
-import { useState, useEffect, useRef, useCallback } from 'react';import axios from 'axios';import { useWalletContext } from '@/contexts/WalletContext';import { config } from '@/config/env';const api = axios.create({  baseURL: config.API_BASE_URL,  timeout: config.DEFAULT_TIMEOUT,  headers: {    'Content-Type': 'application/json'  }});api.interceptors.request.use(  (config) => {    const walletAddress = localStorage.getItem('walletAddress');    if (walletAddress) {      if (!config.headers) {        config.headers = {};      }      config.headers['X-Wallet-Address'] = walletAddress;    }    return config;  },  (error) => {    return Promise.reject(error);  });api.interceptors.request.use(request => {  console.log('Starting Request:', {    url: request.url,    method: request.method,    data: request.data,    headers: request.headers,    baseURL: request.baseURL  });  const walletAddress = localStorage.getItem('walletAddress');  if (walletAddress) {    if (!request.headers) {      request.headers = {};    }    request.headers['Authorization'] = `Bearer ${walletAddress}`;  }  return request;}, error => {  console.error('Request Error:', error);  return Promise.reject(error);});api.interceptors.response.use(  response => {    console.log('Response:', {      status: response.status,      data: response.data,      headers: response.headers    });    return response;  },  error => {    console.error('Response Error:', {      message: error.message,      response: error.response?.data,      status: error.response?.status,      headers: error.response?.headers,      config: error.config    });    return Promise.reject(error);  });interface VPNNode {  walletAddress: string;  ip: string;  location?: {    country: string;    region: string;  };  performance?: {    bandwidth: number;    latency: number;  };  connectedUsers?: number;  lastSeen?: string;  score?: number;  lastChecked?: string;  status?: string;}interface DHTStatus {  active: boolean;  bandwidth: number;  earnings: number;  connectedUsers: number;  lastUpdated: string;  nodeIp: string | null;  walletAddress?: string;  connectionQuality?: number;  rewardTier?: string;  healthStatus?: 'healthy' | 'warning' | 'critical';  uptime?: number;  connectedToNode?: string;   metrics?: {    uptime: number;    latency: number;    packetLoss: number;  };  nodeType?: 'HOST' | 'USER';  performance?: {    bandwidth: number;    latency: number;    packetLoss: number;  };  status?: string;   connectedClients?: Array<{    connectionId?: string;    walletAddress: string;    ip?: string;    connectedSince: string;    lastActivity?: string;  }>;}export function useVPNNode() {  const { isConnected, account } = useWalletContext();  const getInitialState = (): DHTStatus => {    if (typeof window === 'undefined') {      return {        active: false,        bandwidth: 0,        earnings: 0,        connectedUsers: 0,        lastUpdated: new Date().toISOString(),        nodeIp: null      };    }    const savedState = localStorage.getItem('vpnNodeStatus');    if (savedState) {      try {        const parsedState = JSON.parse(savedState);        return {          ...parsedState,          active: false,          nodeIp: null,          connectedToNode: null        };      } catch (e) {        console.error('Error parsing saved VPN node state:', e);      }    }    return {      active: false,      bandwidth: 0,      earnings: 0,      connectedUsers: 0,      lastUpdated: new Date().toISOString().toString(),      nodeIp: null    };  };  const [status, setStatus] = useState<DHTStatus>(getInitialState());  const [isLoading, setIsLoading] = useState(false);  const [error, setError] = useState<string | null>(null);  const [availableNodes, setAvailableNodes] = useState<VPNNode[]>([]);  const [isLoadingNodes, setIsLoadingNodes] = useState(false);  const statusRetryCount = useRef(0);  const startRetryCount = useRef(0);  const stopRetryCount = useRef(0);  const maxRetryDelay = 60000;   const resetAuthState = useCallback(() => {    localStorage.removeItem('vpnNodeStatus');    localStorage.removeItem('walletAddress');    setStatus(getInitialState());    setError(null);  }, []);  const testConnection = async (): Promise<boolean> => {    try {      console.log('Testing server connection...');      const response = await api.get('health', {        timeout: 10000       });      return (response.data as { status?: string }).status === 'healthy';    } catch (error) {      console.error('Server connection test failed:', error);      return false;    }  };  const fetchNodeStatus = useCallback(async () => {    if (!isConnected || !account) {      setError('Wallet not connected');      return;    }    setIsLoading(true);    try {      if (statusRetryCount.current > 5) {        console.warn('Nombre maximum de tentatives atteint, attente avant la prochaine vérification');        statusRetryCount.current = 0;         setIsLoading(false);        return;      }      const now = new Date();      const lastStatusCheck = localStorage.getItem('lastStatusCheck');      if (lastStatusCheck) {        const lastCheck = new Date(lastStatusCheck);        const timeSinceLastCheck = now.getTime() - lastCheck.getTime();        if (timeSinceLastCheck < 15000) {          const cachedStatus = localStorage.getItem('vpnNodeStatus');          if (cachedStatus) {            try {              const parsedStatus = JSON.parse(cachedStatus);              if (parsedStatus.walletAddress === account) {                console.log('Utilisation du cache de statut (moins de 15 secondes)', parsedStatus);                setStatus(parsedStatus);                setIsLoading(false);                return;              }            } catch (e) {              console.error('Error parsing saved VPN node state:', e);            }          }        }      }      localStorage.setItem('lastStatusCheck', now.toISOString());      const response = await api.get('dht/status', {        headers: {          'X-Wallet-Address': account        },        params: {          walletAddress: account        }      });      console.log('Status response:', response.data);      if ((response.data as { success?: boolean }).success) {        const nodeData = response.data as {          active?: boolean;          status?: string;          clientIP?: string;          ip?: string;          connectedUsers?: number;          performance?: {            bandwidth?: number;            latency?: number;            packetLoss?: number;          };          stats?: {            uptime?: number;            earnings?: number;          };          nodeType?: string;          connectedClients?: Array<{            connectionId?: string;            walletAddress: string;            ip?: string;            connectedSince: string;            lastActivity?: string;          }>;        };        const updatedStatus = {          ...status,          active: nodeData.active || false,           status: nodeData.status || 'INACTIVE',           nodeIp: nodeData.clientIP || nodeData.ip || null,           connectedUsers: nodeData.connectedUsers || 0,          bandwidth: nodeData.performance?.bandwidth || 0,          uptime: nodeData.stats?.uptime || 0,          earnings: nodeData.stats?.earnings || 0,          lastUpdated: new Date().toISOString().toString(),          nodeType: (status.nodeType || nodeData.nodeType || 'USER') as 'HOST' | 'USER',          performance: {            bandwidth: nodeData.performance?.bandwidth || 0,            latency: nodeData.performance?.latency || 0,            packetLoss: nodeData.performance?.packetLoss || 0          },          connectedClients: nodeData.connectedClients || []        };        if (updatedStatus.status === 'ACTIVE' && !updatedStatus.active) {          console.log('Correcting inconsistency: status is ACTIVE but active is false');          updatedStatus.active = true;        } else if (updatedStatus.status === 'INACTIVE' && updatedStatus.active) {          console.log('Correcting inconsistency: status is INACTIVE but active is true');          updatedStatus.active = false;        }        setStatus(updatedStatus);        localStorage.setItem('vpnNodeStatus', JSON.stringify({          ...updatedStatus,          walletAddress: account        }));        setError(null);      }    } catch (error: any) {      console.error('Failed to check node status:', error);      if (error.response?.status === 401) {        setError('Erreur d\'authentification. Veuillez vous reconnecter avec votre wallet.');        localStorage.removeItem('walletAddress');         resetAuthState();      } else if (error.response?.status === 404) {        setError('Service non trouvé. Le serveur est peut-être en cours de maintenance.');      } else if (error.response?.status === 429) {        console.warn('Rate limit atteint, utilisation des données en cache');        const cachedStatus = localStorage.getItem('vpnNodeStatus');        if (cachedStatus) {          try {            const parsedStatus = JSON.parse(cachedStatus);            const lastUpdated = new Date(parsedStatus.lastUpdated);            const now = new Date();            const timeSinceLastUpdate = now.getTime() - lastUpdated.getTime();            if (timeSinceLastUpdate < 600000 && parsedStatus.walletAddress === account) {              console.log('Utilisation des données en cache (moins de 10 minutes)', parsedStatus);              setStatus(parsedStatus);            }          } catch (e) {            console.error('Error parsing saved VPN node state:', e);          }        }        const backoffDelay = Math.min(          (Math.pow(2, statusRetryCount.current) * 5000) + (Math.random() * 5000),           maxRetryDelay        );        statusRetryCount.current += 1;        console.log(`Nouvelle tentative dans ${Math.round(backoffDelay/1000)} secondes`);        setTimeout(fetchNodeStatus, backoffDelay);      } else {        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors de la vérification du statut');      }    } finally {      setIsLoading(false);    }  }, [isConnected, account, status, statusRetryCount, maxRetryDelay, resetAuthState]);  const fetchAvailableNodesFromHook = async (forceRefresh = false) => {    try {      const now = new Date();      const lastUpdate = localStorage.getItem('lastNodesUpdate');      const cacheTimeout = 30 * 1000;       if (!forceRefresh && lastUpdate) {        const lastUpdateTime = new Date(lastUpdate);        const timeDiff = now.getTime() - lastUpdateTime.getTime();        if (timeDiff < cacheTimeout) {          const cachedNodes = localStorage.getItem('availableNodesCache');          if (cachedNodes) {            try {              const parsedNodes = JSON.parse(cachedNodes);              console.log('Utilisation du cache de nœuds (moins de 30 secondes)', parsedNodes);              return parsedNodes;            } catch (e) {              console.error('Erreur lors de l\'analyse du cache de nœuds:', e);            }          }        }      }      const randomDelay = Math.floor(Math.random() * 300) + 50;       await new Promise(resolve => setTimeout(resolve, randomDelay));      const response = await api.get('dht/available-nodes', {        headers: {          'X-Wallet-Address': account || localStorage.getItem('walletAddress') || ''        }      });      if ((response.data as { success?: boolean }).success) {        const nodes = (response.data as { nodes?: any[] }).nodes || [];        console.log('Nœuds reçus du serveur:', nodes);        const validNodes = nodes.filter((node: any) => {          if (!node.walletAddress) {            console.log('Nœud rejeté - pas d\'adresse wallet');            return false;          }          if (node.lastSeen) {            const lastSeenDate = new Date(node.lastSeen);            const diffMs = now.getTime() - lastSeenDate.getTime();            const diffMins = Math.floor(diffMs / 60000);            if (diffMins >= 15) {               console.log(`Nœud rejeté - trop ancien (${diffMins} minutes):`, node.walletAddress);              return false;            }          } else {            console.log('Nœud rejeté - pas de lastSeen:', node.walletAddress);            return false;           }          const isOwnNode = node.walletAddress === account;          const isHostMode = localStorage.getItem('vpnNodeIsHost') === 'true';          if (isOwnNode && isHostMode) {            console.log('Nœud propre filtré de la liste des disponibles (mode hôte):', node.walletAddress);            return false;          }          return true;        });        console.log('Nœuds valides après filtrage:', validNodes);        const nodesWithTimestamp = validNodes.map((node: any) => ({          ...node,          lastChecked: now.toISOString()        }));        localStorage.setItem('availableNodesCache', JSON.stringify(nodesWithTimestamp));        localStorage.setItem('lastNodesUpdate', now.toISOString());        return nodesWithTimestamp;      } else {        throw new Error('Failed to fetch available nodes');      }    } catch (error: any) {      console.error('Error fetching available nodes:', error);      if (error.response?.status === 429) {        console.warn('Rate limit atteint, utilisation des données en cache');        const cachedNodes = localStorage.getItem('availableNodesCache');        if (cachedNodes) {          try {            return JSON.parse(cachedNodes);          } catch (e) {            console.error('Erreur lors de l\'analyse du cache de nœuds:', e);          }        }      }      return [];    }  };  const connectToNode = async (nodeWalletAddress: string) => {    if (!isConnected || !account) {      setError('Wallet not connected');      return false;    }    setIsLoading(true);    try {      if (status.active && status.connectedToNode && status.connectedToNode !== nodeWalletAddress) {        console.log('Déjà connecté à un autre nœud. Déconnexion automatique...');        const disconnectSuccess = await disconnectFromNode();        if (!disconnectSuccess) {          console.error('Échec de la déconnexion automatique');          setError('Échec de la déconnexion du nœud actuel. Veuillez réessayer.');          setIsLoading(false);          return false;        }        console.log('Déconnexion réussie, connexion au nouveau nœud...');      }      const response = await api.post('connect', {        clientWalletAddress: account,        hostWalletAddress: nodeWalletAddress      });      if ((response.data as { success?: boolean }).success) {        const updatedStatus = {          ...status,          active: true,          nodeIp: (response.data as { nodeIp?: string }).nodeIp || null,          connectedToNode: nodeWalletAddress,          lastUpdated: new Date().toISOString().toString()        };        setStatus(updatedStatus);        localStorage.setItem('vpnNodeStatus', JSON.stringify({          ...updatedStatus,          walletAddress: account        }));        console.log('Connexion réussie au nœud:', nodeWalletAddress);        console.log('Statut mis à jour:', updatedStatus);        setError(null);        return true;      } else {        setError((response.data as { message?: string }).message || 'Failed to connect to node');        return false;      }    } catch (error) {      console.error('Error connecting to node:', error);      setError((error as any).response?.data?.message || (error as any).message || 'Failed to connect to node');      return false;    } finally {      setIsLoading(false);    }  };  const startNode = async (isHost = false) => {    if (!isConnected || !account) {      setError('Wallet not connected');      return;    }    setIsLoading(true);    try {      const isServerUp = await testConnection();      if (!isServerUp) {        throw new Error('Le serveur VPN est actuellement indisponible. Veuillez réessayer plus tard.');      }      console.log('Starting node for wallet:', account);      const response = await api.post('dht/connect', {        walletAddress: account,        nodeInfo: {          country: 'France',          region: 'Île-de-France',          coordinates: [48.8566, 2.3522]        },        isHost: isHost       });      console.log('Start node response:', response.data);      const responseData = response.data as {        success?: boolean;        ip?: string;        bandwidth?: number;      };      if (responseData.success) {        const newStatus = {          ...status,          active: true,          nodeIp: responseData.ip || null,          bandwidth: responseData.bandwidth || 0,          lastUpdated: new Date().toISOString().toString(),          walletAddress: account,          nodeType: isHost ? 'HOST' as const : 'USER' as const         };        setStatus(newStatus);        localStorage.setItem('vpnNodeStatus', JSON.stringify(newStatus));        setError(null);        startRetryCount.current = 0;      } else {        throw new Error((responseData as { message?: string }).message || 'Failed to start node');      }    } catch (error: any) {      console.error('Failed to start node:', error);      if (error.response?.status === 401) {        setError('Erreur d\'authentification. Veuillez vous reconnecter avec votre wallet.');        localStorage.removeItem('vpnNodeStatus');         localStorage.removeItem('walletAddress');         resetAuthState();      } else if (error.response?.status === 404) {        setError('Service non trouvé. Le serveur est peut-être en cours de maintenance.');      } else if (error.response?.status === 429) {        console.warn('Rate limit atteint, nouvelle tentative avec backoff exponentiel');        const backoffDelay = Math.min(          (Math.pow(2, startRetryCount.current) * 1000) + (Math.random() * 1000),           maxRetryDelay        );        startRetryCount.current += 1;        console.log(`Nouvelle tentative dans ${Math.round(backoffDelay/1000)} secondes`);        setTimeout(startNode, backoffDelay);      } else {        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors du démarrage du nœud');      }    } finally {      setIsLoading(false);    }  };  const stopNode = async () => {    if (!isConnected || !account) {      setError('Wallet not connected');      return false;    }    setIsLoading(true);    try {      const isServerUp = await testConnection();      if (!isServerUp) {        throw new Error('Le serveur VPN est actuellement indisponible. Veuillez réessayer plus tard.');      }      console.log('Stopping node for wallet:', account);      const response = await api.post('dht/disconnect', {        walletAddress: account      });      console.log('Stop node response:', response.data);      if ((response.data as { success?: boolean }).success) {        const currentNodeType = status.nodeType;        const newStatus = {          ...status,          active: false,          lastUpdated: new Date().toISOString().toString(),          nodeType: currentNodeType        };        setStatus(newStatus);        localStorage.setItem('vpnNodeStatus', JSON.stringify(newStatus));        setError(null);        stopRetryCount.current = 0;        return true;      } else {        setError((response.data as { message?: string }).message || 'Failed to stop node');        return false;      }    } catch (error: any) {      console.error('Failed to stop node:', error);      if (error.response?.status === 401) {        setError('Erreur d\'authentification. Veuillez vous reconnecter avec votre wallet.');        localStorage.removeItem('vpnNodeStatus');         localStorage.removeItem('walletAddress');         resetAuthState();      } else if (error.response?.status === 404) {        setError('Service non trouvé. Le serveur est peut-être en cours de maintenance.');      } else if (error.response?.status === 429) {        console.warn('Rate limit atteint, nouvelle tentative avec backoff exponentiel');        const backoffDelay = Math.min(          (Math.pow(2, stopRetryCount.current) * 1000) + (Math.random() * 1000),           maxRetryDelay        );        stopRetryCount.current += 1;        console.log(`Nouvelle tentative dans ${Math.round(backoffDelay/1000)} secondes`);        setTimeout(stopNode, backoffDelay);      } else {        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors de l\'arrêt du nœud');      }      return false;    } finally {      setIsLoading(false);    }  };  const disconnectFromNode = async () => {    if (!isConnected || !account) {      setError('Wallet not connected');      return false;    }    setIsLoading(true);    try {      const isServerUp = await testConnection();      if (!isServerUp) {        throw new Error('The VPN server is currently unavailable. Please try again later.');      }      console.log('Disconnecting client from node for wallet:', account);      const response = await api.post('dht/client-disconnect', {        clientWalletAddress: account      });      console.log('Disconnect client response:', response.data);      if ((response.data as { success?: boolean }).success) {        const newStatus = {          ...status,          active: false,          connectedToNode: undefined,          nodeIp: null,          lastUpdated: new Date().toISOString().toString()        };        setStatus(newStatus);        localStorage.setItem('vpnNodeStatus', JSON.stringify(newStatus));        setTimeout(() => {          fetchNodeStatus();        }, 1000);        setError(null);        return true;      } else {        setError((response.data as { message?: string }).message || 'Failed to disconnect from node');        return false;      }    } catch (error: any) {      console.error('Failed to disconnect from node:', error);      if (error.response?.status === 401) {        setError('Authentication error. Please reconnect with your wallet.');      } else if (error.response?.status === 404) {        setError('Service not found. The server may be under maintenance.');      } else if (error.response?.status === 429) {        console.warn('Rate limit reached, using cached data');        const cachedStatus = localStorage.getItem('vpnNodeStatus');        if (cachedStatus) {          try {            const parsedStatus = JSON.parse(cachedStatus);            setStatus({              ...parsedStatus,              active: false,              connectedToNode: undefined            });            return true;          } catch (e) {            console.error('Error parsing cached status:', e);          }        }      } else {        setError((error.response?.data as { message?: string }).message || error.message || 'Error disconnecting from node');      }      return false;    } finally {      setIsLoading(false);    }  };  const fetchConnectedClients = async () => {    if (!isConnected || !account) {      setError('Wallet not connected');      return [];    }    setIsLoading(true);    try {      const response = await api.get('dht/connected-clients', {        headers: {          'X-Wallet-Address': account        }      });      if ((response.data as { success?: boolean }).success) {        const responseData = response.data as {          success?: boolean;          connectedClients?: any[];          totalConnections?: number;        };        setStatus(prevStatus => ({          ...prevStatus,          connectedClients: responseData.connectedClients || [],          connectedUsers: responseData.totalConnections || 0        }));        return responseData.connectedClients || [];      } else {        throw new Error((response.data as { message?: string }).message || 'Failed to fetch connected clients');      }    } catch (error: any) {      console.error('Error fetching connected clients:', error);      setError((error.response?.data as { message?: string }).message || error.message || 'Error fetching connected clients');      return [];    } finally {      setIsLoading(false);    }  };  const disconnectClient = async (clientWalletAddress: string): Promise<boolean> => {    if (!account) {      setError('Wallet not connected');      return false;    }    setIsLoading(true);    try {      const response = await api.post('dht/disconnect-client', {        hostWalletAddress: account,        clientWalletAddress: clientWalletAddress      });      const responseData = response.data as { success?: boolean };      if (responseData.success) {        setStatus(prevStatus => {          const updatedClients = (prevStatus.connectedClients || [])            .filter(client => client.walletAddress !== clientWalletAddress);          return {            ...prevStatus,            connectedClients: updatedClients,            connectedUsers: (prevStatus.connectedUsers || 1) - 1          };        });        return true;      } else {        setError((responseData as { message?: string }).message || 'Failed to disconnect client');        return false;      }    } catch (error: any) {      console.error('Error disconnecting client:', error);      setError((error.response?.data as { message?: string }).message || error.message || 'Error disconnecting client');      return false;    } finally {      setIsLoading(false);    }  };  useEffect(() => {    if (isConnected && account) {      localStorage.setItem('walletAddress', account);      const savedState = localStorage.getItem('vpnNodeStatus');      if (savedState) {        try {          const parsedState = JSON.parse(savedState);          if (parsedState.walletAddress === account) {            setStatus(parsedState);          }        } catch (e) {          console.error('Error parsing saved VPN node state:', e);        }      }      console.log('Vérification de l\'état du nœud au démarrage');      const timer = setTimeout(() => {        fetchNodeStatus();      }, 2000);      return () => clearTimeout(timer);    } else {      localStorage.removeItem('walletAddress');      setStatus({        active: false,        bandwidth: 0,        earnings: 0,        connectedUsers: 0,        lastUpdated: new Date().toISOString().toString(),        nodeIp: null      });    }  }, [isConnected, account]);  useEffect(() => {    if (isConnected && account) {      fetchNodeStatus();      const interval = setInterval(() => {        fetchNodeStatus();      }, 30000);       return () => clearInterval(interval);    }  }, [isConnected, account, fetchNodeStatus]);  useEffect(() => {    if (status.active && status.nodeType) {      const interval = setInterval(() => {      }, 60000);       return () => clearInterval(interval);    }  }, [status.active, status.nodeType]);  const fetchAvailableNodes = async (forceRefresh: boolean = false, useDemoNodesAsFallback: boolean = true): Promise<VPNNode[]> => {    const now = new Date();    console.log('Début fetchAvailableNodes, forceRefresh:', forceRefresh, 'useDemoNodesAsFallback:', useDemoNodesAsFallback);    if (!forceRefresh) {      const cachedNodes = localStorage.getItem('availableNodesCache');      const lastUpdate = localStorage.getItem('lastNodesUpdate');      if (cachedNodes && lastUpdate) {        const lastUpdateTime = new Date(lastUpdate);        const diffInMinutes = (now.getTime() - lastUpdateTime.getTime()) / (1000 * 60);        if (diffInMinutes < 5) {          console.log('Utilisation du cache de nœuds (moins de 5 minutes)');          try {            const parsedNodes = JSON.parse(cachedNodes);            console.log('Nœuds en cache:', parsedNodes);            return parsedNodes;          } catch (error) {            console.error('Erreur lors de l\'analyse du cache:', error);          }        }      }    }    const randomDelay = Math.floor(Math.random() * 300) + 50;     await new Promise(resolve => setTimeout(resolve, randomDelay));    try {      console.log('Envoi de la requête API pour les nœuds disponibles');      const response = await axios.get(`${config.API_BASE_URL}/nodes`, {        headers: {          'X-Wallet-Address': account || localStorage.getItem('walletAddress') || '',          'Authorization': `Bearer ${localStorage.getItem('token')}`        },        params: {          walletAddress: account || localStorage.getItem('walletAddress') || ''        }      });      console.log('Réponse complète du serveur:', response.data);      let nodes: VPNNode[] = [];      if (Array.isArray(response.data)) {        console.log('La réponse est un tableau');        nodes = response.data;      } else if (response.data && typeof response.data === 'object' && 'nodes' in response.data && Array.isArray((response.data as any).nodes)) {        console.log('La réponse est un objet avec une propriété nodes');        nodes = (response.data as any).nodes;      } else {        console.log('Format de réponse inattendu, aucun nœud trouvé');        if (useDemoNodesAsFallback) {          console.log('Génération de nœuds de démonstration comme solution de repli');          nodes = generateDemoNodes(5);        } else {          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');          nodes = [];        }      }      if (nodes.length === 0) {        console.log('Aucun nœud trouvé dans la réponse API');        if (useDemoNodesAsFallback) {          console.log('Génération de nœuds de démonstration comme solution de repli');          nodes = generateDemoNodes(5);        } else {          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');        }      } else {        console.log(`${nodes.length} nœuds trouvés dans la réponse API`);      }      localStorage.setItem('availableNodesCache', JSON.stringify(nodes));      localStorage.setItem('lastNodesUpdate', now.toISOString());      return nodes;    } catch (error) {      console.error('Erreur lors de la récupération des nœuds disponibles:', error);      const cachedNodes = localStorage.getItem('availableNodesCache');      if (cachedNodes) {        try {          console.log('Utilisation du cache suite à une erreur');          const parsedNodes = JSON.parse(cachedNodes);          return parsedNodes;        } catch (e) {          console.error('Erreur lors de l\'analyse du cache après erreur API:', e);        }      }      if (useDemoNodesAsFallback) {        console.log('Génération de nœuds de démonstration suite à une erreur');        return generateDemoNodes(5);      } else {        console.log('Aucun nœud de démonstration généré malgré l\'erreur car l\'option est désactivée');        return [];      }    }  };  const generateDemoNodes = (count: number = 5): VPNNode[] => {    console.log(`Génération de ${count} nœuds de démonstration`);    const demoNodes: VPNNode[] = [];    for (let i = 0; i < count; i++) {      const nodeId = `demo-node-${i}-${Math.random().toString(36).substring(2, 8)}`;      demoNodes.push({        walletAddress: `demo-wallet-${i}-${Math.random().toString(36).substring(2, 8)}`,        ip: `192.168.1.${10 + i}`,        location: {          country: 'France',          region: 'Île-de-France'        },        performance: {          bandwidth: Math.floor(Math.random() * 1000),          latency: Math.floor(Math.random() * 100)        },        connectedUsers: Math.floor(Math.random() * 10),        lastSeen: new Date().toISOString(),        score: Math.random() * 5,        lastChecked: new Date().toISOString(),        status: 'ACTIVE'      });    }    console.log('Nœuds de démonstration générés:', demoNodes);    return demoNodes;  };  return {    status,    isLoading,    error,    startNode,    stopNode,    fetchNodeStatus,    testConnection,    resetAuthState,    availableNodes,    isLoadingNodes,    fetchAvailableNodes,    connectToNode,    disconnectFromNode,    fetchConnectedClients,    disconnectClient  };}
+import { useState, useEffect, useRef, useCallback } from 'react';
+import axios from 'axios';
+import { useWalletContext } from '@/contexts/WalletContext';
+import { config } from '@/config/env';
+const api = axios.create({
+  baseURL: config.API_BASE_URL,
+  timeout: config.DEFAULT_TIMEOUT,
+  headers: {
+    'Content-Type': 'application/json'
+  }
+});
+api.interceptors.request.use(
+  (config) => {
+    const walletAddress = localStorage.getItem('walletAddress');
+    if (walletAddress) {
+      if (!config.headers) {
+        config.headers = {};
+      }
+      config.headers['X-Wallet-Address'] = walletAddress;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+api.interceptors.request.use(request => {
+  console.log('Starting Request:', {
+    url: request.url,
+    method: request.method,
+    data: request.data,
+    headers: request.headers,
+    baseURL: request.baseURL
+  });
+  const walletAddress = localStorage.getItem('walletAddress');
+  if (walletAddress) {
+    if (!request.headers) {
+      request.headers = {};
+    }
+    request.headers['Authorization'] = `Bearer ${walletAddress}`;
+  }
+  return request;
+}, error => {
+  console.error('Request Error:', error);
+  return Promise.reject(error);
+});
+api.interceptors.response.use(
+  response => {
+    console.log('Response:', {
+      status: response.status,
+      data: response.data,
+      headers: response.headers
+    });
+    return response;
+  },
+  error => {
+    console.error('Response Error:', {
+      message: error.message,
+      response: error.response?.data,
+      status: error.response?.status,
+      headers: error.response?.headers,
+      config: error.config
+    });
+    return Promise.reject(error);
+  }
+);
+interface VPNNode {
+  walletAddress: string;
+  ip: string;
+  location?: {
+    country: string;
+    region: string;
+  };
+  performance?: {
+    bandwidth: number;
+    latency: number;
+  };
+  connectedUsers?: number;
+  lastSeen?: string;
+  score?: number;
+  lastChecked?: string;
+  status?: string;
+}
+interface DHTStatus {
+  active: boolean;
+  bandwidth: number;
+  earnings: number;
+  connectedUsers: number;
+  lastUpdated: string;
+  nodeIp: string | null;
+  walletAddress?: string;
+  connectionQuality?: number;
+  rewardTier?: string;
+  healthStatus?: 'healthy' | 'warning' | 'critical';
+  uptime?: number;
+  connectedToNode?: string; 
+  metrics?: {
+    uptime: number;
+    latency: number;
+    packetLoss: number;
+  };
+  nodeType?: 'HOST' | 'USER';
+  performance?: {
+    bandwidth: number;
+    latency: number;
+    packetLoss: number;
+  };
+  status?: string; 
+  connectedClients?: Array<{
+    connectionId?: string;
+    walletAddress: string;
+    ip?: string;
+    connectedSince: string;
+    lastActivity?: string;
+  }>;
+}
+export function useVPNNode() {
+  const { isConnected, account } = useWalletContext();
+  const getInitialState = (): DHTStatus => {
+    if (typeof window === 'undefined') {
+      return {
+        active: false,
+        bandwidth: 0,
+        earnings: 0,
+        connectedUsers: 0,
+        lastUpdated: new Date().toISOString(),
+        nodeIp: null
+      };
+    }
+    const savedState = localStorage.getItem('vpnNodeStatus');
+    if (savedState) {
+      try {
+        const parsedState = JSON.parse(savedState);
+        return {
+          ...parsedState,
+          active: false,
+          nodeIp: null,
+          connectedToNode: null
+        };
+      } catch (e) {
+        console.error('Error parsing saved VPN node state:', e);
+      }
+    }
+    return {
+      active: false,
+      bandwidth: 0,
+      earnings: 0,
+      connectedUsers: 0,
+      lastUpdated: new Date().toISOString().toString(),
+      nodeIp: null
+    };
+  };
+  const [status, setStatus] = useState<DHTStatus>(getInitialState());
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [availableNodes, setAvailableNodes] = useState<VPNNode[]>([]);
+  const [isLoadingNodes, setIsLoadingNodes] = useState(false);
+  const statusRetryCount = useRef(0);
+  const startRetryCount = useRef(0);
+  const stopRetryCount = useRef(0);
+  const maxRetryDelay = 60000; 
+  const resetAuthState = useCallback(() => {
+    localStorage.removeItem('vpnNodeStatus');
+    localStorage.removeItem('walletAddress');
+    setStatus(getInitialState());
+    setError(null);
+  }, []);
+  const testConnection = async (): Promise<boolean> => {
+    try {
+      console.log('Testing server connection...');
+      const response = await api.get('health', {
+        timeout: 10000 
+      });
+      return (response.data as { status?: string }).status === 'healthy';
+    } catch (error) {
+      console.error('Server connection test failed:', error);
+      return false;
+    }
+  };
+  const fetchNodeStatus = useCallback(async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      if (statusRetryCount.current > 5) {
+        console.warn('Nombre maximum de tentatives atteint, attente avant la prochaine vérification');
+        statusRetryCount.current = 0; 
+        setIsLoading(false);
+        return;
+      }
+      const now = new Date();
+      const lastStatusCheck = localStorage.getItem('lastStatusCheck');
+      if (lastStatusCheck) {
+        const lastCheck = new Date(lastStatusCheck);
+        const timeSinceLastCheck = now.getTime() - lastCheck.getTime();
+        if (timeSinceLastCheck < 15000) {
+          const cachedStatus = localStorage.getItem('vpnNodeStatus');
+          if (cachedStatus) {
+            try {
+              const parsedStatus = JSON.parse(cachedStatus);
+              if (parsedStatus.walletAddress === account) {
+                console.log('Utilisation du cache de statut (moins de 15 secondes)', parsedStatus);
+                setStatus(parsedStatus);
+                setIsLoading(false);
+                return;
+              }
+            } catch (e) {
+              console.error('Error parsing saved VPN node state:', e);
+            }
+          }
+        }
+      }
+      localStorage.setItem('lastStatusCheck', now.toISOString());
+      const response = await api.get('dht/status', {
+        headers: {
+          'X-Wallet-Address': account
+        },
+        params: {
+          walletAddress: account
+        }
+      });
+      console.log('Status response:', response.data);
+      if ((response.data as { success?: boolean }).success) {
+        const nodeData = response.data as {
+          active?: boolean;
+          status?: string;
+          clientIP?: string;
+          ip?: string;
+          connectedUsers?: number;
+          performance?: {
+            bandwidth?: number;
+            latency?: number;
+            packetLoss?: number;
+          };
+          stats?: {
+            uptime?: number;
+            earnings?: number;
+          };
+          nodeType?: string;
+          connectedClients?: Array<{
+            connectionId?: string;
+            walletAddress: string;
+            ip?: string;
+            connectedSince: string;
+            lastActivity?: string;
+          }>;
+        };
+        const updatedStatus = {
+          ...status,
+          active: nodeData.active || false, 
+          status: nodeData.status || 'INACTIVE', 
+          nodeIp: nodeData.clientIP || nodeData.ip || null, 
+          connectedUsers: nodeData.connectedUsers || 0,
+          bandwidth: nodeData.performance?.bandwidth || 0,
+          uptime: nodeData.stats?.uptime || 0,
+          earnings: nodeData.stats?.earnings || 0,
+          lastUpdated: new Date().toISOString().toString(),
+          nodeType: (status.nodeType || nodeData.nodeType || 'USER') as 'HOST' | 'USER',
+          performance: {
+            bandwidth: nodeData.performance?.bandwidth || 0,
+            latency: nodeData.performance?.latency || 0,
+            packetLoss: nodeData.performance?.packetLoss || 0
+          },
+          connectedClients: nodeData.connectedClients || []
+        };
+        if (updatedStatus.status === 'ACTIVE' && !updatedStatus.active) {
+          console.log('Correcting inconsistency: status is ACTIVE but active is false');
+          updatedStatus.active = true;
+        } else if (updatedStatus.status === 'INACTIVE' && updatedStatus.active) {
+          console.log('Correcting inconsistency: status is INACTIVE but active is true');
+          updatedStatus.active = false;
+        }
+        setStatus(updatedStatus);
+        localStorage.setItem('vpnNodeStatus', JSON.stringify({
+          ...updatedStatus,
+          walletAddress: account
+        }));
+        setError(null);
+      }
+    } catch (error: any) {
+      console.error('Failed to check node status:', error);
+      if (error.response?.status === 401) {
+        setError('Erreur d\'authentification. Veuillez vous reconnecter avec votre wallet.');
+        localStorage.removeItem('walletAddress'); 
+        resetAuthState();
+      } else if (error.response?.status === 404) {
+        setError('Service non trouvé. Le serveur est peut-être en cours de maintenance.');
+      } else if (error.response?.status === 429) {
+        console.warn('Rate limit atteint, utilisation des données en cache');
+        const cachedStatus = localStorage.getItem('vpnNodeStatus');
+        if (cachedStatus) {
+          try {
+            const parsedStatus = JSON.parse(cachedStatus);
+            const lastUpdated = new Date(parsedStatus.lastUpdated);
+            const now = new Date();
+            const timeSinceLastUpdate = now.getTime() - lastUpdated.getTime();
+            if (timeSinceLastUpdate < 600000 && parsedStatus.walletAddress === account) {
+              console.log('Utilisation des données en cache (moins de 10 minutes)', parsedStatus);
+              setStatus(parsedStatus);
+            }
+          } catch (e) {
+            console.error('Error parsing saved VPN node state:', e);
+          }
+        }
+        const backoffDelay = Math.min(
+          (Math.pow(2, statusRetryCount.current) * 5000) + (Math.random() * 5000), 
+          maxRetryDelay
+        );
+        statusRetryCount.current += 1;
+        console.log(`Nouvelle tentative dans ${Math.round(backoffDelay/1000)} secondes`);
+        setTimeout(fetchNodeStatus, backoffDelay);
+      } else {
+        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors de la vérification du statut');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isConnected, account, status, statusRetryCount, maxRetryDelay, resetAuthState]);
+  const fetchAvailableNodesFromHook = async (forceRefresh = false) => {
+    try {
+      const now = new Date();
+      const lastUpdate = localStorage.getItem('lastNodesUpdate');
+      const cacheTimeout = 30 * 1000; 
+      if (!forceRefresh && lastUpdate) {
+        const lastUpdateTime = new Date(lastUpdate);
+        const timeDiff = now.getTime() - lastUpdateTime.getTime();
+        if (timeDiff < cacheTimeout) {
+          const cachedNodes = localStorage.getItem('availableNodesCache');
+          if (cachedNodes) {
+            try {
+              const parsedNodes = JSON.parse(cachedNodes);
+              console.log('Utilisation du cache de nœuds (moins de 30 secondes)', parsedNodes);
+              return parsedNodes;
+            } catch (e) {
+              console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
+            }
+          }
+        }
+      }
+      const randomDelay = Math.floor(Math.random() * 300) + 50; 
+      await new Promise(resolve => setTimeout(resolve, randomDelay));
+      const response = await api.get('dht/available-nodes', {
+        headers: {
+          'X-Wallet-Address': account || localStorage.getItem('walletAddress') || ''
+        }
+      });
+      if ((response.data as { success?: boolean }).success) {
+        const nodes = (response.data as { nodes?: any[] }).nodes || [];
+        console.log('Nœuds reçus du serveur:', nodes);
+        const validNodes = nodes.filter((node: any) => {
+          if (!node.walletAddress) {
+            console.log('Nœud rejeté - pas d\'adresse wallet');
+            return false;
+          }
+          if (node.lastSeen) {
+            const lastSeenDate = new Date(node.lastSeen);
+            const diffMs = now.getTime() - lastSeenDate.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            if (diffMins >= 15) { 
+              console.log(`Nœud rejeté - trop ancien (${diffMins} minutes):`, node.walletAddress);
+              return false;
+            }
+          } else {
+            console.log('Nœud rejeté - pas de lastSeen:', node.walletAddress);
+            return false; 
+          }
+          const isOwnNode = node.walletAddress === account;
+          const isHostMode = localStorage.getItem('vpnNodeIsHost') === 'true';
+          if (isOwnNode && isHostMode) {
+            console.log('Nœud propre filtré de la liste des disponibles (mode hôte):', node.walletAddress);
+            return false;
+          }
+          return true;
+        });
+        console.log('Nœuds valides après filtrage:', validNodes);
+        const nodesWithTimestamp = validNodes.map((node: any) => ({
+          ...node,
+          lastChecked: now.toISOString()
+        }));
+        localStorage.setItem('availableNodesCache', JSON.stringify(nodesWithTimestamp));
+        localStorage.setItem('lastNodesUpdate', now.toISOString());
+        return nodesWithTimestamp;
+      } else {
+        throw new Error('Failed to fetch available nodes');
+      }
+    } catch (error: any) {
+      console.error('Error fetching available nodes:', error);
+      if (error.response?.status === 429) {
+        console.warn('Rate limit atteint, utilisation des données en cache');
+        const cachedNodes = localStorage.getItem('availableNodesCache');
+        if (cachedNodes) {
+          try {
+            return JSON.parse(cachedNodes);
+          } catch (e) {
+            console.error('Erreur lors de l\'analyse du cache de nœuds:', e);
+          }
+        }
+      }
+      return [];
+    }
+  };
+  const connectToNode = async (nodeWalletAddress: string) => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return false;
+    }
+    setIsLoading(true);
+    try {
+      if (status.active && status.connectedToNode && status.connectedToNode !== nodeWalletAddress) {
+        console.log('Déjà connecté à un autre nœud. Déconnexion automatique...');
+        const disconnectSuccess = await disconnectFromNode();
+        if (!disconnectSuccess) {
+          console.error('Échec de la déconnexion automatique');
+          setError('Échec de la déconnexion du nœud actuel. Veuillez réessayer.');
+          setIsLoading(false);
+          return false;
+        }
+        console.log('Déconnexion réussie, connexion au nouveau nœud...');
+      }
+      const response = await api.post('connect', {
+        clientWalletAddress: account,
+        hostWalletAddress: nodeWalletAddress
+      });
+      if ((response.data as { success?: boolean }).success) {
+        const updatedStatus = {
+          ...status,
+          active: true,
+          nodeIp: (response.data as { nodeIp?: string }).nodeIp || null,
+          connectedToNode: nodeWalletAddress,
+          lastUpdated: new Date().toISOString().toString()
+        };
+        setStatus(updatedStatus);
+        localStorage.setItem('vpnNodeStatus', JSON.stringify({
+          ...updatedStatus,
+          walletAddress: account
+        }));
+        console.log('Connexion réussie au nœud:', nodeWalletAddress);
+        console.log('Statut mis à jour:', updatedStatus);
+        setError(null);
+        return true;
+      } else {
+        setError((response.data as { message?: string }).message || 'Failed to connect to node');
+        return false;
+      }
+    } catch (error) {
+      console.error('Error connecting to node:', error);
+      setError((error as any).response?.data?.message || (error as any).message || 'Failed to connect to node');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const startNode = async (isHost = false) => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return;
+    }
+    setIsLoading(true);
+    try {
+      const isServerUp = await testConnection();
+      if (!isServerUp) {
+        throw new Error('Le serveur VPN est actuellement indisponible. Veuillez réessayer plus tard.');
+      }
+      console.log('Starting node for wallet:', account);
+      const response = await api.post('dht/connect', {
+        walletAddress: account,
+        nodeInfo: {
+          country: 'France',
+          region: 'Île-de-France',
+          coordinates: [48.8566, 2.3522]
+        },
+        isHost: isHost 
+      });
+      console.log('Start node response:', response.data);
+      const responseData = response.data as {
+        success?: boolean;
+        ip?: string;
+        bandwidth?: number;
+      };
+      if (responseData.success) {
+        const newStatus = {
+          ...status,
+          active: true,
+          nodeIp: responseData.ip || null,
+          bandwidth: responseData.bandwidth || 0,
+          lastUpdated: new Date().toISOString().toString(),
+          walletAddress: account,
+          nodeType: isHost ? 'HOST' as const : 'USER' as const 
+        };
+        setStatus(newStatus);
+        localStorage.setItem('vpnNodeStatus', JSON.stringify(newStatus));
+        setError(null);
+        startRetryCount.current = 0;
+      } else {
+        throw new Error((responseData as { message?: string }).message || 'Failed to start node');
+      }
+    } catch (error: any) {
+      console.error('Failed to start node:', error);
+      if (error.response?.status === 401) {
+        setError('Erreur d\'authentification. Veuillez vous reconnecter avec votre wallet.');
+        localStorage.removeItem('vpnNodeStatus'); 
+        localStorage.removeItem('walletAddress'); 
+        resetAuthState();
+      } else if (error.response?.status === 404) {
+        setError('Service non trouvé. Le serveur est peut-être en cours de maintenance.');
+      } else if (error.response?.status === 429) {
+        console.warn('Rate limit atteint, nouvelle tentative avec backoff exponentiel');
+        const backoffDelay = Math.min(
+          (Math.pow(2, startRetryCount.current) * 1000) + (Math.random() * 1000), 
+          maxRetryDelay
+        );
+        startRetryCount.current += 1;
+        console.log(`Nouvelle tentative dans ${Math.round(backoffDelay/1000)} secondes`);
+        setTimeout(startNode, backoffDelay);
+      } else {
+        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors du démarrage du nœud');
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const stopNode = async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return false;
+    }
+    setIsLoading(true);
+    try {
+      const isServerUp = await testConnection();
+      if (!isServerUp) {
+        throw new Error('Le serveur VPN est actuellement indisponible. Veuillez réessayer plus tard.');
+      }
+      console.log('Stopping node for wallet:', account);
+      const response = await api.post('dht/disconnect', {
+        walletAddress: account
+      });
+      console.log('Stop node response:', response.data);
+      if ((response.data as { success?: boolean }).success) {
+        const currentNodeType = status.nodeType;
+        const newStatus = {
+          ...status,
+          active: false,
+          lastUpdated: new Date().toISOString().toString(),
+          nodeType: currentNodeType
+        };
+        setStatus(newStatus);
+        localStorage.setItem('vpnNodeStatus', JSON.stringify(newStatus));
+        setError(null);
+        stopRetryCount.current = 0;
+        return true;
+      } else {
+        setError((response.data as { message?: string }).message || 'Failed to stop node');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Failed to stop node:', error);
+      if (error.response?.status === 401) {
+        setError('Erreur d\'authentification. Veuillez vous reconnecter avec votre wallet.');
+        localStorage.removeItem('vpnNodeStatus'); 
+        localStorage.removeItem('walletAddress'); 
+        resetAuthState();
+      } else if (error.response?.status === 404) {
+        setError('Service non trouvé. Le serveur est peut-être en cours de maintenance.');
+      } else if (error.response?.status === 429) {
+        console.warn('Rate limit atteint, nouvelle tentative avec backoff exponentiel');
+        const backoffDelay = Math.min(
+          (Math.pow(2, stopRetryCount.current) * 1000) + (Math.random() * 1000), 
+          maxRetryDelay
+        );
+        stopRetryCount.current += 1;
+        console.log(`Nouvelle tentative dans ${Math.round(backoffDelay/1000)} secondes`);
+        setTimeout(stopNode, backoffDelay);
+      } else {
+        setError((error.response?.data as { message?: string }).message || error.message || 'Erreur lors de l\'arrêt du nœud');
+      }
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const disconnectFromNode = async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return false;
+    }
+    setIsLoading(true);
+    try {
+      const isServerUp = await testConnection();
+      if (!isServerUp) {
+        throw new Error('The VPN server is currently unavailable. Please try again later.');
+      }
+      console.log('Disconnecting client from node for wallet:', account);
+      const response = await api.post('dht/client-disconnect', {
+        clientWalletAddress: account
+      });
+      console.log('Disconnect client response:', response.data);
+      if ((response.data as { success?: boolean }).success) {
+        const newStatus = {
+          ...status,
+          active: false,
+          connectedToNode: undefined,
+          nodeIp: null,
+          lastUpdated: new Date().toISOString().toString()
+        };
+        setStatus(newStatus);
+        localStorage.setItem('vpnNodeStatus', JSON.stringify(newStatus));
+        setTimeout(() => {
+          fetchNodeStatus();
+        }, 1000);
+        setError(null);
+        return true;
+      } else {
+        setError((response.data as { message?: string }).message || 'Failed to disconnect from node');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Failed to disconnect from node:', error);
+      if (error.response?.status === 401) {
+        setError('Authentication error. Please reconnect with your wallet.');
+      } else if (error.response?.status === 404) {
+        setError('Service not found. The server may be under maintenance.');
+      } else if (error.response?.status === 429) {
+        console.warn('Rate limit reached, using cached data');
+        const cachedStatus = localStorage.getItem('vpnNodeStatus');
+        if (cachedStatus) {
+          try {
+            const parsedStatus = JSON.parse(cachedStatus);
+            setStatus({
+              ...parsedStatus,
+              active: false,
+              connectedToNode: undefined
+            });
+            return true;
+          } catch (e) {
+            console.error('Error parsing cached status:', e);
+          }
+        }
+      } else {
+        setError((error.response?.data as { message?: string }).message || error.message || 'Error disconnecting from node');
+      }
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const fetchConnectedClients = async () => {
+    if (!isConnected || !account) {
+      setError('Wallet not connected');
+      return [];
+    }
+    setIsLoading(true);
+    try {
+      const response = await api.get('dht/connected-clients', {
+        headers: {
+          'X-Wallet-Address': account
+        }
+      });
+      if ((response.data as { success?: boolean }).success) {
+        const responseData = response.data as {
+          success?: boolean;
+          connectedClients?: any[];
+          totalConnections?: number;
+        };
+        setStatus(prevStatus => ({
+          ...prevStatus,
+          connectedClients: responseData.connectedClients || [],
+          connectedUsers: responseData.totalConnections || 0
+        }));
+        return responseData.connectedClients || [];
+      } else {
+        throw new Error((response.data as { message?: string }).message || 'Failed to fetch connected clients');
+      }
+    } catch (error: any) {
+      console.error('Error fetching connected clients:', error);
+      setError((error.response?.data as { message?: string }).message || error.message || 'Error fetching connected clients');
+      return [];
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const disconnectClient = async (clientWalletAddress: string): Promise<boolean> => {
+    if (!account) {
+      setError('Wallet not connected');
+      return false;
+    }
+    setIsLoading(true);
+    try {
+      const response = await api.post('dht/disconnect-client', {
+        hostWalletAddress: account,
+        clientWalletAddress: clientWalletAddress
+      });
+      const responseData = response.data as { success?: boolean };
+      if (responseData.success) {
+        setStatus(prevStatus => {
+          const updatedClients = (prevStatus.connectedClients || [])
+            .filter(client => client.walletAddress !== clientWalletAddress);
+          return {
+            ...prevStatus,
+            connectedClients: updatedClients,
+            connectedUsers: (prevStatus.connectedUsers || 1) - 1
+          };
+        });
+        return true;
+      } else {
+        setError((responseData as { message?: string }).message || 'Failed to disconnect client');
+        return false;
+      }
+    } catch (error: any) {
+      console.error('Error disconnecting client:', error);
+      setError((error.response?.data as { message?: string }).message || error.message || 'Error disconnecting client');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  useEffect(() => {
+    if (isConnected && account) {
+      localStorage.setItem('walletAddress', account);
+      const savedState = localStorage.getItem('vpnNodeStatus');
+      if (savedState) {
+        try {
+          const parsedState = JSON.parse(savedState);
+          if (parsedState.walletAddress === account) {
+            setStatus(parsedState);
+          }
+        } catch (e) {
+          console.error('Error parsing saved VPN node state:', e);
+        }
+      }
+      console.log('Vérification de l\'état du nœud au démarrage');
+      const timer = setTimeout(() => {
+        fetchNodeStatus();
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else {
+      localStorage.removeItem('walletAddress');
+      setStatus({
+        active: false,
+        bandwidth: 0,
+        earnings: 0,
+        connectedUsers: 0,
+        lastUpdated: new Date().toISOString().toString(),
+        nodeIp: null
+      });
+    }
+  }, [isConnected, account]);
+  useEffect(() => {
+    if (isConnected && account) {
+      fetchNodeStatus();
+      const interval = setInterval(() => {
+        fetchNodeStatus();
+      }, 30000); 
+      return () => clearInterval(interval);
+    }
+  }, [isConnected, account, fetchNodeStatus]);
+  useEffect(() => {
+    if (status.active && status.nodeType) {
+      const interval = setInterval(() => {
+      }, 60000); 
+      return () => clearInterval(interval);
+    }
+  }, [status.active, status.nodeType]);
+  const fetchAvailableNodes = async (forceRefresh: boolean = false, useDemoNodesAsFallback: boolean = true): Promise<VPNNode[]> => {
+    const now = new Date();
+    console.log('Début fetchAvailableNodes, forceRefresh:', forceRefresh, 'useDemoNodesAsFallback:', useDemoNodesAsFallback);
+    if (!forceRefresh) {
+      const cachedNodes = localStorage.getItem('availableNodesCache');
+      const lastUpdate = localStorage.getItem('lastNodesUpdate');
+      if (cachedNodes && lastUpdate) {
+        const lastUpdateTime = new Date(lastUpdate);
+        const diffInMinutes = (now.getTime() - lastUpdateTime.getTime()) / (1000 * 60);
+        if (diffInMinutes < 5) {
+          console.log('Utilisation du cache de nœuds (moins de 5 minutes)');
+          try {
+            const parsedNodes = JSON.parse(cachedNodes);
+            console.log('Nœuds en cache:', parsedNodes);
+            return parsedNodes;
+          } catch (error) {
+            console.error('Erreur lors de l\'analyse du cache:', error);
+          }
+        }
+      }
+    }
+    const randomDelay = Math.floor(Math.random() * 300) + 50; 
+    await new Promise(resolve => setTimeout(resolve, randomDelay));
+    try {
+      console.log('Envoi de la requête API pour les nœuds disponibles');
+      const response = await axios.get(`${config.API_BASE_URL}/nodes`, {
+        headers: {
+          'X-Wallet-Address': account || localStorage.getItem('walletAddress') || '',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        params: {
+          walletAddress: account || localStorage.getItem('walletAddress') || ''
+        }
+      });
+      console.log('Réponse complète du serveur:', response.data);
+      let nodes: VPNNode[] = [];
+      if (Array.isArray(response.data)) {
+        console.log('La réponse est un tableau');
+        nodes = response.data;
+      } else if (response.data && typeof response.data === 'object' && 'nodes' in response.data && Array.isArray((response.data as any).nodes)) {
+        console.log('La réponse est un objet avec une propriété nodes');
+        nodes = (response.data as any).nodes;
+      } else {
+        console.log('Format de réponse inattendu, aucun nœud trouvé');
+        if (useDemoNodesAsFallback) {
+          console.log('Génération de nœuds de démonstration comme solution de repli');
+          nodes = generateDemoNodes(5);
+        } else {
+          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
+          nodes = [];
+        }
+      }
+      if (nodes.length === 0) {
+        console.log('Aucun nœud trouvé dans la réponse API');
+        if (useDemoNodesAsFallback) {
+          console.log('Génération de nœuds de démonstration comme solution de repli');
+          nodes = generateDemoNodes(5);
+        } else {
+          console.log('Aucun nœud de démonstration généré car l\'option est désactivée');
+        }
+      } else {
+        console.log(`${nodes.length} nœuds trouvés dans la réponse API`);
+      }
+      localStorage.setItem('availableNodesCache', JSON.stringify(nodes));
+      localStorage.setItem('lastNodesUpdate', now.toISOString());
+      return nodes;
+    } catch (error) {
+      console.error('Erreur lors de la récupération des nœuds disponibles:', error);
+      const cachedNodes = localStorage.getItem('availableNodesCache');
+      if (cachedNodes) {
+        try {
+          console.log('Utilisation du cache suite à une erreur');
+          const parsedNodes = JSON.parse(cachedNodes);
+          return parsedNodes;
+        } catch (e) {
+          console.error('Erreur lors de l\'analyse du cache après erreur API:', e);
+        }
+      }
+      if (useDemoNodesAsFallback) {
+        console.log('Génération de nœuds de démonstration suite à une erreur');
+        return generateDemoNodes(5);
+      } else {
+        console.log('Aucun nœud de démonstration généré malgré l\'erreur car l\'option est désactivée');
+        return [];
+      }
+    }
+  };
+  const generateDemoNodes = (count: number = 5): VPNNode[] => {
+    console.log(`Génération de ${count} nœuds de démonstration`);
+    const demoNodes: VPNNode[] = [];
+    for (let i = 0; i < count; i++) {
+      const nodeId = `demo-node-${i}-${Math.random().toString(36).substring(2, 8)}`;
+      demoNodes.push({
+        walletAddress: `demo-wallet-${i}-${Math.random().toString(36).substring(2, 8)}`,
+        ip: `192.168.1.${10 + i}`,
+        location: {
+          country: 'France',
+          region: 'Île-de-France'
+        },
+        performance: {
+          bandwidth: Math.floor(Math.random() * 1000),
+          latency: Math.floor(Math.random() * 100)
+        },
+        connectedUsers: Math.floor(Math.random() * 10),
+        lastSeen: new Date().toISOString(),
+        score: Math.random() * 5,
+        lastChecked: new Date().toISOString(),
+        status: 'ACTIVE'
+      });
+    }
+    console.log('Nœuds de démonstration générés:', demoNodes);
+    return demoNodes;
+  };
+  return {
+    status,
+    isLoading,
+    error,
+    startNode,
+    stopNode,
+    fetchNodeStatus,
+    testConnection,
+    resetAuthState,
+    availableNodes,
+    isLoadingNodes,
+    fetchAvailableNodes,
+    connectToNode,
+    disconnectFromNode,
+    fetchConnectedClients,
+    disconnectClient
+  };
+}

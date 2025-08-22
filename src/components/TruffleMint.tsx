@@ -1,1 +1,38 @@
-'use client';import { FC, useState } from 'react';export const TruffleMint: FC = () => {  const [isHovered, setIsHovered] = useState(false);  const handleClick = () => {    window.open('https:  };  return (    <div       className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow relative cursor-pointer overflow-hidden"      onMouseEnter={() => setIsHovered(true)}      onMouseLeave={() => setIsHovered(false)}      onClick={handleClick}      style={{        backgroundImage: 'url(https:        backgroundSize: 'cover',        backgroundPosition: 'center',        backgroundBlendMode: 'overlay',        height: '250px'      }}    >      <div         className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-all duration-500 z-10"        style={{          opacity: isHovered ? 0.3 : 0.6,        }}      />      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white">        <button           className="px-6 py-2 bg-black-500/20 backdrop-blur-sm border border-black-400/30 hover:bg-black-500/40 rounded-lg transition-all duration-300 text-white-400 font-medium"          onClick={handleClick}        >          Enter        </button>      </div>    </div>  );}; 
+'use client';
+import { FC, useState } from 'react';
+export const TruffleMint: FC = () => {
+  const [isHovered, setIsHovered] = useState(false);
+  const handleClick = () => {
+    window.open('https:
+  };
+  return (
+    <div 
+      className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow relative cursor-pointer overflow-hidden"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onClick={handleClick}
+      style={{
+        backgroundImage: 'url(https:
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundBlendMode: 'overlay',
+        height: '250px'
+      }}
+    >
+      <div 
+        className="absolute inset-0 bg-black/30 backdrop-blur-sm transition-all duration-500 z-10"
+        style={{
+          opacity: isHovered ? 0.3 : 0.6,
+        }}
+      />
+      <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-white">
+        <button 
+          className="px-6 py-2 bg-black-500/20 backdrop-blur-sm border border-black-400/30 hover:bg-black-500/40 rounded-lg transition-all duration-300 text-white-400 font-medium"
+          onClick={handleClick}
+        >
+          Enter
+        </button>
+      </div>
+    </div>
+  );
+}; 

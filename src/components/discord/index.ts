@@ -1,1 +1,1 @@
-export { default as DiscordLink } from './DiscordLink';
+export { default as DiscordLink } from './DiscordLink';

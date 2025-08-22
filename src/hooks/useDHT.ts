@@ -1,1 +1,270 @@
-import { useState, useEffect, useCallback } from 'react';import { useAuth } from '@/hooks/useAuth';import { useWalletContext } from '@/contexts/WalletContext';import * as dhtUtils from '@/utils/dhtUtils';import { getActiveDHTNodes } from '@/utils/dhtUtils';interface DHTNode {  nodeId: string;  walletAddress: string;  publicKey: string;  ip: string;  port: number;  multiaddr: string;  isActive: boolean;  isHost: boolean;  bandwidth?: number;  latency?: number;  uptime?: number;  lastSeen: string;  createdAt: string;}interface DHTNodeStats {  nodeId: string;  connections: number;  addresses: string[];  isActive: boolean;  peers: {    id: string;    direction: string;    latency: number;  }[];}interface DHTStatus {  isActive: boolean;  nodeId?: string;  stats?: DHTNodeStats;}interface WireGuardNode {  id: string;  walletAddress: string;  publicKey: string;  ip: string;  port: number;  lastSeen: string;  isActive: boolean;}export function useDHT() {  const { isAuthenticated } = useAuth();  const { account: walletAddress } = useWalletContext();  const [status, setStatus] = useState<DHTStatus>({ isActive: false });  const [nodes, setNodes] = useState<DHTNode[]>([]);  const [wireGuardNodes, setWireGuardNodes] = useState<WireGuardNode[]>([]);  const [loading, setLoading] = useState<boolean>(false);  const [error, setError] = useState<string | null>(null);  const [isLoadingWireGuard, setIsLoadingWireGuard] = useState(false);  const [pollingInterval, setPollingInterval] = useState<number>(30000);   const [isPollingEnabled, setIsPollingEnabled] = useState<boolean>(true);  const fetchStatus = useCallback(async () => {    if (!isAuthenticated || !walletAddress) return;    setLoading(true);    setError(null);    try {      const data = await dhtUtils.getDHTStatusByWallet(walletAddress);      if (data.success === false && data.error) {        throw new Error(data.error);      }      const sanitizedStats = data.stats ? {        nodeId: data.nodeId || '',        connections: data.stats.connections || 0,        addresses: Array.isArray(data.stats.addresses) ? data.stats.addresses : [],        isActive: Boolean(data.isActive),        peers: Array.isArray(data.stats.peers) ? data.stats.peers.map((peer: any) => ({          id: peer?.id || '',          direction: peer?.direction || 'N/A',          latency: typeof peer?.latency === 'number' ? peer.latency : 0        })) : []      } : undefined;      setStatus({        isActive: Boolean(data.isActive),        nodeId: data.nodeId || '',        stats: sanitizedStats      });    } catch (err) {      console.error('Erreur:', err);      setError(err instanceof Error ? err.message : 'Une erreur est survenue');    } finally {      setLoading(false);    }  }, [isAuthenticated, walletAddress]);  const startNode = useCallback(async () => {    if (!isAuthenticated) return;    setLoading(true);    setError(null);    try {      const data = await dhtUtils.startDHTNode();      if (data.success === false && data.error) {        throw new Error(data.error);      }      await fetchStatus();    } catch (err) {      console.error('Erreur:', err);      setError(err instanceof Error ? err.message : 'Une erreur est survenue');    } finally {      setLoading(false);    }  }, [isAuthenticated, fetchStatus]);  const stopNode = useCallback(async () => {    if (!isAuthenticated) return;    setLoading(true);    setError(null);    try {      const data = await dhtUtils.stopDHTNode();      if (data.success === false && data.error) {        throw new Error(data.error);      }      setStatus({ isActive: false });    } catch (err) {      console.error('Erreur:', err);      setError(err instanceof Error ? err.message : 'Une erreur est survenue');    } finally {      setLoading(false);    }  }, [isAuthenticated]);  const fetchNodes = useCallback(async () => {    setLoading(true);    setError(null);    try {      const nodes = await getActiveDHTNodes();      setNodes(nodes);      setLoading(false);      return nodes;    } catch (err) {      setError('Erreur lors de la récupération des nœuds DHT actifs');      setLoading(false);      setNodes([]);      return [];    }  }, []);  const fetchWireGuardNodes = useCallback(async () => {    if (!isAuthenticated) {      console.log('Non authentifié, impossible de récupérer les nœuds WireGuard');      return [];    }    setIsLoadingWireGuard(true);    try {      console.log('Récupération des nœuds WireGuard...');      const data = await dhtUtils.getWireGuardNodes();      if (data.success === false && data.error) {        throw new Error(data.error);      }      const sanitizedNodes = Array.isArray(data.nodes)         ? data.nodes.map((node: any) => ({            id: node?.id || '',            walletAddress: node?.walletAddress || '',            publicKey: node?.publicKey || '',            ip: node?.ip || '',            port: typeof node?.port === 'number' ? node.port : 0,            lastSeen: node?.lastSeen || new Date().toISOString(),            isActive: node?.isActive || false          }))        : [];      if (sanitizedNodes.length === 0) {        console.log('Aucun nœud WireGuard disponible');        setWireGuardNodes([]);        return [];      }      console.log(`${sanitizedNodes.length} nœuds WireGuard récupérés`);      setWireGuardNodes(sanitizedNodes);      return sanitizedNodes;    } catch (err) {      console.error('Erreur lors de la récupération des nœuds WireGuard:', err);      setWireGuardNodes([]);      return [];    } finally {      setIsLoadingWireGuard(false);    }  }, [isAuthenticated]);  const publishWireGuardNode = useCallback(async () => {    if (!isAuthenticated || !walletAddress) return;    setLoading(true);    setError(null);    try {      const data = await dhtUtils.publishWireGuardNode(walletAddress);      if (data.success === false && data.error) {        throw new Error(data.error);      }      return data.success;    } catch (err) {      console.error('Erreur:', err);      setError(err instanceof Error ? err.message : 'Une erreur est survenue');      return false;    } finally {      setLoading(false);    }  }, [isAuthenticated, walletAddress]);  const storeValue = useCallback(async (key: string, value: any) => {    if (!isAuthenticated) return false;    setLoading(true);    setError(null);    try {      const data = await dhtUtils.storeDHTValue(key, value);      if (data.success === false && data.error) {        throw new Error(data.error);      }      return true;    } catch (err) {      console.error('Erreur:', err);      setError(err instanceof Error ? err.message : 'Une erreur est survenue');      return false;    } finally {      setLoading(false);    }  }, [isAuthenticated]);  const retrieveValue = useCallback(async (key: string) => {    if (!isAuthenticated) return null;    setLoading(true);    setError(null);    try {      const data = await dhtUtils.retrieveDHTValue(key);      if (data.success === false) {        if (data.error && data.error.includes('not found')) {          return null;        }        throw new Error(data.error);      }      return data.value;    } catch (err) {      console.error('Erreur:', err);      setError(err instanceof Error ? err.message : 'Une erreur est survenue');      return null;    } finally {      setLoading(false);    }  }, [isAuthenticated]);  useEffect(() => {    if (isAuthenticated) {      fetchStatus();    }  }, [isAuthenticated, fetchStatus]);  useEffect(() => {    if (!isAuthenticated || !isPollingEnabled) return;    console.log(`Configuration du polling automatique du statut DHT toutes les ${pollingInterval / 1000} secondes`);    const intervalId = setInterval(() => {      console.log('Polling automatique: récupération du statut DHT');      fetchStatus();    }, pollingInterval);    return () => {      console.log('Nettoyage du polling automatique du statut DHT');      clearInterval(intervalId);    };  }, [isAuthenticated, fetchStatus, pollingInterval, isPollingEnabled]);  return {    status,    nodes,    wireGuardNodes,    loading,    error,    fetchStatus,    startNode,    stopNode,    fetchNodes,    fetchWireGuardNodes,    publishWireGuardNode,    storeValue,    retrieveValue,    pollingInterval,    setPollingInterval,    isPollingEnabled,    setIsPollingEnabled  };}
+import { useState, useEffect, useCallback } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useWalletContext } from '@/contexts/WalletContext';
+import * as dhtUtils from '@/utils/dhtUtils';
+import { getActiveDHTNodes } from '@/utils/dhtUtils';
+interface DHTNode {
+  nodeId: string;
+  walletAddress: string;
+  publicKey: string;
+  ip: string;
+  port: number;
+  multiaddr: string;
+  isActive: boolean;
+  isHost: boolean;
+  bandwidth?: number;
+  latency?: number;
+  uptime?: number;
+  lastSeen: string;
+  createdAt: string;
+}
+interface DHTNodeStats {
+  nodeId: string;
+  connections: number;
+  addresses: string[];
+  isActive: boolean;
+  peers: {
+    id: string;
+    direction: string;
+    latency: number;
+  }[];
+}
+interface DHTStatus {
+  isActive: boolean;
+  nodeId?: string;
+  stats?: DHTNodeStats;
+}
+interface WireGuardNode {
+  id: string;
+  walletAddress: string;
+  publicKey: string;
+  ip: string;
+  port: number;
+  lastSeen: string;
+  isActive: boolean;
+}
+export function useDHT() {
+  const { isAuthenticated } = useAuth();
+  const { account: walletAddress } = useWalletContext();
+  const [status, setStatus] = useState<DHTStatus>({ isActive: false });
+  const [nodes, setNodes] = useState<DHTNode[]>([]);
+  const [wireGuardNodes, setWireGuardNodes] = useState<WireGuardNode[]>([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoadingWireGuard, setIsLoadingWireGuard] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState<number>(30000); 
+  const [isPollingEnabled, setIsPollingEnabled] = useState<boolean>(true);
+  const fetchStatus = useCallback(async () => {
+    if (!isAuthenticated || !walletAddress) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await dhtUtils.getDHTStatusByWallet(walletAddress);
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
+      }
+      const sanitizedStats = data.stats ? {
+        nodeId: data.nodeId || '',
+        connections: data.stats.connections || 0,
+        addresses: Array.isArray(data.stats.addresses) ? data.stats.addresses : [],
+        isActive: Boolean(data.isActive),
+        peers: Array.isArray(data.stats.peers) ? data.stats.peers.map((peer: any) => ({
+          id: peer?.id || '',
+          direction: peer?.direction || 'N/A',
+          latency: typeof peer?.latency === 'number' ? peer.latency : 0
+        })) : []
+      } : undefined;
+      setStatus({
+        isActive: Boolean(data.isActive),
+        nodeId: data.nodeId || '',
+        stats: sanitizedStats
+      });
+    } catch (err) {
+      console.error('Erreur:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, walletAddress]);
+  const startNode = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await dhtUtils.startDHTNode();
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
+      }
+      await fetchStatus();
+    } catch (err) {
+      console.error('Erreur:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, fetchStatus]);
+  const stopNode = useCallback(async () => {
+    if (!isAuthenticated) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await dhtUtils.stopDHTNode();
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
+      }
+      setStatus({ isActive: false });
+    } catch (err) {
+      console.error('Erreur:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+  const fetchNodes = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const nodes = await getActiveDHTNodes();
+      setNodes(nodes);
+      setLoading(false);
+      return nodes;
+    } catch (err) {
+      setError('Erreur lors de la récupération des nœuds DHT actifs');
+      setLoading(false);
+      setNodes([]);
+      return [];
+    }
+  }, []);
+  const fetchWireGuardNodes = useCallback(async () => {
+    if (!isAuthenticated) {
+      console.log('Non authentifié, impossible de récupérer les nœuds WireGuard');
+      return [];
+    }
+    setIsLoadingWireGuard(true);
+    try {
+      console.log('Récupération des nœuds WireGuard...');
+      const data = await dhtUtils.getWireGuardNodes();
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
+      }
+      const sanitizedNodes = Array.isArray(data.nodes) 
+        ? data.nodes.map((node: any) => ({
+            id: node?.id || '',
+            walletAddress: node?.walletAddress || '',
+            publicKey: node?.publicKey || '',
+            ip: node?.ip || '',
+            port: typeof node?.port === 'number' ? node.port : 0,
+            lastSeen: node?.lastSeen || new Date().toISOString(),
+            isActive: node?.isActive || false
+          }))
+        : [];
+      if (sanitizedNodes.length === 0) {
+        console.log('Aucun nœud WireGuard disponible');
+        setWireGuardNodes([]);
+        return [];
+      }
+      console.log(`${sanitizedNodes.length} nœuds WireGuard récupérés`);
+      setWireGuardNodes(sanitizedNodes);
+      return sanitizedNodes;
+    } catch (err) {
+      console.error('Erreur lors de la récupération des nœuds WireGuard:', err);
+      setWireGuardNodes([]);
+      return [];
+    } finally {
+      setIsLoadingWireGuard(false);
+    }
+  }, [isAuthenticated]);
+  const publishWireGuardNode = useCallback(async () => {
+    if (!isAuthenticated || !walletAddress) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await dhtUtils.publishWireGuardNode(walletAddress);
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
+      }
+      return data.success;
+    } catch (err) {
+      console.error('Erreur:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated, walletAddress]);
+  const storeValue = useCallback(async (key: string, value: any) => {
+    if (!isAuthenticated) return false;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await dhtUtils.storeDHTValue(key, value);
+      if (data.success === false && data.error) {
+        throw new Error(data.error);
+      }
+      return true;
+    } catch (err) {
+      console.error('Erreur:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+  const retrieveValue = useCallback(async (key: string) => {
+    if (!isAuthenticated) return null;
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await dhtUtils.retrieveDHTValue(key);
+      if (data.success === false) {
+        if (data.error && data.error.includes('not found')) {
+          return null;
+        }
+        throw new Error(data.error);
+      }
+      return data.value;
+    } catch (err) {
+      console.error('Erreur:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchStatus();
+    }
+  }, [isAuthenticated, fetchStatus]);
+  useEffect(() => {
+    if (!isAuthenticated || !isPollingEnabled) return;
+    console.log(`Configuration du polling automatique du statut DHT toutes les ${pollingInterval / 1000} secondes`);
+    const intervalId = setInterval(() => {
+      console.log('Polling automatique: récupération du statut DHT');
+      fetchStatus();
+    }, pollingInterval);
+    return () => {
+      console.log('Nettoyage du polling automatique du statut DHT');
+      clearInterval(intervalId);
+    };
+  }, [isAuthenticated, fetchStatus, pollingInterval, isPollingEnabled]);
+  return {
+    status,
+    nodes,
+    wireGuardNodes,
+    loading,
+    error,
+    fetchStatus,
+    startNode,
+    stopNode,
+    fetchNodes,
+    fetchWireGuardNodes,
+    publishWireGuardNode,
+    storeValue,
+    retrieveValue,
+    pollingInterval,
+    setPollingInterval,
+    isPollingEnabled,
+    setIsPollingEnabled
+  };
+}

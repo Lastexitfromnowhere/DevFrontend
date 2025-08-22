@@ -1,1 +1,35 @@
-import { useCallback, useState } from 'react';import type { WalletState } from '@/types/wallet.types';export const useWallet = () => {  const [state, setState] = useState<WalletState>({    isConnected: false,    account: null,    chain: 'solana',    publicKey: null  });  const connectWallet = useCallback(async () => {    try {      setState(prev => ({         ...prev,         isConnected: true,        account: "Demo_Account",        publicKey: "Demo_PublicKey"      }));    } catch (error) {      console.error('Failed to connect wallet:', error);    }  }, []);  const disconnectWallet = useCallback(async () => {    setState(prev => ({      ...prev,      isConnected: false,      account: null,      publicKey: null    }));  }, []);  return {    ...state,    connectWallet,    disconnectWallet  };};
+import { useCallback, useState } from 'react';
+import type { WalletState } from '@/types/wallet.types';
+export const useWallet = () => {
+  const [state, setState] = useState<WalletState>({
+    isConnected: false,
+    account: null,
+    chain: 'solana',
+    publicKey: null
+  });
+  const connectWallet = useCallback(async () => {
+    try {
+      setState(prev => ({ 
+        ...prev, 
+        isConnected: true,
+        account: "Demo_Account",
+        publicKey: "Demo_PublicKey"
+      }));
+    } catch (error) {
+      console.error('Failed to connect wallet:', error);
+    }
+  }, []);
+  const disconnectWallet = useCallback(async () => {
+    setState(prev => ({
+      ...prev,
+      isConnected: false,
+      account: null,
+      publicKey: null
+    }));
+  }, []);
+  return {
+    ...state,
+    connectWallet,
+    disconnectWallet
+  };
+};

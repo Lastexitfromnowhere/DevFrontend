@@ -1,1 +1,108 @@
-import { useEffect, useState } from 'react';import { Card } from '@/components/ui/Card';import { DashboardBadge } from '@/components/ui/DashboardBadge';import { Globe, Cpu, Wifi, Activity, Upload } from 'lucide-react';import type { NetworkStats as NetworkStatsType } from '@/types/ecosystem.types';import axios from 'axios';import { config } from '@/config/env';export default function NetworkStats() {  const [stats, setStats] = useState<NetworkStatsType | null>(null);  const [error, setError] = useState<string | null>(null);  const [loading, setLoading] = useState(true);  useEffect(() => {    const fetchNetworkStats = async () => {      try {        const response = await axios.get(`${config.API_BASE_URL}/network-stats`);        setStats(response.data as NetworkStatsType);        setLoading(false);      } catch (error) {        console.error('Erreur lors de la récupération des statistiques du réseau:', error);        setError('Impossible de charger les statistiques du réseau');        setLoading(false);      }    };    fetchNetworkStats();    const interval = setInterval(fetchNetworkStats, 5 * 60 * 1000);    return () => clearInterval(interval);  }, []);  const healthColors = {    healthy: 'text-white',    warning: 'text-yellow-400',    critical: 'text-red-400'  };  if (error) {    return (      <Card className="backdrop-blur-md bg-black/40 border border-red-700/50 p-4 rounded-lg shadow-lg">        <div className="text-red-400 text-center">{error}</div>      </Card>    );  }  if (loading) {    return (      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg">        <div className="text-gray-300 text-center">Chargement des statistiques réseau...</div>      </Card>    );  }  if (!stats) {    return (      <Card className="backdrop-blur-md bg-black/40 border border-yellow-700/50 p-4 rounded-lg shadow-lg">        <div className="text-yellow-400 text-center">Aucune donnée disponible</div>      </Card>    );  }  return (    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6">      <div className="flex items-center justify-between">        <div className="flex items-center space-x-2">          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">            <Globe className="text-blue-400" size={20} />          </div>          <h3 className="text-xl font-bold text-white">Network Statistics</h3>        </div>        <DashboardBadge           variant={            stats.networkHealth === 'healthy' ? 'success' :             stats.networkHealth === 'warning' ? 'warning' : 'danger'          }          dot        >          <span className="capitalize">{stats.networkHealth || 'unknown'}</span>        </DashboardBadge>      </div>      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">        <div className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg shadow-inner transition-all duration-300 hover:bg-black/40">          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm mx-auto mb-2">            <Cpu className="text-blue-400" size={16} />          </div>          <p className="text-sm text-gray-400">Total Nodes</p>          <p className="text-xl font-bold text-white">{stats?.totalNodes || 0}</p>        </div>        <div className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg shadow-inner transition-all duration-300 hover:bg-black/40">          <div className="p-2 rounded-full bg-green-500/20 backdrop-blur-sm mx-auto mb-2">            <Wifi className="text-green-400" size={16} />          </div>          <p className="text-sm text-gray-400">Active Nodes</p>          <p className="text-xl font-bold text-white">{stats?.activeNodes || 0}</p>        </div>        <div className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg shadow-inner transition-all duration-300 hover:bg-black/40">          <div className="p-2 rounded-full bg-purple-500/20 backdrop-blur-sm mx-auto mb-2">            <Upload className="text-purple-400" size={16} />          </div>          <p className="text-sm text-gray-400">Total Bandwidth</p>          <p className="text-xl font-bold text-white">{stats?.totalBandwidth || 0} TB</p>        </div>        <div className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg shadow-inner transition-all duration-300 hover:bg-black/40">          <div className="p-2 rounded-full bg-yellow-500/20 backdrop-blur-sm mx-auto mb-2">            <Activity className="text-yellow-400" size={16} />          </div>          <p className="text-sm text-gray-400">Avg. Uptime</p>          <p className="text-xl font-bold text-white">{stats?.averageUptime || 0}%</p>        </div>      </div>      <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">        {`      </div>    </Card>  );}
+import { useEffect, useState } from 'react';
+import { Card } from '@/components/ui/Card';
+import { DashboardBadge } from '@/components/ui/DashboardBadge';
+import { Globe, Cpu, Wifi, Activity, Upload } from 'lucide-react';
+import type { NetworkStats as NetworkStatsType } from '@/types/ecosystem.types';
+import axios from 'axios';
+import { config } from '@/config/env';
+export default function NetworkStats() {
+  const [stats, setStats] = useState<NetworkStatsType | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const fetchNetworkStats = async () => {
+      try {
+        const response = await axios.get(`${config.API_BASE_URL}/network-stats`);
+        setStats(response.data as NetworkStatsType);
+        setLoading(false);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des statistiques du réseau:', error);
+        setError('Impossible de charger les statistiques du réseau');
+        setLoading(false);
+      }
+    };
+    fetchNetworkStats();
+    const interval = setInterval(fetchNetworkStats, 5 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+  const healthColors = {
+    healthy: 'text-white',
+    warning: 'text-yellow-400',
+    critical: 'text-red-400'
+  };
+  if (error) {
+    return (
+      <Card className="backdrop-blur-md bg-black/40 border border-red-700/50 p-4 rounded-lg shadow-lg">
+        <div className="text-red-400 text-center">{error}</div>
+      </Card>
+    );
+  }
+  if (loading) {
+    return (
+      <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-4 rounded-lg shadow-lg">
+        <div className="text-gray-300 text-center">Chargement des statistiques réseau...</div>
+      </Card>
+    );
+  }
+  if (!stats) {
+    return (
+      <Card className="backdrop-blur-md bg-black/40 border border-yellow-700/50 p-4 rounded-lg shadow-lg">
+        <div className="text-yellow-400 text-center">Aucune donnée disponible</div>
+      </Card>
+    );
+  }
+  return (
+    <Card className="backdrop-blur-md bg-black/40 border border-gray-700/50 p-6 rounded-lg shadow-lg transition-all duration-500 animate-pulse-shadow space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-2">
+          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm">
+            <Globe className="text-blue-400" size={20} />
+          </div>
+          <h3 className="text-xl font-bold text-white">Network Statistics</h3>
+        </div>
+        <DashboardBadge 
+          variant={
+            stats.networkHealth === 'healthy' ? 'success' : 
+            stats.networkHealth === 'warning' ? 'warning' : 'danger'
+          }
+          dot
+        >
+          <span className="capitalize">{stats.networkHealth || 'unknown'}</span>
+        </DashboardBadge>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg shadow-inner transition-all duration-300 hover:bg-black/40">
+          <div className="p-2 rounded-full bg-blue-500/20 backdrop-blur-sm mx-auto mb-2">
+            <Cpu className="text-blue-400" size={16} />
+          </div>
+          <p className="text-sm text-gray-400">Total Nodes</p>
+          <p className="text-xl font-bold text-white">{stats?.totalNodes || 0}</p>
+        </div>
+        <div className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg shadow-inner transition-all duration-300 hover:bg-black/40">
+          <div className="p-2 rounded-full bg-green-500/20 backdrop-blur-sm mx-auto mb-2">
+            <Wifi className="text-green-400" size={16} />
+          </div>
+          <p className="text-sm text-gray-400">Active Nodes</p>
+          <p className="text-xl font-bold text-white">{stats?.activeNodes || 0}</p>
+        </div>
+        <div className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg shadow-inner transition-all duration-300 hover:bg-black/40">
+          <div className="p-2 rounded-full bg-purple-500/20 backdrop-blur-sm mx-auto mb-2">
+            <Upload className="text-purple-400" size={16} />
+          </div>
+          <p className="text-sm text-gray-400">Total Bandwidth</p>
+          <p className="text-xl font-bold text-white">{stats?.totalBandwidth || 0} TB</p>
+        </div>
+        <div className="text-center p-4 backdrop-blur-sm bg-black/30 border border-gray-700/30 rounded-lg shadow-inner transition-all duration-300 hover:bg-black/40">
+          <div className="p-2 rounded-full bg-yellow-500/20 backdrop-blur-sm mx-auto mb-2">
+            <Activity className="text-yellow-400" size={16} />
+          </div>
+          <p className="text-sm text-gray-400">Avg. Uptime</p>
+          <p className="text-xl font-bold text-white">{stats?.averageUptime || 0}%</p>
+        </div>
+      </div>
+      <div className="text-center text-xs text-gray-400 bg-black/20 backdrop-blur-sm p-2 rounded-md">
+        {`
+      </div>
+    </Card>
+  );
+}

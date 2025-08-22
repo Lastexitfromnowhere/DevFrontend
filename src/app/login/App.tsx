@@ -1,1 +1,279 @@
-import React, { useEffect } from 'react';import './App.css';import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';import { Button, Box, Typography, CircularProgress, Link } from '@mui/material';import { AccountBalanceWallet } from '@mui/icons-material';import { useWalletContext } from '@/contexts/WalletContext';import { useRouter } from 'next/navigation';import axios from 'axios';import { authService } from '@/services/authService';import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';import { googleWalletService } from '@/services/googleWalletService';const WALLET_ADDRESS_KEY = 'wallet_address';const GOOGLE_USER_ID_KEY = 'google_user_id';function App() {  const [loading, setLoading] = React.useState(false);  const { connectWallet, isConnected, isAuthReady } = useWalletContext();  const router = useRouter();  useEffect(() => {    const createParticles = () => {      const container = document.getElementById('particles-container');      if (!container) return;      container.innerHTML = '';      for (let i = 0; i < 20; i++) {        const particle = document.createElement('div');        particle.classList.add('particle');        container.appendChild(particle);      }    };    createParticles();    window.addEventListener('resize', createParticles);    return () => {      window.removeEventListener('resize', createParticles);    };  }, []);  useEffect(() => {    const checkAuthAndRedirect = async () => {      const authState = authService.checkAuthenticationState();      const walletConnected = isConnected && isAuthReady;      console.log('Vérification d\'authentification sur /login:', authState);      if (authState.canRegenerateToken) {        console.log('Token expiré pour utilisateur Google sur /login, tentative de régénération...');        try {          const walletAddress = authService.getWalletAddress();          if (walletAddress) {            const { token, expiresAt } = await authService.generateToken(walletAddress);            if (token && expiresAt) {              authService.saveToken(token, expiresAt, walletAddress);              console.log('Token régénéré avec succès, redirection vers la page d\'accueil');              router.push('/');              return;            }          }        } catch (error) {          console.error('Erreur lors de la régénération du token:', error);        }      }      if ('reason' in authState && authState.reason === 'token_expired' && !authState.canRegenerateToken) {        console.log('Token expiré sur /login, utilisateur reste sur la page de connexion');        return;      }      const isAuthenticated = authState.isAuthenticated || walletConnected;      if (isAuthenticated) {        console.log('Utilisateur authentifié sur /login, redirection vers la page d\'accueil');        router.push('/');      }    };    const timer = setTimeout(checkAuthAndRedirect, 200);    return () => clearTimeout(timer);  }, [isConnected, isAuthReady, router]);  useEffect(() => {    const checkWalletConnection = () => {      if (isConnected && isAuthReady) {        console.log('Connexion wallet détectée, redirection vers la page d\'accueil');        window.location.href = '/';      }    };    const intervalId = setInterval(checkWalletConnection, 500);    return () => clearInterval(intervalId);  }, []);  const handleGoogleSuccess = async (credentialResponse: any) => {    console.log('Connexion Google réussie:', credentialResponse);    setLoading(true);    try {      if (!credentialResponse || !credentialResponse.credential) {        throw new Error('Aucun credential reçu de Google');      }      const googleToken = credentialResponse.credential;      const base64Url = googleToken.split('.')[1];      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');      const payload = JSON.parse(window.atob(base64));      const googleUserId = payload.sub;       const userEmail = payload.email;      const userName = payload.name;      console.log('Google User Info:', { googleUserId, userEmail, userName });      if (typeof window !== 'undefined') {        localStorage.setItem(GOOGLE_USER_ID_KEY, googleUserId);        localStorage.setItem('google_user_email', userEmail);        localStorage.setItem('google_user_name', userName);        const googleWalletMapping = JSON.parse(localStorage.getItem('google_wallet_mappings') || '{}');        googleWalletMapping[googleUserId] = {          email: userEmail,          name: userName,          createdAt: new Date().toISOString()        };        localStorage.setItem('google_wallet_mappings', JSON.stringify(googleWalletMapping));      }      const googleWallet = googleWalletService.getOrCreateGoogleWallet(googleUserId);      console.log('Portefeuille Solana généré pour l\'utilisateur Google:', googleWallet?.publicKey);      const walletAddress = googleWallet?.publicKey || googleUserId;      try {        const googleUserData = {          sub: googleUserId,          email: userEmail,          name: userName,          picture: null        };        const publicKey = googleWallet?.publicKey || walletAddress;        const userCreationResult = await authService.createGoogleWalletUser(          googleUserData,          walletAddress,          publicKey        );        if (userCreationResult.success) {          console.log('Utilisateur Google-Wallet complet créé:', userCreationResult);        } else {          console.error('Erreur lors de la création de l\'utilisateur complet:', userCreationResult);        }      } catch (error) {        console.error('Erreur lors de la création de l\'utilisateur Google-Wallet:', error);      }      try {        await authService.saveGoogleWalletAssociation(googleUserId, userEmail, userName, walletAddress);        console.log('Association Google-Wallet sauvegardée en base de données');      } catch (error) {        console.warn('Impossible de sauvegarder en base, utilisation du localStorage:', error);      }      console.log('Génération du token JWT avec l\'adresse du portefeuille:', walletAddress);      const { token, expiresAt } = await authService.generateToken(walletAddress);      console.log('Token généré:', token ? 'OK' : 'Erreur');      if (token && expiresAt) {        console.log('Sauvegarde du token et configuration de l\'authentification...');        authService.saveToken(token, expiresAt, walletAddress);        if (typeof window !== 'undefined') {          localStorage.setItem('jwt_token', token);          localStorage.setItem('token_expires_at', expiresAt.toString());          localStorage.setItem(WALLET_ADDRESS_KEY, walletAddress);          localStorage.setItem('isAuthReady', 'true');          localStorage.setItem('isConnected', 'true');          localStorage.setItem('isGoogleWallet', 'true');         }        console.log('Authentification réussie, redirection dans 1 seconde...');        setTimeout(() => {          console.log('Redirection vers la page d\'accueil...');          window.location.href = '/';        }, 1000);      } else {        throw new Error('Échec de la génération du token');      }    } catch (error) {      console.error('Erreur lors de l\'authentification Google:', error);      alert('Échec de l\'authentification Google. Veuillez réessayer.');      setLoading(false);    }  };  const handleGoogleError = () => {    console.error('Échec de la connexion Google');    alert('Échec de la connexion Google. Veuillez réessayer.');  };  const handleWalletLogin = async () => {    setLoading(true);    console.log('Ouverture du sélecteur de wallet...');    try {      console.log('Utilisation directe de connectWallet...');      await connectWallet();      await new Promise(resolve => setTimeout(resolve, 1000));    } catch (error) {      console.error('Erreur lors de la connexion wallet:', error);      alert('Erreur lors de la connexion wallet. Veuillez réessayer.');    } finally {      setLoading(false);    }  };  return (    <div className="app login-page">      {}      <div className="background"></div>      {}      <div className="auth-container">        {}        <div className="mascot-section">          <img src="/dsgx.png" alt="Mascotte" className="mascot-image" />        </div>        {}        <div className="login-section">          <img src="/welcome.png" alt="Welcome" className="login-title" />          <Typography variant="body1" className="login-subtitle">            Sign in to access your dashboard          </Typography>          {}          <div style={{ marginTop: '24px', width: '100%' }}>            <button              onClick={handleWalletLogin}              disabled={loading}              style={{                width: '100%',                padding: '12px 24px',                backgroundColor: '#6366f1',                color: 'white',                border: 'none',                borderRadius: '8px',                fontSize: '16px',                fontWeight: '500',                cursor: loading ? 'not-allowed' : 'pointer',                opacity: loading ? 0.7 : 1,                transition: 'all 0.2s ease',              }}              onMouseEnter={(e) => {                if (!loading) {                  e.currentTarget.style.backgroundColor = '#5856eb';                }              }}              onMouseLeave={(e) => {                if (!loading) {                  e.currentTarget.style.backgroundColor = '#6366f1';                }              }}            >              {loading ? 'Connecting...' : 'Connect Wallet'}            </button>            {}            <div style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>              <WalletMultiButton className="wallet-adapter-button-trigger" />            </div>          </div>          {}          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', margin: '20px 0' }}>            <Box sx={{ flex: '1', height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)' }} />            <Typography variant="body2" sx={{ margin: '0 10px', color: 'rgba(255, 255, 255, 0.6)' }}>              OR            </Typography>            <Box sx={{ flex: '1', height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)' }} />          </Box>          {}          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: 1 }}>            <GoogleOAuthProvider clientId="953938174658-bc0t3blb5hqb3cf9c2jgari174hepqn1.apps.googleusercontent.com">              <div className="google-login-container">                <GoogleLogin                  onSuccess={handleGoogleSuccess}                  onError={handleGoogleError}                  useOneTap                  theme="filled_blue"                  text="continue_with"                  shape="pill"                  locale="fr"                  width="280px"                />              </div>            </GoogleOAuthProvider>          </Box>          {}          <Typography variant="caption" sx={{ marginTop: 4, color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center' }}>            By signing in, you agree to our terms of service and privacy policy.          </Typography>        </div>      </div>      {}      <div id="particles-container"></div>      <footer>        <p className="copyright"> 2024 Last Parad0x vPN — All rights reserved</p>        <div className="social-links">          <a href="https:          <a href="https:          <a href="https:        </div>      </footer>    </div>  );}export default App;
+import React, { useEffect } from 'react';
+import './App.css';
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { Button, Box, Typography, CircularProgress, Link } from '@mui/material';
+import { AccountBalanceWallet } from '@mui/icons-material';
+import { useWalletContext } from '@/contexts/WalletContext';
+import { useRouter } from 'next/navigation';
+import axios from 'axios';
+import { authService } from '@/services/authService';
+import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
+import { googleWalletService } from '@/services/googleWalletService';
+const WALLET_ADDRESS_KEY = 'wallet_address';
+const GOOGLE_USER_ID_KEY = 'google_user_id';
+function App() {
+  const [loading, setLoading] = React.useState(false);
+  const { connectWallet, isConnected, isAuthReady } = useWalletContext();
+  const router = useRouter();
+  useEffect(() => {
+    const createParticles = () => {
+      const container = document.getElementById('particles-container');
+      if (!container) return;
+      container.innerHTML = '';
+      for (let i = 0; i < 20; i++) {
+        const particle = document.createElement('div');
+        particle.classList.add('particle');
+        container.appendChild(particle);
+      }
+    };
+    createParticles();
+    window.addEventListener('resize', createParticles);
+    return () => {
+      window.removeEventListener('resize', createParticles);
+    };
+  }, []);
+  useEffect(() => {
+    const checkAuthAndRedirect = async () => {
+      const authState = authService.checkAuthenticationState();
+      const walletConnected = isConnected && isAuthReady;
+      console.log('Vérification d\'authentification sur /login:', authState);
+      if (authState.canRegenerateToken) {
+        console.log('Token expiré pour utilisateur Google sur /login, tentative de régénération...');
+        try {
+          const walletAddress = authService.getWalletAddress();
+          if (walletAddress) {
+            const { token, expiresAt } = await authService.generateToken(walletAddress);
+            if (token && expiresAt) {
+              authService.saveToken(token, expiresAt, walletAddress);
+              console.log('Token régénéré avec succès, redirection vers la page d\'accueil');
+              router.push('/');
+              return;
+            }
+          }
+        } catch (error) {
+          console.error('Erreur lors de la régénération du token:', error);
+        }
+      }
+      if ('reason' in authState && authState.reason === 'token_expired' && !authState.canRegenerateToken) {
+        console.log('Token expiré sur /login, utilisateur reste sur la page de connexion');
+        return;
+      }
+      const isAuthenticated = authState.isAuthenticated || walletConnected;
+      if (isAuthenticated) {
+        console.log('Utilisateur authentifié sur /login, redirection vers la page d\'accueil');
+        router.push('/');
+      }
+    };
+    const timer = setTimeout(checkAuthAndRedirect, 200);
+    return () => clearTimeout(timer);
+  }, [isConnected, isAuthReady, router]);
+  useEffect(() => {
+    const checkWalletConnection = () => {
+      if (isConnected && isAuthReady) {
+        console.log('Connexion wallet détectée, redirection vers la page d\'accueil');
+        window.location.href = '/';
+      }
+    };
+    const intervalId = setInterval(checkWalletConnection, 500);
+    return () => clearInterval(intervalId);
+  }, []);
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    console.log('Connexion Google réussie:', credentialResponse);
+    setLoading(true);
+    try {
+      if (!credentialResponse || !credentialResponse.credential) {
+        throw new Error('Aucun credential reçu de Google');
+      }
+      const googleToken = credentialResponse.credential;
+      const base64Url = googleToken.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+      const googleUserId = payload.sub; 
+      const userEmail = payload.email;
+      const userName = payload.name;
+      console.log('Google User Info:', { googleUserId, userEmail, userName });
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(GOOGLE_USER_ID_KEY, googleUserId);
+        localStorage.setItem('google_user_email', userEmail);
+        localStorage.setItem('google_user_name', userName);
+        const googleWalletMapping = JSON.parse(localStorage.getItem('google_wallet_mappings') || '{}');
+        googleWalletMapping[googleUserId] = {
+          email: userEmail,
+          name: userName,
+          createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('google_wallet_mappings', JSON.stringify(googleWalletMapping));
+      }
+      const googleWallet = googleWalletService.getOrCreateGoogleWallet(googleUserId);
+      console.log('Portefeuille Solana généré pour l\'utilisateur Google:', googleWallet?.publicKey);
+      const walletAddress = googleWallet?.publicKey || googleUserId;
+      try {
+        const googleUserData = {
+          sub: googleUserId,
+          email: userEmail,
+          name: userName,
+          picture: null
+        };
+        const publicKey = googleWallet?.publicKey || walletAddress;
+        const userCreationResult = await authService.createGoogleWalletUser(
+          googleUserData,
+          walletAddress,
+          publicKey
+        );
+        if (userCreationResult.success) {
+          console.log('Utilisateur Google-Wallet complet créé:', userCreationResult);
+        } else {
+          console.error('Erreur lors de la création de l\'utilisateur complet:', userCreationResult);
+        }
+      } catch (error) {
+        console.error('Erreur lors de la création de l\'utilisateur Google-Wallet:', error);
+      }
+      try {
+        await authService.saveGoogleWalletAssociation(googleUserId, userEmail, userName, walletAddress);
+        console.log('Association Google-Wallet sauvegardée en base de données');
+      } catch (error) {
+        console.warn('Impossible de sauvegarder en base, utilisation du localStorage:', error);
+      }
+      console.log('Génération du token JWT avec l\'adresse du portefeuille:', walletAddress);
+      const { token, expiresAt } = await authService.generateToken(walletAddress);
+      console.log('Token généré:', token ? 'OK' : 'Erreur');
+      if (token && expiresAt) {
+        console.log('Sauvegarde du token et configuration de l\'authentification...');
+        authService.saveToken(token, expiresAt, walletAddress);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('jwt_token', token);
+          localStorage.setItem('token_expires_at', expiresAt.toString());
+          localStorage.setItem(WALLET_ADDRESS_KEY, walletAddress);
+          localStorage.setItem('isAuthReady', 'true');
+          localStorage.setItem('isConnected', 'true');
+          localStorage.setItem('isGoogleWallet', 'true'); 
+        }
+        console.log('Authentification réussie, redirection dans 1 seconde...');
+        setTimeout(() => {
+          console.log('Redirection vers la page d\'accueil...');
+          window.location.href = '/';
+        }, 1000);
+      } else {
+        throw new Error('Échec de la génération du token');
+      }
+    } catch (error) {
+      console.error('Erreur lors de l\'authentification Google:', error);
+      alert('Échec de l\'authentification Google. Veuillez réessayer.');
+      setLoading(false);
+    }
+  };
+  const handleGoogleError = () => {
+    console.error('Échec de la connexion Google');
+    alert('Échec de la connexion Google. Veuillez réessayer.');
+  };
+  const handleWalletLogin = async () => {
+    setLoading(true);
+    console.log('Ouverture du sélecteur de wallet...');
+    try {
+      console.log('Utilisation directe de connectWallet...');
+      await connectWallet();
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } catch (error) {
+      console.error('Erreur lors de la connexion wallet:', error);
+      alert('Erreur lors de la connexion wallet. Veuillez réessayer.');
+    } finally {
+      setLoading(false);
+    }
+  };
+  return (
+    <div className="app login-page">
+      {}
+      <div className="background"></div>
+      {}
+      <div className="auth-container">
+        {}
+        <div className="mascot-section">
+          <img src="/dsgx.png" alt="Mascotte" className="mascot-image" />
+        </div>
+        {}
+        <div className="login-section">
+          <img src="/welcome.png" alt="Welcome" className="login-title" />
+          <Typography variant="body1" className="login-subtitle">
+            Sign in to access your dashboard
+          </Typography>
+          {}
+          <div style={{ marginTop: '24px', width: '100%' }}>
+            <button
+              onClick={handleWalletLogin}
+              disabled={loading}
+              style={{
+                width: '100%',
+                padding: '12px 24px',
+                backgroundColor: '#6366f1',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '16px',
+                fontWeight: '500',
+                cursor: loading ? 'not-allowed' : 'pointer',
+                opacity: loading ? 0.7 : 1,
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor = '#5856eb';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!loading) {
+                  e.currentTarget.style.backgroundColor = '#6366f1';
+                }
+              }}
+            >
+              {loading ? 'Connecting...' : 'Connect Wallet'}
+            </button>
+            {}
+            <div style={{ position: 'absolute', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+              <WalletMultiButton className="wallet-adapter-button-trigger" />
+            </div>
+          </div>
+          {}
+          <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', margin: '20px 0' }}>
+            <Box sx={{ flex: '1', height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)' }} />
+            <Typography variant="body2" sx={{ margin: '0 10px', color: 'rgba(255, 255, 255, 0.6)' }}>
+              OR
+            </Typography>
+            <Box sx={{ flex: '1', height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.2)' }} />
+          </Box>
+          {}
+          <Box sx={{ width: '100%', display: 'flex', justifyContent: 'center', marginTop: 1 }}>
+            <GoogleOAuthProvider clientId="953938174658-bc0t3blb5hqb3cf9c2jgari174hepqn1.apps.googleusercontent.com">
+              <div className="google-login-container">
+                <GoogleLogin
+                  onSuccess={handleGoogleSuccess}
+                  onError={handleGoogleError}
+                  useOneTap
+                  theme="filled_blue"
+                  text="continue_with"
+                  shape="pill"
+                  locale="fr"
+                  width="280px"
+                />
+              </div>
+            </GoogleOAuthProvider>
+          </Box>
+          {}
+          <Typography variant="caption" sx={{ marginTop: 4, color: 'rgba(255, 255, 255, 0.5)', textAlign: 'center' }}>
+            By signing in, you agree to our terms of service and privacy policy.
+          </Typography>
+        </div>
+      </div>
+      {}
+      <div id="particles-container"></div>
+      <footer>
+        <p className="copyright"> 2024 Last Parad0x vPN — All rights reserved</p>
+        <div className="social-links">
+          <a href="https:
+          <a href="https:
+          <a href="https:
+        </div>
+      </footer>
+    </div>
+  );
+}
+export default App;

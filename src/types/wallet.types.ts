@@ -1,1 +1,17 @@
-export interface WalletState {    isConnected: boolean;    account: string | null;    chain: string;    publicKey: string | null;  }  export interface WalletContextType extends WalletState {    connectWallet: () => Promise<void>;    disconnectWallet: () => Promise<void>;    updateUserRWRD?: (address: string, amount: number) => void;  }  export interface WalletData {    address: string;    rwrd: number;    lastActive: string;    totalEarned: number;  }
+export interface WalletState {
+    isConnected: boolean;
+    account: string | null;
+    chain: string;
+    publicKey: string | null;
+  }
+  export interface WalletContextType extends WalletState {
+    connectWallet: () => Promise<void>;
+    disconnectWallet: () => Promise<void>;
+    updateUserRWRD?: (address: string, amount: number) => void;
+  }
+  export interface WalletData {
+    address: string;
+    rwrd: number;
+    lastActive: string;
+    totalEarned: number;
+  }
