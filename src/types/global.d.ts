@@ -1,1 +1,12 @@
-declare global {  interface Window {    solana?: {      isPhantom?: boolean;      connect: () => Promise<{ publicKey: { toString: () => string } }>;      disconnect: () => Promise<void>;      on: (event: string, callback: () => void) => void;      off: (event: string, callback: () => void) => void;    };  }}export {};
+declare global {
+  interface Window {
+    solana?: {
+      isPhantom?: boolean;
+      connect: () => Promise<{ publicKey: { toString: () => string } }>;
+      disconnect: () => Promise<void>;
+      on: (event: string, callback: () => void) => void;
+      off: (event: string, callback: () => void) => void;
+    };
+  }
+}
+export {};

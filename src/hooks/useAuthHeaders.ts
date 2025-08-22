@@ -1,1 +1,39 @@
-'use client';import { useEffect } from 'react';export function useAuthHeaders() {  useEffect(() => {    const updateAuthHeaders = () => {      if (typeof window === 'undefined') return;      const jwtToken = localStorage.getItem('jwt_token');      const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';      const headers: Record<string, string> = {};      if (jwtToken) {        headers['x-has-token'] = 'true';      }      if (isGoogleWallet) {        headers['x-google-wallet'] = 'true';      }      Object.entries(headers).forEach(([key, value]) => {        let meta = document.querySelector(`meta[name="${key}"]`) as HTMLMetaElement;        if (!meta) {          meta = document.createElement('meta');          meta.name = key;          document.head.appendChild(meta);        }        meta.content = value;      });    };    updateAuthHeaders();    const handleStorageChange = (e: StorageEvent) => {      if (e.key === 'jwt_token' || e.key === 'isGoogleWallet') {        updateAuthHeaders();      }    };    window.addEventListener('storage', handleStorageChange);    const interval = setInterval(updateAuthHeaders, 1000);    return () => {      window.removeEventListener('storage', handleStorageChange);      clearInterval(interval);    };  }, []);}
+'use client';
+import { useEffect } from 'react';
+export function useAuthHeaders() {
+  useEffect(() => {
+    const updateAuthHeaders = () => {
+      if (typeof window === 'undefined') return;
+      const jwtToken = localStorage.getItem('jwt_token');
+      const isGoogleWallet = localStorage.getItem('isGoogleWallet') === 'true';
+      const headers: Record<string, string> = {};
+      if (jwtToken) {
+        headers['x-has-token'] = 'true';
+      }
+      if (isGoogleWallet) {
+        headers['x-google-wallet'] = 'true';
+      }
+      Object.entries(headers).forEach(([key, value]) => {
+        let meta = document.querySelector(`meta[name="${key}"]`) as HTMLMetaElement;
+        if (!meta) {
+          meta = document.createElement('meta');
+          meta.name = key;
+          document.head.appendChild(meta);
+        }
+        meta.content = value;
+      });
+    };
+    updateAuthHeaders();
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'jwt_token' || e.key === 'isGoogleWallet') {
+        updateAuthHeaders();
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    const interval = setInterval(updateAuthHeaders, 1000);
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(interval);
+    };
+  }, []);
+}

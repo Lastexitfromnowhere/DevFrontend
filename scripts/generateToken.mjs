@@ -1,1 +1,78 @@
-import jwt from 'jsonwebtoken';import fs from 'fs';import path from 'path';import { fileURLToPath } from 'url';const __filename = fileURLToPath(import.meta.url);const __dirname = path.dirname(__filename);let JWT_SECRET = 'votre_secret_jwt_super_securise';try {  const envPath = path.resolve(__dirname, '../.env.local');  const envContent = fs.readFileSync(envPath, 'utf8');  const jwtSecretMatch = envContent.match(/JWT_SECRET=(.+)/);  if (jwtSecretMatch && jwtSecretMatch[1]) {    JWT_SECRET = jwtSecretMatch[1].trim();    console.log('Secret JWT chargé depuis .env.local');  }} catch (error) {  console.warn('Impossible de charger le secret JWT depuis .env.local, utilisation du secret par défaut');}const walletAddress = process.argv[2] || '0xVotreAdresseWallet';const generateToken = (walletAddress, expiresIn = '1h') => {  const now = Math.floor(Date.now() / 1000);  const payload = {    walletAddress,    role: 'user',    iat: now  };  return jwt.sign(payload, JWT_SECRET, { expiresIn });};const encodeSimpleJWT = (payload) => {  const header = {    alg: 'HS256',    typ: 'JWT'  };  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64')    .replace(/=/g, '').replace(/\+/g, '-').replace(/\  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64')    .replace(/=/g, '').replace(/\+/g, '-').replace(/\  const signature = Buffer.from(    Array.from(payload.walletAddress)      .map(char => char.charCodeAt(0))      .reduce((acc, val) => acc + val, 0)      .toString(16)  ).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\  return `${encodedHeader}.${encodedPayload}.${signature}`;};const now = Math.floor(Date.now() / 1000);const expiresAt = now + 3600; const jwtToken = generateToken(walletAddress);const payload = {  walletAddress,  role: 'user',  iat: now,  exp: expiresAt};const simpleToken = encodeSimpleJWT(payload);console.log('\n1. Token JWT standard (pour le backend):');console.log('----------------------------');console.log(jwtToken);console.log('----------------------------');console.log('\n2. Token simplifié (compatible avec le frontend):');console.log('----------------------------');console.log(simpleToken);console.log('----------------------------');const decoded = jwt.decode(jwtToken);console.log('\nInformations du token:');console.log('- Adresse wallet:', decoded.walletAddress);console.log('- Rôle:', decoded.role);console.log('- Émis le:', new Date(decoded.iat * 1000).toLocaleString());console.log('- Expire le:', new Date(decoded.exp * 1000).toLocaleString());console.log('\nCommandes curl pour tester l\'API DHT:');console.log('----------------------------');console.log(`curl -X GET "http:console.log(`curl -X GET "http:console.log('----------------------------');export default {  jwtToken,  simpleToken};
+import jwt from 'jsonwebtoken';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+let JWT_SECRET = 'votre_secret_jwt_super_securise';
+try {
+  const envPath = path.resolve(__dirname, '../.env.local');
+  const envContent = fs.readFileSync(envPath, 'utf8');
+  const jwtSecretMatch = envContent.match(/JWT_SECRET=(.+)/);
+  if (jwtSecretMatch && jwtSecretMatch[1]) {
+    JWT_SECRET = jwtSecretMatch[1].trim();
+    console.log('Secret JWT chargé depuis .env.local');
+  }
+} catch (error) {
+  console.warn('Impossible de charger le secret JWT depuis .env.local, utilisation du secret par défaut');
+}
+const walletAddress = process.argv[2] || '0xVotreAdresseWallet';
+const generateToken = (walletAddress, expiresIn = '1h') => {
+  const now = Math.floor(Date.now() / 1000);
+  const payload = {
+    walletAddress,
+    role: 'user',
+    iat: now
+  };
+  return jwt.sign(payload, JWT_SECRET, { expiresIn });
+};
+const encodeSimpleJWT = (payload) => {
+  const header = {
+    alg: 'HS256',
+    typ: 'JWT'
+  };
+  const encodedHeader = Buffer.from(JSON.stringify(header)).toString('base64')
+    .replace(/=/g, '').replace(/\+/g, '-').replace(/\
+  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString('base64')
+    .replace(/=/g, '').replace(/\+/g, '-').replace(/\
+  const signature = Buffer.from(
+    Array.from(payload.walletAddress)
+      .map(char => char.charCodeAt(0))
+      .reduce((acc, val) => acc + val, 0)
+      .toString(16)
+  ).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\
+  return `${encodedHeader}.${encodedPayload}.${signature}`;
+};
+const now = Math.floor(Date.now() / 1000);
+const expiresAt = now + 3600; 
+const jwtToken = generateToken(walletAddress);
+const payload = {
+  walletAddress,
+  role: 'user',
+  iat: now,
+  exp: expiresAt
+};
+const simpleToken = encodeSimpleJWT(payload);
+console.log('\n1. Token JWT standard (pour le backend):');
+console.log('----------------------------');
+console.log(jwtToken);
+console.log('----------------------------');
+console.log('\n2. Token simplifié (compatible avec le frontend):');
+console.log('----------------------------');
+console.log(simpleToken);
+console.log('----------------------------');
+const decoded = jwt.decode(jwtToken);
+console.log('\nInformations du token:');
+console.log('- Adresse wallet:', decoded.walletAddress);
+console.log('- Rôle:', decoded.role);
+console.log('- Émis le:', new Date(decoded.iat * 1000).toLocaleString());
+console.log('- Expire le:', new Date(decoded.exp * 1000).toLocaleString());
+console.log('\nCommandes curl pour tester l\'API DHT:');
+console.log('----------------------------');
+console.log(`curl -X GET "http:
+console.log(`curl -X GET "http:
+console.log('----------------------------');
+export default {
+  jwtToken,
+  simpleToken
+};

@@ -1,1 +1,60 @@
-import { Keypair } from '@solana/web3.js';import * as nacl from 'tweetnacl';const GOOGLE_WALLET_KEY = 'google_wallet';const generateDeterministicWallet = (googleId) => {  try {    const seed = new Uint8Array(32);    const googleIdBytes = new TextEncoder().encode(googleId);    for (let i = 0; i < Math.min(googleIdBytes.length, 32); i++) {      seed[i] = googleIdBytes[i];    }    const keypair = Keypair.fromSeed(seed);    return {      publicKey: keypair.publicKey.toString(),      secretKey: Buffer.from(keypair.secretKey).toString('hex')    };  } catch (error) {    console.error('Erreur lors de la génération du portefeuille:', error);    return null;  }};const isBrowser = () => {  return typeof window !== 'undefined';};const getOrCreateGoogleWallet = (googleId) => {  if (!isBrowser()) {    return null;  }  const existingWallet = localStorage.getItem(`${GOOGLE_WALLET_KEY}_${googleId}`);  if (existingWallet) {    return JSON.parse(existingWallet);  }  const newWallet = generateDeterministicWallet(googleId);  if (newWallet) {    localStorage.setItem(`${GOOGLE_WALLET_KEY}_${googleId}`, JSON.stringify(newWallet));    return newWallet;  }  return null;};const getGoogleWalletAddress = (googleId) => {  const wallet = getOrCreateGoogleWallet(googleId);  return wallet ? wallet.publicKey : null;};const hasGoogleWallet = (googleId) => {  if (!isBrowser()) {    return false;  }  return localStorage.getItem(`${GOOGLE_WALLET_KEY}_${googleId}`) !== null;};const removeGoogleWallet = (googleId) => {  if (!isBrowser()) {    return;  }  localStorage.removeItem(`${GOOGLE_WALLET_KEY}_${googleId}`);};export const googleWalletService = {  getOrCreateGoogleWallet,  getGoogleWalletAddress,  hasGoogleWallet,  removeGoogleWallet};
+import { Keypair } from '@solana/web3.js';
+import * as nacl from 'tweetnacl';
+const GOOGLE_WALLET_KEY = 'google_wallet';
+const generateDeterministicWallet = (googleId) => {
+  try {
+    const seed = new Uint8Array(32);
+    const googleIdBytes = new TextEncoder().encode(googleId);
+    for (let i = 0; i < Math.min(googleIdBytes.length, 32); i++) {
+      seed[i] = googleIdBytes[i];
+    }
+    const keypair = Keypair.fromSeed(seed);
+    return {
+      publicKey: keypair.publicKey.toString(),
+      secretKey: Buffer.from(keypair.secretKey).toString('hex')
+    };
+  } catch (error) {
+    console.error('Erreur lors de la génération du portefeuille:', error);
+    return null;
+  }
+};
+const isBrowser = () => {
+  return typeof window !== 'undefined';
+};
+const getOrCreateGoogleWallet = (googleId) => {
+  if (!isBrowser()) {
+    return null;
+  }
+  const existingWallet = localStorage.getItem(`${GOOGLE_WALLET_KEY}_${googleId}`);
+  if (existingWallet) {
+    return JSON.parse(existingWallet);
+  }
+  const newWallet = generateDeterministicWallet(googleId);
+  if (newWallet) {
+    localStorage.setItem(`${GOOGLE_WALLET_KEY}_${googleId}`, JSON.stringify(newWallet));
+    return newWallet;
+  }
+  return null;
+};
+const getGoogleWalletAddress = (googleId) => {
+  const wallet = getOrCreateGoogleWallet(googleId);
+  return wallet ? wallet.publicKey : null;
+};
+const hasGoogleWallet = (googleId) => {
+  if (!isBrowser()) {
+    return false;
+  }
+  return localStorage.getItem(`${GOOGLE_WALLET_KEY}_${googleId}`) !== null;
+};
+const removeGoogleWallet = (googleId) => {
+  if (!isBrowser()) {
+    return;
+  }
+  localStorage.removeItem(`${GOOGLE_WALLET_KEY}_${googleId}`);
+};
+export const googleWalletService = {
+  getOrCreateGoogleWallet,
+  getGoogleWalletAddress,
+  hasGoogleWallet,
+  removeGoogleWallet
+};

@@ -1,1 +1,6 @@
-"use client";import React from 'react';import DailyClaims from './DailyClaims';export function DailyRewards() {  return <DailyClaims />;}
+"use client";
+import React from 'react';
+import DailyClaims from './DailyClaims';
+export function DailyRewards() {
+  return <DailyClaims />;
+}

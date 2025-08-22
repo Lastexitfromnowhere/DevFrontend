@@ -1,1 +1,34 @@
-interface TerminalInputProps extends React.InputHTMLAttributes<HTMLInputElement> {    prefix?: string;    error?: string;  }  export function TerminalInput({     prefix = "$",     error,    className = "",     ...props   }: TerminalInputProps) {    return (      <div className="space-y-1">        <div className="relative">          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400 font-mono">            {prefix}          </span>          <input            className={`              w-full bg-black/20 border border-green-800 rounded              px-8 py-2 text-green-400 font-mono text-sm              focus:outline-none focus:border-green-600              placeholder:text-green-700              ${error ? 'border-red-500' : ''}              ${className}            `}            {...props}          />        </div>        {error && (          <p className="text-red-500 text-xs font-mono">{error}</p>        )}      </div>    );  }
+interface TerminalInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
+    prefix?: string;
+    error?: string;
+  }
+  export function TerminalInput({ 
+    prefix = "$", 
+    error,
+    className = "", 
+    ...props 
+  }: TerminalInputProps) {
+    return (
+      <div className="space-y-1">
+        <div className="relative">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-green-400 font-mono">
+            {prefix}
+          </span>
+          <input
+            className={`
+              w-full bg-black/20 border border-green-800 rounded
+              px-8 py-2 text-green-400 font-mono text-sm
+              focus:outline-none focus:border-green-600
+              placeholder:text-green-700
+              ${error ? 'border-red-500' : ''}
+              ${className}
+            `}
+            {...props}
+          />
+        </div>
+        {error && (
+          <p className="text-red-500 text-xs font-mono">{error}</p>
+        )}
+      </div>
+    );
+  }

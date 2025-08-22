@@ -1,1 +1,10 @@
-export const config = {  API_BASE_URL: `${process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https:  DHT_API_URL: `${process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https:  POLLING_INTERVAL: 120000,   DEFAULT_TIMEOUT: 30000,   CONNECT_TIMEOUT: 60000, };export const API_BASE_URL = config.API_BASE_URL;export const DHT_API_URL = config.DHT_API_URL;export default config;
+export const config = {
+  API_BASE_URL: `${process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https:
+  DHT_API_URL: `${process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || 'https:
+  POLLING_INTERVAL: 120000, 
+  DEFAULT_TIMEOUT: 30000, 
+  CONNECT_TIMEOUT: 60000, 
+};
+export const API_BASE_URL = config.API_BASE_URL;
+export const DHT_API_URL = config.DHT_API_URL;
+export default config;

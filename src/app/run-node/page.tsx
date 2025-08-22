@@ -1,1 +1,4 @@
-import RunNode from "@/components/RunNode";export default function RunNodePage() {  return <RunNode />;}
+import RunNode from "@/components/RunNode";
+export default function RunNodePage() {
+  return <RunNode />;
+}
